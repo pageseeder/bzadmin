@@ -264,8 +264,16 @@ val warStagedHost = tasks.register<War>("warStagedHost") {
 tasks.register<Test>("hostTestStaged") {
   description = "Runs the packaged-host tests on Java 11 against the staged overlay"
   runOnHost(warStagedHost.flatMap { it.archiveFile })
-  val staged = stagingRepo.get().file("org/pageseeder/berlioz/pso-bzadmin/$version/pso-bzadmin-$version.jar").asFile
-  systemProperty("bzadmin.staged.jar", staged.path)
+  val staged = stagingRepo.get().dir("org/pageseeder/berlioz/pso-bzadmin/$version").asFile
+  systemProperty("bzadmin.staged.jar", staged.resolve("pso-bzadmin-$version.jar").path)
+  // A snapshot is published under the timestamp of its latest build, from the Maven metadata
+  if (version.toString().endsWith("-SNAPSHOT")) doFirst {
+    val metadata = staged.resolve("maven-metadata.xml").readText()
+    val timestamp = Regex("<timestamp>([^<]+)</timestamp>").find(metadata)!!.groupValues[1]
+    val build = Regex("<buildNumber>([^<]+)</buildNumber>").find(metadata)!!.groupValues[1]
+    val snapshot = version.toString().removeSuffix("-SNAPSHOT") + "-$timestamp-$build"
+    systemProperty("bzadmin.staged.jar", staged.resolve("pso-bzadmin-$snapshot.jar").path)
+  }
 }
 
 tasks.check {
