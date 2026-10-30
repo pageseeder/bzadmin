@@ -1,0 +1,123 @@
+/**
+ * Contains all bases styles for the admin interfaces.
+ * (reset/normalize, typography rules, etc...)
+ */
+
+/* Font stack */
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font-default);
+  height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-strong);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 1.5em 0 0.5em;
+
+  /* The container provides the space above its first heading */
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+h1 {
+  font-size: 1.75rem;
+}
+h2 {
+  font-size: 1.5rem;
+}
+h3 {
+  font-size: 1.25rem;
+}
+h4 {
+  font-size: 1.0625rem;
+}
+h5,
+h6 {
+  font-size: 0.9375rem;
+}
+
+/* Headings follow their content closely */
+:is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6) {
+  margin-top: 0.5em;
+}
+
+/* Links */
+a {
+  color: var(--link);
+  text-decoration: none;
+  &:visited {
+    color: var(--link-visited);
+  }
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+input[type='text'],
+input[type='password'],
+input[type='email'],
+input[type='search'],
+input[type='number'],
+select,
+textarea {
+  background: var(--field-background);
+  border-color: var(--field-border);
+  color: var(--text-strong);
+  &:focus {
+    border-color: var(--focus-ring);
+  }
+  &:active {
+    background: var(--field-active-background);
+  }
+}
+
+select {
+  font-size: 0.9rem;
+}
+
+code {
+  font-family: var(--font-monospace);
+  font-size: 0.875em;
+  color: var(--text);
+}
+
+/* Elements with a tooltip */
+time[title] {
+  cursor: help;
+}
+
+abbr[title] {
+  cursor: help;
+  text-decoration: none;
+  &:hover {
+    border-bottom: 1px dotted;
+  }
+}
+
+table tr {
+  background: var(--surface-subtle);
+}
+thead,
+tfoot {
+  color: var(--text);
+}
+
+thead,
+tbody,
+tfoot {
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface-subtle);
+  tr {
+    border-bottom: 1px solid var(--border-subtle);
+  }
+}

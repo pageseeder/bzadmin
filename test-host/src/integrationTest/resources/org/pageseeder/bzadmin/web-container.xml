@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Test host (HostExample.CONTAINER): container BASIC authentication over HTTPS, administrators by
+  container role (berlioz.admin.role.view and .operate in config-test.xml), then the admin filter.
+  The users are in the realm of the container (realm.properties next to this file).
+-->
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         metadata-complete="false"
+         version="3.0">
+
+  <display-name>Berlioz Admin (test host, container authentication)</display-name>
+
+  <!-- The cache managers of the host: a cache named PSML in three managers of EHCache 2 and JCache -->
+  <listener>
+    <listener-class>org.pageseeder.bzadmin.fixture.FixtureCacheManagers</listener-class>
+  </listener>
+
+  <filter>
+    <filter-name>SecurityHeadersFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.SecurityHeadersFilter</filter-class>
+  </filter>
+
+  <filter>
+    <filter-name>AdminFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.access.AdminFilter</filter-class>
+  </filter>
+
+  <filter>
+    <filter-name>StaticCacheControlFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.StaticCacheControlFilter</filter-class>
+    <init-param>
+      <param-name>cache-control</param-name>
+      <param-value>max-age=86400, stale-while-revalidate=604800</param-value>
+    </init-param>
+  </filter>
+
+  <!-- Records the static files served in an EHCache 2 cache, as a host's static caching filter -->
+  <filter>
+    <filter-name>FixtureStaticCache</filter-name>
+    <filter-class>org.pageseeder.bzadmin.fixture.FixtureStaticCache</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>SecurityHeadersFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <filter-mapping>
+    <filter-name>AdminFilter</filter-name>
+    <url-pattern>/bzadmin/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>FORWARD</dispatcher>
+    <dispatcher>ERROR</dispatcher>
+  </filter-mapping>
+
+  <!-- A host servlet that forwards to the admin services -->
+  <servlet>
+    <servlet-name>FixtureForward</servlet-name>
+    <servlet-class>org.pageseeder.bzadmin.fixture.FixtureForward</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>FixtureForward</servlet-name>
+    <url-pattern>/fixture-forward/*</url-pattern>
+  </servlet-mapping>
+
+  <!-- Host servlets that include an admin service, and send errors whose pages are admin services
+       (negative cases: the admin filter does not process includes, and processes error dispatches) -->
+  <servlet>
+    <servlet-name>FixtureInclude</servlet-name>
+    <servlet-class>org.pageseeder.bzadmin.fixture.FixtureInclude</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>FixtureInclude</servlet-name>
+    <url-pattern>/fixture-include/*</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>FixtureError</servlet-name>
+    <servlet-class>org.pageseeder.bzadmin.fixture.FixtureError</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>FixtureError</servlet-name>
+    <url-pattern>/fixture-error/*</url-pattern>
+  </servlet-mapping>
+  <error-page>
+    <error-code>418</error-code>
+    <location>/bzadmin/config.src</location>
+  </error-page>
+  <error-page>
+    <error-code>451</error-code>
+    <location>/bzadmin/cache/clear.src</location>
+  </error-page>
+
+  <filter-mapping>
+    <filter-name>StaticCacheControlFilter</filter-name>
+    <url-pattern>/style/images/*</url-pattern>
+    <url-pattern>/js/*</url-pattern>
+    <url-pattern>/css/*</url-pattern>
+    <url-pattern>/font/*</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>FixtureStaticCache</filter-name>
+    <url-pattern>/js/*</url-pattern>
+    <url-pattern>/css/*</url-pattern>
+  </filter-mapping>
+
+  <!--
+    Every URL that reaches the admin services requires an authenticated user ('**': any role; the
+    admin filter checks the admin roles), over HTTPS only
+  -->
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Berlioz administration</web-resource-name>
+      <url-pattern>/bzadmin/*</url-pattern>
+      <url-pattern>/fixture-forward/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>**</role-name>
+    </auth-constraint>
+    <user-data-constraint>
+      <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+    </user-data-constraint>
+  </security-constraint>
+
+  <login-config>
+    <auth-method>BASIC</auth-method>
+    <realm-name>Berlioz administration</realm-name>
+  </login-config>
+
+  <security-role>
+    <role-name>fixture-admin-view</role-name>
+  </security-role>
+  <security-role>
+    <role-name>fixture-admin-operate</role-name>
+  </security-role>
+
+</web-app>

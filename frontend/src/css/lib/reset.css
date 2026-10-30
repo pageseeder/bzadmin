@@ -1,0 +1,83 @@
+/* Minimal CSS reset replacing foundation-global-styles and foundation-typography */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 100%;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 var(--space-3);
+  line-height: 1.4;
+}
+
+p {
+  margin: 0 0 var(--space-5);
+}
+
+ul,
+ol {
+  margin: 0 0 var(--space-5);
+  padding-left: var(--space-6);
+}
+
+.no-bullet {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+small {
+  font-size: 80%;
+}
+
+pre {
+  margin: 0 0 var(--space-5);
+  overflow-x: auto;
+}
+
+/* Form elements inherit font and get base border */
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+}
+
+button {
+  cursor: pointer;
+}
+
+input[type='text'],
+input[type='password'],
+input[type='email'],
+input[type='search'],
+input[type='number'],
+select,
+textarea {
+  border: 1px solid;
+  padding: var(--space-3);
+}
+
+/* Table base */
+table {
+  border-collapse: collapse;
+  margin: 0 0 var(--space-5);
+}

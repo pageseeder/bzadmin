@@ -1,0 +1,33 @@
+.page-bzadmin-cache-summary {
+  .cache-provider,
+  .cache-capacity {
+    margin-bottom: var(--space-8);
+  }
+
+  .cache-capacity-table {
+    th:nth-child(n + 2),
+    td:nth-child(n + 2) {
+      text-align: right;
+    }
+  }
+
+  .cache-table {
+    th:last-child {
+      text-align: right;
+    }
+    .actions {
+      justify-content: flex-end;
+    }
+  }
+
+  .cache-warnings svg-icon {
+    color: var(--warning-text);
+  }
+  .cache-warning-icon {
+    color: var(--warning-text);
+  }
+  .cache-manager h3 small,
+  .cache-provider h2 small {
+    color: var(--text-muted);
+  }
+}

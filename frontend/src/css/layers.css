@@ -1,0 +1,6 @@
+/*
+ * Cascade layer order: later layers override earlier ones regardless of specificity.
+ * Kept in its own file and imported first, because css-loader hoists imported
+ * content above the importing file's own rules.
+ */
+@layer tokens, reset, base, lib, layout, components, pages;

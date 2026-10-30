@@ -1,0 +1,80 @@
+/* The home page of the development application (default.xsl) */
+
+:root {
+  color-scheme: light dark;
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --border: #d9dde3;
+  --text: #2b2f36;
+  --text-muted: #646b75;
+  --link: #1b5fb8;
+  --code: #eef1f5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #16181c;
+    --surface: #1f2228;
+    --border: #353a42;
+    --text: #e3e6ea;
+    --text-muted: #9aa1ab;
+    --link: #7fb2f5;
+    --code: #2a2e35;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 2rem 1rem;
+  background: var(--background);
+  color: var(--text);
+  font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 1.75rem;
+  line-height: 1.25;
+}
+
+h2 {
+  margin-top: 1.75rem;
+  font-size: 1.25rem;
+}
+
+a {
+  color: var(--link);
+}
+
+code {
+  padding: 0.1em 0.3em;
+  background: var(--code);
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+li + li {
+  margin-top: 0.25rem;
+}
+
+footer {
+  max-width: 46rem;
+  margin: 1rem auto 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 40rem) {
+  main {
+    padding: 1rem;
+  }
+}

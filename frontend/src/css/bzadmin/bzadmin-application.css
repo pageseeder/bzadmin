@@ -1,0 +1,135 @@
+/* Statistics */
+.page-bzadmin-application {
+  .statistics-table {
+    font-size: 90%;
+
+    td {
+      text-align: right;
+      &:first-child {
+        text-align: left;
+      }
+
+      /* Zero values */
+      &.muted {
+        color: var(--text-muted);
+      }
+      &.server_error {
+        color: var(--error-text);
+      }
+    }
+
+    .avg {
+      background-color: var(--surface-subtle);
+    }
+
+    td abbr {
+      border-bottom: none;
+      color: var(--accent);
+      &.app {
+        border: none;
+        color: var(--text-strong);
+        opacity: 1;
+      }
+    }
+
+    tr.warn {
+      font-weight: bold;
+      td.mark {
+        color: var(--error-text);
+        background: var(--warning-subtle);
+      }
+    }
+
+    td.up svg-icon {
+      color: var(--error-text);
+    }
+    td.down svg-icon {
+      color: var(--success-text);
+    }
+  }
+
+  .libraries-table {
+    td {
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .library-file {
+      color: var(--text-muted);
+      font-family: var(--font-monospace);
+    }
+  }
+}
+
+/* Manifest of a library */
+.page-bzadmin-application .library-dialog {
+  width: min(56rem, 100% - 2rem);
+
+  .properties-table {
+    font-size: 90%;
+    td {
+      overflow-wrap: anywhere;
+      vertical-align: top;
+    }
+    td:first-child {
+      width: 30%;
+    }
+  }
+}
+
+/* Summary */
+.page-bzadmin-application .summary-table {
+  th {
+    width: 30%;
+  }
+}
+
+.page-bzadmin-application .application-overview {
+  .application-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .application-overview-grid > .panel {
+    margin-block-start: 0;
+  }
+
+  .application-integrations-table {
+    border: 0;
+
+    th,
+    td {
+      border: 0;
+      vertical-align: top;
+    }
+
+    p {
+      margin-block: 0.5rem 0;
+    }
+  }
+
+  .summary-table td {
+    overflow-wrap: anywhere;
+  }
+
+  .component-details {
+    margin-block-start: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  summary {
+    cursor: pointer;
+  }
+
+  .application-providers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li + li {
+      margin-block-start: 1rem;
+    }
+  }
+}

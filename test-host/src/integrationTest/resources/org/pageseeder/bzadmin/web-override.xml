@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Applied over every web descriptor of the test host, after the web fragment of Berlioz kickstart.
+
+  Since Berlioz 0.14.5, the kickstart 'BerliozSource' servlet (*.src) requires control authorization
+  ('requires-control'), and answers 404 otherwise. The tests read the raw generator XML through it,
+  as any user, so the test host serves it without control.
+-->
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         version="3.0">
+
+  <servlet>
+    <servlet-name>BerliozSource</servlet-name>
+    <init-param>
+      <param-name>requires-control</param-name>
+      <param-value>false</param-value>
+    </init-param>
+  </servlet>
+
+</web-app>

@@ -1,0 +1,98 @@
+/* The Services page, and the page of the service matching a URL */
+:is(.page-bzadmin-services, .page-bzadmin-services-lookup) {
+  table.services {
+    width: 80%;
+  }
+
+  /* Notes about the metadata */
+  .help-text {
+    font-size: 0.8rem;
+  }
+
+  /* Number of services next to a group title */
+  .count {
+    font-weight: normal;
+  }
+
+  /* URL patterns */
+  .url-pattern {
+    color: var(--text);
+    var {
+      color: var(--error-text);
+      font-weight: bold;
+    }
+  }
+
+  /* Service being displayed */
+  tr.active > td {
+    background: var(--surface-selected);
+    color: var(--text-selected);
+  }
+
+  /* When grouping by generator */
+  .generator-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-5);
+    overflow-wrap: anywhere;
+    font-size: 1.2rem;
+
+    > span {
+      min-width: 0;
+    }
+
+    .generator-package {
+      font-size: 0.875rem;
+      font-weight: normal;
+      color: var(--text-muted);
+    }
+  }
+
+  /* Tree View */
+  .tree {
+    h2 {
+      font-size: 1.5rem;
+    }
+    h3 {
+      font-size: 1.2rem;
+    }
+  }
+
+  .tree_details {
+    padding-left: var(--space-8);
+    > .url-pattern-row {
+      margin-bottom: var(--space-3);
+    }
+  }
+
+  #services-details ul {
+    padding-left: var(--space-1);
+    ul {
+      padding-left: var(--space-7);
+    }
+  }
+
+  /* Service matching a URL */
+  .service-lookup {
+    margin-bottom: var(--space-7);
+    form {
+      max-width: 50rem;
+    }
+    label {
+      display: block;
+      margin-bottom: var(--space-2);
+    }
+    .service-lookup-help {
+      margin-top: var(--space-5);
+    }
+    .service-lookup-method {
+      flex: 0 0 auto;
+    }
+  }
+
+  .service-match .summary-table th {
+    width: 30%;
+  }
+}

@@ -1,0 +1,37 @@
+/* ======================================================================== *
+ * Berlioz Admin styles                                                     *
+ * ======================================================================== */
+
+/* Layer order (must come first) */
+@import url('layers.css');
+
+/* Core settings */
+@import url('settings.css') layer(tokens);
+@import url('darkmode.css') layer(tokens);
+
+/* Fonts */
+@import url('fonts.css');
+
+/* Reset and element defaults */
+@import url('lib/reset.css') layer(reset);
+@import url('base.css') layer(base);
+
+/* UI library (replaced Foundation) */
+@import url('lib/grid.css') layer(lib);
+@import url('lib/ui.css') layer(lib);
+
+/* Layout and components */
+@import url('layout.css') layer(layout);
+@import url('components.css') layer(components);
+
+/* Pages */
+@import url('bzadmin/bzadmin-application.css') layer(pages);
+@import url('bzadmin/bzadmin-cache-details.css') layer(pages);
+@import url('bzadmin/bzadmin-cache-summary.css') layer(pages);
+@import url('bzadmin/bzadmin-config.css') layer(pages);
+@import url('bzadmin/bzadmin-files.css') layer(pages);
+@import url('bzadmin/bzadmin-logs.css') layer(pages);
+@import url('bzadmin/bzadmin-services.css') layer(pages);
+@import url('bzadmin/bzadmin-system.css') layer(pages);
+@import url('bzadmin/bzadmin-xslt-doc.css') layer(pages);
+@import url('bzadmin/bzadmin-xslt.css') layer(pages);

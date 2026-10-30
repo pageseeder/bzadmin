@@ -1,0 +1,8 @@
+.page-bzadmin-xslt article {
+  min-height: 400px;
+}
+
+/* File tree */
+#xslttree {
+  min-height: 400px;
+}

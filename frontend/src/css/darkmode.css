@@ -1,0 +1,53 @@
+/* Dark mode changes semantic roles; palette and geometry stay stable. */
+:root {
+  @media (prefers-color-scheme: dark) {
+    --background: #181818;
+    --surface: #222;
+    --surface-raised: #272727;
+    --surface-floating: #2d2d2d;
+    --surface-subtle: hsl(0, 0%, 12.9%);
+    --border-subtle: hsl(0, 0%, 27.8%);
+    --border: hsl(0, 0%, 35%);
+    --border-strong: hsl(0, 0%, 46.3%);
+    --text-muted: hsl(0, 0%, 79.2%);
+    --text: hsl(0, 0%, 93.7%);
+    --text-strong: hsl(0, 0%, 96.9%);
+    --surface-hover: #353535;
+    --field-label-background: #303030;
+    --meter-track: #3b3b3b;
+    --nav-hover-background: var(--surface-hover);
+    --nav-hover-text: var(--text-strong);
+    --disabled-background: #303030;
+    --disabled-text: #b0b0b0;
+    --disabled-border: #484848;
+    --field-active-background: hsl(0, 0%, 20%);
+    --surface-accent-subtle: hsl(205, 60%, 16%);
+    --surface-selected: hsl(205, 60%, 22%);
+    --table-heading-background: hsl(205, 60%, 22%);
+    --shadow-panel: 0 1px 3px rgb(0 0 0 / 18%), 0 0 0 1px rgb(255 255 255 / 3%);
+    --shadow-popover: 0 0 0 1px var(--border-strong), 0 4px 16px rgb(0 0 0 / 50%);
+    --overlay-backdrop: rgb(0 0 0 / 65%);
+    --success-text: #a5d66b;
+    --warning-text: #ffb65c;
+    --warning-subtle: #382a18;
+    --error-text: #ff85a6;
+    --error-subtle: #3b1e29;
+
+    --link: var(--light-primary);
+    --link-visited: var(--default-primary);
+    --accent: var(--light-primary);
+    --accent-strong: var(--lighter-primary);
+    --nav-active-text: var(--light-primary);
+
+    --table-border: hsl(205, 60%, 30%);
+    --table-shade: hsl(205, 60%, 16%);
+
+    --code-tag: var(--light-primary);
+    --code-attr: #f4a06b;
+    --code-value: #a5d66b;
+    --code-entity: #d4a5f0;
+
+    --chart-border: #0198dc;
+    --chart-slice-3: hsl(201, 60%, 18%);
+  }
+}

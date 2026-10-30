@@ -1,0 +1,46 @@
+{
+  "name": "berlioz-bzadmin",
+  "version": "0.14.0",
+  "description": "Frontend for the Berlioz admin overlay",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "build": "webpack --mode=production",
+    "dev": "webpack serve --mode=development",
+    "analyze": "webpack --mode=production --env analyze",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write src",
+    "format:check": "prettier --check src",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/js/**/*.test.js\""
+  },
+  "author": "Christophe Lauret",
+  "contributors": [
+    {
+      "name": "Christophe Lauret"
+    },
+    {
+      "name": "Jean-Baptiste Reure"
+    }
+  ],
+  "private": true,
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "css-loader": "^7.1.5",
+    "css-minimizer-webpack-plugin": "^8.0.0",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "mini-css-extract-plugin": "^2.10.2",
+    "prettier": "3.9.10",
+    "webpack": "^5.112.2",
+    "webpack-bundle-analyzer": "^5.4.0",
+    "webpack-cli": "^7.2.3",
+    "webpack-dev-server": "^6.1.0",
+    "webpackbar": "^7.0.0"
+  },
+  "browserslist": [
+    "baseline widely available"
+  ]
+}

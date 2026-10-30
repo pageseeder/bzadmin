@@ -1,0 +1,39 @@
+/* The information and the keys of one cache */
+.page-bzadmin-cache-info,
+.page-bzadmin-cache-entries {
+  .cache-keys {
+    .key {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .cache-pages {
+    display: flex;
+    gap: var(--space-5);
+    align-items: baseline;
+    margin-bottom: var(--space-5);
+  }
+
+  .cache-warnings {
+    svg-icon {
+      color: var(--warning-text);
+    }
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .cache-rates td[data-rate] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cache-back {
+    margin-top: var(--space-7);
+  }
+
+  .remove-entry label {
+    display: block;
+    margin-bottom: var(--space-3);
+  }
+}

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging of the local dev server (berlioz.mode=local), which Berlioz loads in place of logback.xml.
+
+  The log files go to the directory of the system property bzadmin.dev.logs (test-host/build/dev-logs,
+  set by Gretty), so that the Files view of the Logs page has files to show: the directories of
+  these file appenders are detected, since config-local.xml does not set berlioz.admin.logs.
+  The task devLogSamples adds older dated files (see test-host/build.gradle.kts).
+-->
+<configuration debug="false">
+  <contextName>Berlioz</contextName>
+
+  <property name="pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${pattern}</pattern>
+    </encoder>
+  </appender>
+
+  <!-- Rolled over daily to app.yyyy-MM-dd.log -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${bzadmin.dev.logs:-logs}/app.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${bzadmin.dev.logs:-logs}/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>${pattern}</pattern>
+    </encoder>
+  </appender>
+
+  <!-- The operations of the admin pages, in a second directory -->
+  <appender name="AUDIT" class="ch.qos.logback.core.FileAppender">
+    <file>${bzadmin.dev.logs:-logs}/audit/audit.log</file>
+    <encoder>
+      <pattern>${pattern}</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="org.pageseeder.bzadmin.audit" level="INFO">
+    <appender-ref ref="AUDIT"/>
+  </logger>
+
+  <logger name="net.sf.ehcache" level="WARN"/>
+  <logger name="org.ehcache" level="WARN"/>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </root>
+</configuration>

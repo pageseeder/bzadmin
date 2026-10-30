@@ -1,0 +1,136 @@
+.page-bzadmin-logs,
+.page-bzadmin-logs-raw {
+  /* The logging framework of the recent events */
+  .recent-events-backend {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    color: var(--text-muted);
+    svg-icon {
+      color: var(--accent);
+      flex: none;
+    }
+  }
+
+  /* log files */
+  .log-files-table {
+    th.size {
+      width: 100px;
+    }
+    th.modified {
+      width: 140px;
+    }
+    td:nth-child(3) {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+  }
+
+  /* events table */
+  .basic-table.events {
+    font-size: 90%;
+
+    th.time {
+      width: 100px;
+    }
+    th.level {
+      width: 65px;
+    }
+
+    td {
+      vertical-align: top;
+      padding: 1px var(--space-2);
+    }
+    td > abbr {
+      color: var(--text-muted);
+      border-bottom: none;
+    }
+  }
+
+  /* recent events */
+  .throwable {
+    summary {
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+    pre {
+      font-family: var(--font-monospace);
+      font-size: 90%;
+      margin: var(--space-2) 0;
+      white-space: pre-wrap;
+    }
+  }
+
+  /* When too many line in the log file */
+  .callout.alert {
+    background: var(--error-fill);
+    border: none;
+    color: var(--error-on-fill);
+  }
+
+  /* Log levels */
+  .debug svg-icon {
+    color: var(--accent);
+  }
+  .info svg-icon {
+    color: var(--accent);
+  }
+  .warn {
+    color: var(--warning-text);
+  }
+  .error {
+    color: var(--error-text);
+  }
+
+  /* raw logs */
+  #earlier-log p {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    /* On the right, whatever message follows the text */
+    button {
+      margin-inline-start: auto;
+    }
+  }
+  /* Under the lines, where the new lines are added */
+  #follow-log p {
+    margin-block: var(--space-4) 0;
+  }
+  /* Line numbers are generated content in a gutter, so that a selection copies the lines alone */
+  .rawlog {
+    /* Up to 999999, with the gap after the numbers */
+    --gutter: calc(6ch + 0.5rem);
+    background: linear-gradient(
+        to right,
+        var(--surface-subtle) calc(var(--gutter) * 0.75),
+        var(--border-strong) calc(var(--gutter) - 1px),
+        var(--text-muted) calc(var(--gutter) - 1px) var(--gutter),
+        transparent var(--gutter)
+      )
+      no-repeat;
+    border: 1px solid var(--border);
+    color: var(--accent-strong);
+    font-family: var(--font-monospace);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0;
+    padding: var(--space-1) var(--space-2) var(--space-1) calc(var(--gutter) + var(--space-3));
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    code {
+      font-size: inherit;
+      color: inherit;
+    }
+    /* On the baseline of the first line of each log line; the following lines wrap under the text */
+    span[data-n]::before {
+      content: attr(data-n);
+      display: inline-block;
+      width: 6ch;
+      margin-inline: calc(-1 * var(--gutter) - var(--space-2)) calc(var(--gutter) + var(--space-2) - 6ch);
+      text-align: right;
+      color: var(--accent-strong);
+      font-variant-numeric: tabular-nums;
+      user-select: none;
+    }
+  }
+}

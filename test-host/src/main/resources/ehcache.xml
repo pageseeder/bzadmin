@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache updateCheck="false" monitoring="off" dynamicConfig="true">
+
+  <!-- Setup the disk store -->
+  <diskStore path="java.io.tmpdir"/>
+
+  <!-- Default cache -->
+  <defaultCache
+          maxElementsInMemory="10000"
+          eternal="false"
+          timeToIdleSeconds="120"
+          timeToLiveSeconds="120"
+          overflowToDisk="true"
+          diskSpoolBufferSizeMB="30"
+          maxElementsOnDisk="10000000"
+          diskPersistent="false"
+          diskExpiryThreadIntervalSeconds="120"
+          memoryStoreEvictionPolicy="LRU"
+          />
+
+  <!-- Used for static resources -->
+  <cache  name="static-web-caching"
+          maxElementsInMemory="100"
+          eternal="true"
+          overflowToDisk="true"
+          memoryStoreEvictionPolicy="LRU"
+  />
+
+  <!-- Used for PSML files -->
+  <cache name="PSML"
+         maxElementsInMemory="1000"
+         eternal="false"
+         timeToIdleSeconds="3600"
+         timeToLiveSeconds="172800" />
+
+</ehcache>

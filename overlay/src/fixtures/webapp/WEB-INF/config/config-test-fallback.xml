@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  Global configuration of the test host with the fallback login (berlioz.mode=test-fallback, see
+  HostExample.FALLBACK): the same as config-test.xml, with the fallback login of the admin filter
+  instead of container roles. The password of 'operator' is fixture-secret-password-operator,
+  hashed (100,000 iterations, the fewest accepted, to keep the tests fast).
+-->
+<global>
+
+  <berlioz>
+    <errors handle="false" generator-catch="false"/>
+    <http cache-control="private, max-age=0, must-revalidate"/>
+    <xml parse-strict="true" header.version="1.0"/>
+    <xslt cache="false"/>
+    <nonce enable="true"/>
+    <control key="fixture-secret-control-key"/>
+    <admin username="operator" password="$pbkdf2-sha256$i=100000$Zml4dHVyZS1zYWx0LTAwMDE$XlIP4qlCeXoj3pJSrh+F1soeuRfppETLt1GZBWJSstk"/>
+  </berlioz>
+
+  <fixture colour="blue" api-key="fixture-secret-property"/>
+
+</global>

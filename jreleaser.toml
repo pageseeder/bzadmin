@@ -1,0 +1,40 @@
+[project]
+name = "bzadmin"
+description = "Administration pages for Berlioz applications"
+tags = ["java", "xslt", "berlioz", "servlet", "administration"]
+authors = ["Christophe Lauret"]
+license = "Apache-2.0"
+inceptionYear = "2013"
+vendor = "Allette Systems"
+
+[project.links]
+homepage = "https://github.com/pageseeder/bzadmin"
+documentation = "https://github.com/pageseeder/bzadmin/blob/main/README.md"
+license = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+
+[project.languages.java]
+groupId = "org.pageseeder.berlioz"
+
+[release.github]
+owner = "pageseeder"
+name = "bzadmin"
+username = "pageseeder"
+branch = "main"
+skipTag = true
+skipRelease = true
+
+[signing]
+active = "ALWAYS"
+
+[signing.pgp]
+active = "ALWAYS"
+armored = true
+mode = "MEMORY"
+
+[deploy.maven.mavenCentral.sonatype]
+active = "ALWAYS"
+url = "https://central.sonatype.com/api/v1/publisher"
+stagingRepositories = ["build/staging-repo"]
+applyMavenCentralRules = true
+# Upload/validate only. Public release is a separate authorized Portal action.
+stage = "UPLOAD"

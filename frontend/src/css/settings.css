@@ -1,0 +1,153 @@
+:root {
+  /* Native form controls, scrollbars and dialogs follow the dark mode in darkmode.css */
+  color-scheme: light dark;
+
+  --darkest-primary: #002c4b;
+  --darker-primary: #014d84;
+  --dark-primary: #016ebc;
+  --default-primary: #0193fc;
+  --light-primary: #5fbcfe;
+  --lighter-primary: #bfe4ff;
+  --lightest-primary: #e5f4ff;
+
+  /* Stable palette; components use the semantic roles below. */
+  --white: #fff;
+  --super-light-neutral: #f7f7f7;
+  --lightest-neutral: #efefef;
+  --lighter-neutral: #d5d5d5;
+  --light-neutral: #cacaca;
+  --default-neutral: #9f9f9f;
+  --dark-neutral: #767676;
+  --darker-neutral: #474747;
+  --darkest-neutral: #171717;
+  --black: #000;
+
+  /* Semantic roles: darkmode.css overrides these without changing the palette. */
+  --surface: var(--white); /* tables and ordinary content */
+  --surface-raised: var(--surface); /* panels and key metrics */
+  --surface-floating: var(--surface); /* dialogs and popovers */
+  --background: var(--lightest-neutral); /* page, form fields and code */
+  --border: var(--lighter-neutral);
+  --text: var(--darkest-neutral);
+  --text-strong: var(--black);
+  --text-muted: #686868; /* 4.5:1 on the light page canvas and surfaces */
+  --text-on-color: #fff; /* on primary and status backgrounds, in both modes */
+  --surface-shadow: 0 0 8px 3px rgba(0, 0, 0, 0.1); /* light-mode panel elevation */
+
+  /* Rainbow colors */
+  --rainbow-red: #cf0041;
+  --rainbow-orange: #fb8600;
+  --rainbow-yellow: #ffcc00;
+  --rainbow-green: #75b400;
+  --rainbow-blue: #0193fc;
+  --dark-rainbow-red: #a3003a;
+  --dark-rainbow-green: #5a8a00;
+  --highlight: #fe9;
+
+  /* Font stack */
+  --font-default: Roboto, Arial, sans-serif;
+  --font-heading: Quicksand, Roboto, Arial, sans-serif;
+  --font-monospace: Roboto Mono, Consolas, Courier New, monospace;
+
+  /* Shared geometry; keep these identical in both colour schemes. */
+  --space-1: 0.125rem;
+  --space-2: 0.25rem;
+  --space-3: 0.5rem;
+  --space-4: 0.75rem;
+  --space-5: 1rem;
+  --space-6: 1.25rem;
+  --space-7: 1.5rem;
+  --space-8: 2rem;
+  --page-gutter: 0.9375rem; /* preserves alignment with the header artwork */
+  --layout-gap: 1.875rem;
+  --panel-padding: var(--space-5);
+  --table-cell-padding: var(--space-3);
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+
+  --surface-subtle: var(--super-light-neutral);
+  --surface-accent-subtle: var(--lightest-primary);
+  --surface-selected: var(--lightest-primary);
+  --text-selected: var(--text);
+  --table-heading-background: var(--lighter-primary);
+  --surface-hover: var(--lighter-neutral);
+  --field-label-background: var(--lighter-neutral);
+  --meter-track: var(--lightest-neutral);
+  --action-fill: var(--dark-primary);
+  --action-fill-hover: var(--darker-primary);
+  --action-on-fill: var(--text-on-color);
+  --nav-hover-background: var(--lightest-primary);
+  --nav-hover-text: var(--darker-primary);
+  --disabled-background: var(--lightest-neutral);
+  --disabled-text: var(--darker-neutral);
+  --disabled-border: var(--lighter-neutral);
+  --loading-opacity: 0.65;
+  --paused-chart-opacity: 0.65;
+  --field-background: var(--background);
+  --field-active-background: var(--lighter-neutral);
+  --border-subtle: var(--lightest-neutral);
+  --border-strong: var(--light-neutral);
+  --field-border: var(--border);
+  --focus-ring: var(--accent);
+  --divider-border: 5px solid var(--border-subtle);
+  --shadow-panel: var(--surface-shadow);
+  --shadow-popover: 0 4px 12px rgb(0 0 0 / 20%);
+  --overlay-backdrop: rgb(0 0 0 / 40%);
+
+  /* Text and fills have different contrast requirements. */
+  --success-text: #426800;
+  --success-fill: #426800;
+  --success-fill-hover: #345200;
+  --success-on-fill: #fff;
+  --warning-text: #8a4700;
+  --warning-subtle: #fff3df;
+  --error-text: #b00038;
+  --error-fill: var(--rainbow-red);
+  --error-fill-hover: var(--dark-rainbow-red);
+  --error-on-fill: #fff;
+  --error-subtle: #fff0f4;
+
+  /* Links, on --surface */
+  --link: var(--dark-primary);
+  --link-visited: var(--darker-primary);
+
+  /* Blue text, icons and controls that are not links, on --surface; --accent-strong for more contrast */
+  --accent: var(--dark-primary);
+  --accent-strong: var(--darker-primary);
+
+  /* Navigation: text of the current page's tab and of the secondary navigation links, on --surface */
+  --nav-active-text: var(--darker-primary);
+
+  /* Tables (.basic-table, .summary-table) */
+  --table-border: var(--light-primary);
+  --table-shade: var(--lightest-primary);
+
+  /* XML source (<xml-source>), on --background; comments and declarations use --text-muted */
+  --code-tag: var(--darker-primary);
+  --code-attr: #8f3b00;
+  --code-value: #2e6b00;
+  --code-entity: #7a3497;
+
+  /* Charts (<pie-chart> and <line-chart>) */
+  --chart-border: #066aa2;
+  --chart-slice-1: #066aa2;
+  --chart-slice-2: #0198dc;
+  --chart-slice-3: #f0f9ff;
+  --chart-series-1-line: #0198dc;
+  --chart-series-1-fill: #0198dc;
+  --chart-series-2-line: #066aa2;
+  --chart-series-2-fill: #066aa2;
+  --chart-series-3-line: #e8590c;
+  --chart-series-3-fill: rgb(232 89 12 / 35%);
+}
+
+/* State changes remain immediate when motion is reduced. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0s;
+    --duration-normal: 0s;
+  }
+}

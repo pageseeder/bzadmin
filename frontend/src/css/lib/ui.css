@@ -1,0 +1,151 @@
+/* UI components replacing foundation-button, foundation-forms, foundation-table */
+
+/* Buttons */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background-color: var(--action-fill);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--action-on-fill);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: bold;
+  line-height: 1;
+  padding: 0.5em 1em;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+
+  &:hover:not(:disabled) {
+    background-color: var(--action-fill-hover);
+    color: var(--action-on-fill);
+    text-decoration: none;
+  }
+
+  &.success {
+    background-color: var(--success-fill);
+    color: var(--success-on-fill);
+    &:hover:not(:disabled) {
+      background-color: var(--success-fill-hover);
+    }
+  }
+
+  &.alert {
+    background-color: var(--error-fill);
+    color: var(--error-on-fill);
+    &:hover:not(:disabled) {
+      background-color: var(--error-fill-hover);
+    }
+  }
+
+  &.hollow {
+    background-color: transparent;
+    border-color: var(--accent);
+    color: var(--accent);
+    &:hover:not(:disabled) {
+      background-color: var(--action-fill);
+      color: var(--action-on-fill);
+    }
+  }
+
+  &.small {
+    font-size: 0.8rem;
+    padding: 0.3em 0.6em;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    background-color: var(--disabled-background);
+    border-color: var(--disabled-border);
+    color: var(--disabled-text);
+  }
+}
+
+/* Tags: short labels next to a name or value */
+.tag {
+  display: inline-block;
+  background-color: var(--action-fill);
+  border: 1px solid var(--action-fill);
+  border-radius: 1em;
+  color: var(--action-on-fill);
+  font-size: 0.7rem;
+  font-weight: bold;
+  line-height: 1.4;
+  padding: 0 0.5em;
+  vertical-align: middle;
+  white-space: nowrap;
+
+  &.success {
+    background-color: var(--success-fill);
+    border-color: var(--success-fill);
+    color: var(--success-on-fill);
+  }
+
+  &.warning {
+    background-color: var(--error-fill);
+    border-color: var(--error-fill);
+    color: var(--error-on-fill);
+  }
+}
+
+/* Callout */
+.callout {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-5);
+
+  &.alert {
+    background: var(--error-subtle);
+    border-color: var(--error-text);
+    color: var(--error-text);
+  }
+
+  &.warning {
+    background: var(--warning-subtle);
+    border-color: var(--warning-text);
+  }
+}
+
+/* Input group — flexbox container for label + field + button combos */
+.input-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.input-group-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--border);
+  padding: var(--space-3);
+}
+
+.input-group-label {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-3);
+  white-space: nowrap;
+}
+
+.input-group-button {
+  display: flex;
+  align-items: stretch;
+  > * {
+    border-radius: 0;
+  }
+}
+
+/* Secondary text: notes, defaults, unavailable values */
+.muted {
+  color: var(--text-muted);
+}
+
+/* Text alignment utility */
+.text-right {
+  text-align: right;
+}

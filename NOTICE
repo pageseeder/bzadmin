@@ -1,0 +1,14 @@
+Berlioz Admin
+Copyright 2013-2026 Allette Systems
+
+This product is licensed under the Apache License, Version 2.0 (LICENSE).
+
+It includes the following third-party material.
+
+Fonts (META-INF/resources/css/bzadmin/fonts/, Latin subsets in WOFF2)
+  Quicksand: Copyright 2019 The Quicksand Project Authors
+    (https://github.com/andrew-paglinawan/QuicksandFamily), with Reserved Font Name "Quicksand".
+    SIL Open Font License, Version 1.1 (licenses/Quicksand-OFL-1.1.txt).
+  Roboto: Copyright 2011 Google Inc. Apache License, Version 2.0.
+  Roboto Mono: Copyright 2015 The Roboto Mono Project Authors
+    (https://github.com/googlefonts/robotomono). Apache License, Version 2.0.

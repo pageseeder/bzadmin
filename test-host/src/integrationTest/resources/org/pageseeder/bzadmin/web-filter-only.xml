@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Test host: the admin filter is mapped, but the host has no authentication (no AdminAccess, no
+  container login, no fallback login); the admin roles are configured (config-test.xml).
+-->
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         metadata-complete="false"
+         version="3.0">
+
+  <display-name>Berlioz Admin (test host, no authentication)</display-name>
+
+  <filter>
+    <filter-name>AdminFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.access.AdminFilter</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>AdminFilter</filter-name>
+    <url-pattern>/bzadmin/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>FORWARD</dispatcher>
+    <dispatcher>ERROR</dispatcher>
+  </filter-mapping>
+
+</web-app>

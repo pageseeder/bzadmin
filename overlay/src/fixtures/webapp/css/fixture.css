@@ -1,0 +1,2 @@
+/* Test host: a static file that the caching filter stores (cache fixture) */
+body { margin: 0; }

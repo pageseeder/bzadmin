@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging of the test host with the fallback login (berlioz.mode=test-fallback): the same as
+  logback-test.xml, a file log in a disposable directory set by the test task (bzadmin.test.logs).
+-->
+<configuration debug="false">
+  <contextName>Berlioz</contextName>
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>${bzadmin.test.logs}/fixture.log</file>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <root level="INFO">
+    <appender-ref ref="FILE"/>
+  </root>
+</configuration>

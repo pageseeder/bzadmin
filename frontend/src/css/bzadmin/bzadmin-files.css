@@ -1,0 +1,69 @@
+/* The folder pages and the document page (its own service id, so its own body class) */
+.page-bzadmin-files,
+.page-bzadmin-files-document {
+  article {
+    min-height: 400px;
+  }
+
+  /* Folder contents */
+  col.name {
+    width: 60%;
+  }
+  col.modified {
+    width: 25%;
+  }
+  col.size {
+    width: 15%;
+  }
+
+  /* Ranges of a large folder */
+  .psml-pages {
+    display: flex;
+    gap: var(--space-5);
+    justify-content: center;
+  }
+
+  /* Document */
+  .psml-metadata th {
+    width: 25%;
+    text-align: left;
+  }
+  .psml-source {
+    max-height: 60vh;
+  }
+}
+
+/* Shared folder and document layout */
+.psml-path {
+  overflow-wrap: anywhere;
+}
+.psml-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-7);
+  align-items: stretch;
+}
+.psml-context > .panel {
+  min-height: 28rem;
+  min-width: 0;
+  margin-top: 0;
+}
+.psml-tree-panel {
+  overflow-wrap: anywhere;
+}
+.psml-source-panel {
+  margin-top: var(--space-7);
+}
+@media (max-width: 48rem) {
+  .psml-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .psml-context > .panel {
+    min-height: 0;
+  }
+}
+
+/* Folders loaded with no folder in them */
+.directory-tree details.empty .caret {
+  visibility: hidden;
+}

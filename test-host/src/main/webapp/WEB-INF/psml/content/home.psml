@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document level="portable" type="default">
+
+  <documentinfo>
+    <uri docid="home" title="Berlioz Admin development application"/>
+  </documentinfo>
+
+  <section id="title">
+    <fragment id="intro">
+      <heading level="1">Berlioz Admin development application</heading>
+      <para>This is a small Berlioz application used to develop and try
+        <link href="/bzadmin/config.html">Berlioz Admin</link>, the admin overlay deployed with a Berlioz
+        application at <monospace>/bzadmin/*</monospace>. It plays the part of the host: it is not distributed,
+        and everything here only exists to give the admin pages something to show.</para>
+    </fragment>
+  </section>
+
+  <section id="content">
+
+    <fragment id="access">
+      <heading level="2">Access</heading>
+      <para>A host authenticates its users and maps the admin filter after its authentication. Here,
+        <monospace>LocalAdminAccessFilter</monospace> grants admin access to requests from this machine only.
+        A real host uses its own authentication, container roles or the fallback login: see
+        <monospace>docs/access.md</monospace>.</para>
+    </fragment>
+
+    <fragment id="caches">
+      <heading level="2">Caches</heading>
+      <para>The admin pages never create a cache: they show those of the application. This application has
+        three cache managers, one per supported library:</para>
+      <list>
+        <item><bold>EHCache 2</bold>, the default manager from <monospace>ehcache.xml</monospace>:
+          <monospace>static-web-caching</monospace> and <monospace>PSML</monospace>.</item>
+        <item><bold>EHCache 3</bold> through JCache, registered as <monospace>dev-ehcache3</monospace>:
+          <monospace>static-files</monospace>.</item>
+        <item><bold>Caffeine</bold> through JCache, registered as <monospace>dev-caffeine</monospace>:
+          <monospace>static-files</monospace>.</item>
+      </list>
+      <para>Each static file (scripts, styles, fonts) is looked up and stored in the static file cache of every
+        library, so their statistics and configuration can be compared for the same requests. This page is
+        read through the <monospace>PSML</monospace> cache: reload it to count a hit, or edit
+        <monospace>WEB-INF/psml/content/home.psml</monospace> to replace the entry.</para>
+      <para>See the <link href="/bzadmin/cache.html">Cache</link> page.</para>
+    </fragment>
+
+    <fragment id="sections">
+      <heading level="2">What to look at</heading>
+      <list>
+        <item><link href="/bzadmin/config.html">Config</link>: the global configuration of
+          <monospace>config-local.xml</monospace>, with sample application properties and secrets that are
+          redacted.</item>
+        <item><link href="/bzadmin/services.html">Services</link>: the services of this application
+          (<monospace>default</monospace> group) and of the overlay.</item>
+        <item><link href="/bzadmin/files.html">PSML</link>: the documents of <monospace>WEB-INF/psml</monospace>,
+          including this one.</item>
+        <item><link href="/bzadmin/xslt.html">XSLT</link>: <monospace>default.xsl</monospace>, the stylesheet of
+          this page, and those of the overlay.</item>
+        <item><link href="/bzadmin/logs.html">Logs</link>, <link href="/bzadmin/application.html">Application</link>
+          and <link href="/bzadmin/system.html">System</link>: the logs, versions and runtime of this
+          server.</item>
+      </list>
+    </fragment>
+
+  </section>
+
+</document>

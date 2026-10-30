@@ -1,0 +1,22 @@
+.page-bzadmin-config {
+  .basic-table {
+    .ok {
+      color: var(--accent);
+    }
+    .error {
+      color: var(--error-text);
+    }
+  }
+
+  /* Same column widths in every group of properties */
+  .page-bzadmin-config_properties-table {
+    table-layout: fixed;
+
+    th:first-child {
+      width: 33.333%;
+    }
+    td {
+      overflow-wrap: anywhere;
+    }
+  }
+}

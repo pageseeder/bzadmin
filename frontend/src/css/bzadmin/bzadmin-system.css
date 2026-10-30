@@ -1,0 +1,331 @@
+/* Live charts, started and stopped with their `.toggle-poll` button */
+.live-panel {
+  border-left: var(--divider-border);
+  padding-left: 10px;
+
+  h3 {
+    margin-top: 0;
+  }
+
+  line-chart {
+    display: block;
+    height: auto;
+    opacity: var(--paused-chart-opacity);
+    svg {
+      height: 100px;
+    }
+  }
+
+  &.on {
+    .toggle-poll {
+      background-color: var(--action-fill);
+      color: var(--action-on-fill);
+    }
+    line-chart {
+      opacity: 1;
+    }
+    /* The title is shown above the chart while it is running */
+    line-chart::before {
+      content: attr(title);
+      font-size: 80%;
+    }
+  }
+}
+
+/* Live updates of CPU and memory: the chart with its values to the right as the legend */
+#cpu-live,
+#memory-live {
+  /* The machine, behind the process, in a lighter shade */
+  --chart-series-1-fill: color-mix(in srgb, var(--chart-series-1-line) 30%, transparent);
+
+  border-left: none;
+  padding-left: 0;
+  margin-bottom: var(--space-5);
+
+  .live-chart {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-5) var(--space-7);
+  }
+
+  line-chart {
+    flex: 1 1 24rem;
+    svg {
+      height: 160px;
+    }
+  }
+
+  table {
+    flex: 0 1 26rem;
+    margin-bottom: 0;
+    font-size: 90%;
+    color: var(--text-muted);
+  }
+  td,
+  thead th:not(:first-child) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .series {
+    display: inline-block;
+    width: 0.75em;
+    height: 0.75em;
+    margin-inline-end: 0.5em;
+    border: 2px solid var(--chart-series-1-line);
+    background: var(--chart-series-1-fill);
+  }
+  .series-2 {
+    border-color: var(--chart-series-2-line);
+    background: var(--chart-series-2-fill);
+  }
+  .series-3 {
+    border-color: var(--chart-series-3-line);
+    background: var(--chart-series-3-fill);
+  }
+
+  &.on {
+    table {
+      color: var(--text);
+    }
+    line-chart svg {
+      border: 1px solid var(--lighter-primary);
+    }
+  }
+}
+
+/* Files */
+.folders-table {
+  .name {
+    text-align: left;
+  }
+  .size,
+  .count {
+    text-align: right;
+  }
+}
+
+/* Threads: the panel with their states and origins, and the buttons at the bottom, above the table */
+.threads-panel {
+  h2 {
+    margin-top: 0;
+  }
+  h3 {
+    font-size: 1rem;
+  }
+}
+
+/* By origin, and by state in a narrow pane to the right (below on narrow screens) */
+.thread-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5) var(--space-8);
+
+  .thread-origins {
+    flex: 1 1 28rem;
+    min-width: 0;
+  }
+  .thread-states {
+    flex: 0 0 12rem;
+  }
+  h3 {
+    margin-top: 0;
+  }
+}
+
+/* Refresh with the time between the last two refreshes, and hide idle threads */
+.threads-actions {
+  margin: var(--space-7) 0 0;
+}
+
+#since-last-refresh {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+label.hide-idle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  margin: 0 0 0 var(--space-5);
+  font-size: 90%;
+}
+
+/* Threads by component, with the roles of their threads */
+.thread-components {
+  width: 100%;
+  margin-bottom: 0;
+  font-size: 90%;
+
+  .number {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  td .tag {
+    margin-block: 0.1rem;
+  }
+}
+
+/* The role of a thread, in the table and by origin */
+.thread-role {
+  &.request {
+    background-color: var(--success-fill);
+    border-color: var(--success-fill);
+    color: var(--success-on-fill);
+  }
+  &.idle {
+    background-color: transparent;
+    border-style: dashed;
+    color: var(--accent);
+  }
+}
+
+/* threads table */
+.threads-table {
+  font-size: 90%;
+  width: 100%;
+
+  td {
+    vertical-align: top;
+  }
+  .thread-name {
+    font-weight: bold;
+  }
+  .number {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .thread-activity code {
+    font-size: 90%;
+    overflow-wrap: anywhere;
+    &.jdk {
+      color: var(--text-muted);
+    }
+  }
+  .thread-lock {
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+  }
+}
+
+#threads-details.hide-idle .threads-table tr.idle {
+  display: none;
+}
+
+.thread-state {
+  white-space: nowrap;
+  &.runnable {
+    color: var(--success-text);
+  }
+  &.waiting {
+    color: var(--text-muted);
+  }
+  &.blocked {
+    color: var(--error-text);
+  }
+}
+
+/* The stack of a thread */
+.thread-dialog {
+  width: min(64rem, 100% - 2rem);
+
+  .thread-properties {
+    font-size: 90%;
+    th {
+      text-align: left;
+      width: 20%;
+      vertical-align: top;
+    }
+  }
+}
+
+.thread-stack {
+  font-size: 85%;
+  margin-inline-start: 2.5em;
+
+  li {
+    overflow-wrap: anywhere;
+  }
+  li.jdk code {
+    color: var(--text-muted);
+  }
+}
+
+.thread-states {
+  /* The same colours as the states in the threads table */
+  --chart-border: var(--surface);
+  --chart-slice-1: var(--rainbow-green);
+  --chart-slice-2: var(--rainbow-red);
+  --chart-slice-3: var(--text-muted);
+  --chart-slice-4: var(--border-strong);
+
+  pie-chart {
+    display: block;
+    width: 7rem;
+    height: 7rem;
+    margin-bottom: var(--space-5);
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    font-size: 90%;
+  }
+
+  .state-key {
+    display: inline-block;
+    width: 0.75em;
+    height: 0.75em;
+    margin-inline-end: 0.5em;
+    background: var(--chart-slice-1);
+    &.blocked {
+      background: var(--chart-slice-2);
+    }
+    &.waiting {
+      background: var(--chart-slice-3);
+    }
+    &.timed-waiting {
+      background: var(--chart-slice-4);
+    }
+  }
+}
+
+/* JVM summary */
+.page-bzadmin-system .summary-table {
+  tr.memory-area th {
+    color: var(--text-strong);
+  }
+
+  tr.memory-pool td:first-child {
+    padding-left: 1.5em;
+  }
+}
+
+.memory-pools-table thead th {
+  background: var(--table-heading-background);
+}
+
+.memory-pools-table .memory-area td {
+  background: var(--surface-accent-subtle);
+  font-weight: bold;
+}
+
+/* Key metrics of each view, with the uptime of the JVM and the refresh button */
+.system-metrics {
+  margin-bottom: var(--space-7);
+}
+
+.system-metrics-note {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  color: var(--text-muted);
+  margin: 0;
+
+  .uptime {
+    cursor: help;
+  }
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE services PUBLIC "-//Berlioz//DTD::Services 1.0//EN" "http://www.pageseeder.org/schema/berlioz/services-1.0.dtd">
+<!--
+  Test-only filesystem module: a service with the same id and URL as a GET service of the fixture
+  JAR, for another method.
+-->
+<services group="fixture">
+
+  <service id="fixture-echo" method="post">
+    <url pattern="/fixture/echo"/>
+    <generator class="org.pageseeder.berlioz.generator.NoContent" name="echo" target="main"/>
+  </service>
+
+</services>

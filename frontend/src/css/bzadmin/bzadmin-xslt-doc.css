@@ -1,0 +1,170 @@
+/* ------------------------------------------------------------------------ *
+ * XSLT documentation navigation                                            *
+ * ------------------------------------------------------------------------ */
+
+/* Navigation */
+#xsltdoc-nav {
+  background: var(--surface-subtle);
+  border-radius: var(--radius-sm);
+  li {
+    display: inline-block;
+    height: 32px;
+    line-height: 32px;
+    list-style-type: none;
+    padding: 0;
+    vertical-align: top;
+  }
+  a {
+    display: block;
+    color: var(--text);
+    padding: 0 var(--space-3);
+    &:hover {
+      color: var(--text-strong);
+      text-decoration: none;
+      background: var(--surface-hover);
+    }
+  }
+  .active a {
+    color: var(--text-strong);
+  }
+
+  /* File navigation */
+  .files ul {
+    background: var(--surface-subtle);
+    li {
+      background: var(--surface-subtle);
+      display: block;
+      & + li {
+        display: none;
+      }
+    }
+  }
+  /* Show the other stylesheets on hover, or while one of the links has keyboard focus */
+  .files:hover,
+  .files:has(:focus-visible) {
+    ul li + li {
+      display: block;
+      position: relative;
+      z-index: 100;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------ *
+ * XSLT documentation                                                       *
+ * ------------------------------------------------------------------------ */
+
+.xsltdoc {
+  overflow-wrap: anywhere;
+  table {
+    td,
+    th {
+      text-align: left;
+    }
+    td .description {
+      margin-left: 40px;
+    }
+  }
+
+  .imports,
+  .includes {
+    color: var(--text);
+    list-style-type: square;
+    a {
+      color: var(--text);
+    }
+  }
+
+  .templates,
+  .variables,
+  .functions {
+    width: 100%;
+  }
+
+  var {
+    color: var(--accent);
+    white-space: normal;
+  }
+  i {
+    color: var(--accent);
+  }
+
+  .stylesheet-title {
+    border-top: 2px solid var(--border-subtle);
+  }
+  code {
+    color: var(--text);
+    font-size: 13px;
+  }
+  pre {
+    color: var(--text);
+    font-size: 13px;
+    border-left: 4px solid var(--border-strong);
+    background: var(--surface-subtle);
+    padding: var(--space-2);
+  }
+
+  .template-title {
+    background: var(--dark-primary);
+    color: var(--text-on-color);
+    font-size: 15px;
+    padding: var(--space-2) var(--space-1) var(--space-2) var(--space-2);
+    .mode {
+      color: var(--text);
+      background: var(--table-heading-background);
+      border-radius: var(--radius-xs);
+      float: right;
+      font-weight: 600;
+      margin: 0 var(--space-1);
+      padding: 0 var(--space-1);
+    }
+    .priority {
+      background: var(--rainbow-red);
+      float: right;
+      font-weight: 600;
+      margin: 0 var(--space-1);
+      padding: 0 var(--space-1);
+    }
+  }
+  .template-title var {
+    color: var(--text-on-color);
+    font-weight: 600;
+  }
+
+  .template-meta {
+    background: var(--surface-accent-subtle);
+    color: var(--text);
+    margin-bottom: var(--space-3);
+    margin-top: var(--space-3);
+    min-height: 20px;
+    padding: var(--space-2);
+
+    span {
+      border-left: 1px solid var(--default-primary);
+      padding: 0 10px;
+      &:first-child {
+        border-left: none;
+        padding-left: 0;
+      }
+    }
+  }
+
+  .function-title {
+    background: var(--dark-primary);
+    color: var(--text-on-color);
+    font-size: 15px;
+    padding: var(--space-2) var(--space-1);
+    i {
+      color: var(--text-on-color);
+      font-weight: 600;
+    }
+  }
+
+  .path {
+    color: var(--text-muted);
+    font-family: var(--font-monospace);
+  }
+  .implied {
+    color: var(--text-muted);
+  }
+}

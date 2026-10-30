@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE services PUBLIC "-//Berlioz//DTD::Services 1.0//EN" "http://www.pageseeder.org/schema/berlioz/services-1.0.dtd">
+<!--
+  Test-only JAR overlay: never packaged with bzadmin.
+
+  Exposes Berlioz metadata generators directly (raw XML via `.src`), services with the metadata the
+  Services page must show (methods, flags, direct mode, parameters), and a service rendered by the
+  filesystem stylesheet `WEB-INF/xslt/html/fixture.xsl`, which overrides this JAR's group stylesheet
+  `xslt/html/fixture.xsl` and imports the other stylesheets of this JAR by classpath URI.
+-->
+<services group="fixture">
+
+  <service id="fixture-render" method="get">
+    <url pattern="/fixture/render"/>
+    <generator class="org.pageseeder.berlioz.generator.NoContent" name="render" target="main"/>
+  </service>
+
+  <!-- Same id and URL as the POST service in WEB-INF/config/services!fixture.xml (ids are unique
+       within a file); parameters are shown as declared, even with a name that looks sensitive -->
+  <service id="fixture-echo" method="get" flags="fixture-flag">
+    <url pattern="/fixture/echo"/>
+    <generator class="org.pageseeder.berlioz.generator.NoContent" name="echo" target="main">
+      <parameter name="sort-key" value="fixture-sort-key"/>
+      <parameter name="path"    value="/fixture/visible"/>
+    </generator>
+  </service>
+
+  <!-- Direct service: the output of the handler without a Berlioz envelope -->
+  <service id="fixture-direct" method="get">
+    <url pattern="/fixture/direct"/>
+    <handler class="org.pageseeder.berlioz.generator.GetGlobalConfig"/>
+  </service>
+
+  <service id="fixture-berlioz-config" method="get">
+    <url pattern="/fixture/berlioz-config"/>
+    <generator class="org.pageseeder.berlioz.generator.GetBerliozConfig" name="berlioz-config" target="main"/>
+  </service>
+
+  <service id="fixture-error-handler-config" method="get">
+    <url pattern="/fixture/error-handler-config"/>
+    <generator class="org.pageseeder.berlioz.generator.GetErrorHandlerConfig" name="error-handler-config" target="main"/>
+  </service>
+
+  <service id="fixture-global-config" method="get">
+    <url pattern="/fixture/global-config"/>
+    <generator class="org.pageseeder.berlioz.generator.GetGlobalConfig" name="global-config" target="main"/>
+  </service>
+
+  <service id="fixture-runtime-services" method="get">
+    <url pattern="/fixture/runtime-services"/>
+    <generator class="org.pageseeder.berlioz.generator.ListRuntimeServices" name="runtime-services" target="main"/>
+  </service>
+
+  <!-- Generators of bzadmin outside the admin URLs, where the admin filter does not run: denied,
+       even to administrators -->
+  <service id="fixture-admin-read" method="get">
+    <url pattern="/fixture/admin/read"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetGlobalConfig" name="global-config" target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListBerliozOptions" name="berlioz-options" target="main"/>
+    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl" name="berlioz-control" target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetSystemProperties" name="sysproperties" target="main"/>
+    <generator class="org.pageseeder.bzadmin.cache.ListCaches" name="cache-overview" target="main"/>
+    <generator class="org.pageseeder.bzadmin.cache.GetCacheInfo" name="cache-info" target="main">
+      <parameter name="provider" value="ehcache2"/>
+      <parameter name="manager" value="fixture"/>
+      <parameter name="cache" value="PSML"/>
+    </generator>
+    <generator class="org.pageseeder.bzadmin.cache.ListCacheEntries" name="cache-entries" target="main">
+      <parameter name="provider" value="ehcache2"/>
+      <parameter name="manager" value="fixture"/>
+      <parameter name="cache" value="PSML"/>
+    </generator>
+    <generator class="org.pageseeder.bzadmin.log.GetLogEntries" name="logs-raw" target="main">
+      <parameter name="name" value="fixture.log"/>
+    </generator>
+    <generator class="org.pageseeder.bzadmin.log.GetRecentEvents" name="logs-recent" target="main"/>
+    <generator class="org.pageseeder.bzadmin.xslt.ListXsltFiles" name="xslt" target="main"/>
+    <generator class="org.pageseeder.bzadmin.xslt.GetXsltDocumentation" name="xslt-doc" target="main">
+      <parameter name="path" value="xslt/html/bzadmin.xsl"/>
+    </generator>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.ListLibraries" name="libraries" target="main"/>
+  </service>
+
+  <service id="fixture-admin-operate" method="post">
+    <url pattern="/fixture/admin/operate"/>
+    <generator class="org.pageseeder.bzadmin.cache.ClearCache" name="cache-clear" target="main"/>
+    <generator class="org.pageseeder.bzadmin.cache.RemoveCacheEntry" name="cache-entry-remove" target="main">
+      <parameter name="provider" value="ehcache2"/>
+      <parameter name="manager" value="fixture"/>
+      <parameter name="cache" value="PSML"/>
+      <parameter name="key" value="fixture-key"/>
+    </generator>
+    <generator class="org.pageseeder.bzadmin.cache.SetCacheStatistics" name="cache-statistics" target="main">
+      <parameter name="provider" value="jcache"/>
+      <parameter name="manager" value="fixture-caffeine"/>
+      <parameter name="cache" value="PSML"/>
+      <parameter name="enable" value="false"/>
+    </generator>
+    <generator class="org.pageseeder.bzadmin.log.SetRecentEventsThreshold" name="logs-threshold" target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetGeneratorStatistics" name="statistics" target="main">
+      <parameter name="reset" value="true"/>
+    </generator>
+  </service>
+
+  <!-- Direct service: a bzadmin generator as handler -->
+  <service id="fixture-admin-direct" method="get">
+    <url pattern="/fixture/admin/direct"/>
+    <handler class="org.pageseeder.bzadmin.guard.berlioz.generator.GetGlobalConfig"/>
+  </service>
+
+</services>

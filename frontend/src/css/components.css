@@ -1,0 +1,573 @@
+/**
+ * Contains all styles for components specific to the admin interfaces.
+ * (buttons, drop-downs, custom tables, etc...)
+ */
+
+/* Secondary navigation: links to the views of a page, the current one active */
+.secondary-nav {
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--space-5);
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* Same colour whether visited or not: the base link colours are too dark on a dark surface */
+  a,
+  a:visited {
+    border-bottom: 4px solid transparent;
+    color: var(--nav-active-text);
+    display: block;
+    font-weight: 600;
+    padding: var(--space-2) 0;
+  }
+  a.active {
+    border-bottom-color: currentColor;
+  }
+  a:hover {
+    text-decoration: none;
+    border-bottom-color: var(--default-primary);
+  }
+}
+
+/* Tables: `.basic-table` for lists, `.summary-table` for name/value rows headed by a <th>,
+   `.properties-table` for two columns of names and values */
+.basic-table,
+.summary-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--table-border);
+  font-size: 95%;
+  overflow: hidden;
+  width: 100%;
+
+  th,
+  td {
+    border: 0 none;
+    border-bottom: 1px solid var(--table-border);
+    padding: var(--table-cell-padding);
+  }
+  th {
+    background: var(--table-shade);
+  }
+  td {
+    background: var(--surface);
+  }
+  tbody tr:last-child :is(th, td) {
+    border-bottom: 0 none;
+  }
+
+  tfoot td {
+    background: var(--table-shade);
+    border-bottom: 0 none;
+    font-weight: 600;
+  }
+  tfoot tr:first-child :is(th, td) {
+    border-top: 1px solid var(--table-border);
+  }
+
+  .sort-button svg-icon {
+    color: var(--accent);
+  }
+}
+
+.summary-table th {
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.basic-table thead {
+  position: sticky;
+  top: 0;
+}
+
+/* Row headers in lists (`<th scope="row">`): a bold name on the row's background */
+.basic-table tbody th[scope='row'] {
+  background: var(--surface);
+  font-weight: 600;
+  text-align: left;
+}
+
+.basic-table.is-panel {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  margin: var(--space-7) 0;
+  border: 0 none;
+
+  tbody td {
+    background: var(--surface-raised);
+  }
+
+  th {
+    background: var(--darker-primary);
+    color: var(--text-on-color);
+    border: 0 none;
+    .sort-button svg-icon {
+      color: var(--lighter-primary);
+    }
+  }
+}
+
+.properties-table td {
+  overflow-wrap: anywhere;
+  width: 50%;
+}
+
+/* Key metrics: a row of large figures at the top of a page (`<dl class="key-metrics">`, one
+   `.key-metric` per figure with its <dt> label, `.key-metric-value`, and an optional <meter> and detail) */
+.key-metrics {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  margin: 0 0 var(--space-7);
+}
+
+.key-metric {
+  background: var(--surface-raised);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  padding: var(--panel-padding);
+
+  dt {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+
+    .info-button {
+      margin-inline-start: 0.35em;
+    }
+  }
+  dd {
+    margin: 0;
+  }
+  .key-metric-value {
+    color: var(--text-strong);
+    font-size: 2rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .metric-status-icon {
+    font-size: 0.75em;
+
+    &[name='ok'] {
+      color: var(--success-text);
+    }
+  }
+  .key-metric-value.muted {
+    color: var(--text-muted);
+  }
+  .key-metric-meter {
+    margin: var(--space-2) 0;
+  }
+  .key-metric-detail {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+  /* A value that calls for attention (`.key-metric.warning`) */
+  &.warning {
+    border-color: var(--error-text);
+    .key-metric-value {
+      color: var(--error-text);
+    }
+  }
+}
+
+/* Meters: blue when optimum, orange then red as the value moves away from it (`low`, `high`, `optimum`) */
+meter {
+  appearance: none;
+  background: var(--meter-track);
+  border: 0 none;
+  border-radius: var(--radius-sm);
+  display: block;
+  height: 0.5rem;
+  width: 100%;
+
+  &::-webkit-meter-bar {
+    background: var(--meter-track);
+    border: 0 none;
+    border-radius: var(--radius-sm);
+    height: 0.5rem;
+  }
+  &::-webkit-meter-optimum-value {
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+  }
+  &::-webkit-meter-suboptimum-value {
+    background: var(--rainbow-orange);
+    border-radius: var(--radius-sm);
+  }
+  &::-webkit-meter-even-less-good-value {
+    background: var(--rainbow-red);
+    border-radius: var(--radius-sm);
+  }
+  &::-moz-meter-bar {
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+  }
+  &:-moz-meter-sub-optimum::-moz-meter-bar {
+    background: var(--rainbow-orange);
+  }
+  &:-moz-meter-sub-sub-optimum::-moz-meter-bar {
+    background: var(--rainbow-red);
+  }
+}
+
+/* Input groups */
+.input-group {
+  & > :first-child,
+  & > :first-child.input-group-button > * {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  }
+  & > :last-child,
+  & > :last-child.input-group-button > * {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
+}
+
+.input-group-label {
+  border: 1px solid var(--border-subtle);
+  background: var(--field-label-background);
+  color: var(--text-strong);
+}
+
+/* Dialogs */
+.dialog {
+  background: var(--surface-floating);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  color: var(--text-strong);
+
+  &::backdrop {
+    background: var(--overlay-backdrop);
+  }
+}
+
+.dialog-title {
+  background: var(--dark-primary);
+  color: var(--text-on-color);
+  font-size: 1rem;
+  font-weight: bold;
+  margin: calc(-1 * var(--panel-padding));
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+}
+
+/* Sections of a dialog, under its title */
+.dialog h3 {
+  font-size: 0.9375rem;
+}
+
+/* Sorted tables */
+sortable-table {
+  display: block;
+
+  th:has(> .sort-button) {
+    padding-right: var(--space-1);
+  }
+
+  th[aria-sort] {
+    svg-icon {
+      color: var(--accent);
+    }
+  }
+
+  .sort-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    width: 100%;
+    color: inherit;
+    font-weight: inherit;
+    text-align: inherit;
+
+    svg-icon {
+      flex: none;
+      color: var(--light-primary);
+    }
+    &:hover svg-icon,
+    &:focus-visible svg-icon {
+      color: var(--accent);
+    }
+    &:focus-visible {
+      outline-offset: 1px;
+    }
+  }
+}
+
+/* Cache status */
+.cache-status {
+  margin-left: 10px;
+  color: var(--error-text);
+  &.active {
+    color: var(--success-text);
+  }
+}
+
+svg-icon {
+  vertical-align: -0.125em;
+}
+
+/* Content being reloaded (`dim()` sets aria-busy, so the transition also applies when undimming) */
+[aria-busy] {
+  transition: opacity var(--duration-normal);
+}
+
+.is-loading {
+  opacity: var(--loading-opacity);
+}
+
+/* Status messages */
+.message {
+  padding-left: 10px;
+  &.ok {
+    color: var(--success-text);
+  }
+  &.error {
+    color: var(--error-text);
+  }
+}
+
+/* A row of buttons (icon and text) under a heading */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Buttons without background or border: links and sort headers */
+.link-button,
+.sort-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Buttons that look like links (actions inside tables) */
+.link-button:hover {
+  text-decoration: underline;
+}
+
+/* Expandable trees made of <details> with a rotating caret in the <summary> */
+.tree {
+  summary {
+    cursor: pointer;
+    list-style: none;
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+
+  .caret {
+    display: inline-block;
+    width: 1rem;
+    color: var(--accent-strong);
+    transition: rotate var(--duration-fast);
+  }
+  summary:hover .caret {
+    color: var(--accent);
+  }
+  details[open] > summary .caret {
+    rotate: 90deg;
+  }
+}
+
+/* Trees of folders and files, with a `.goto` link for each */
+.file-tree {
+  ul {
+    padding-left: 0;
+    ul {
+      padding-left: var(--space-5);
+    }
+  }
+
+  .goto {
+    border-radius: var(--radius-sm);
+    padding: var(--space-1);
+    line-height: 150%;
+  }
+  .leaf .goto {
+    margin-left: var(--space-5);
+  }
+  .active {
+    color: var(--text-on-color);
+    background: var(--dark-primary);
+  }
+}
+
+/* Highlighted XML source */
+xml-source {
+  display: block;
+  pre {
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .xml-tag {
+    color: var(--code-tag);
+  }
+  .xml-attr {
+    color: var(--code-attr);
+  }
+  .xml-value {
+    color: var(--code-value);
+  }
+  .xml-entity {
+    color: var(--code-entity);
+  }
+  .xml-comment {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  .xml-pi,
+  .xml-cdata {
+    color: var(--text-muted);
+  }
+}
+
+/* SVG charts */
+pie-chart,
+line-chart {
+  display: inline-block;
+  vertical-align: middle;
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+pie-chart {
+  width: 2rem;
+  height: 2rem;
+}
+
+line-chart {
+  width: 100%;
+  height: 100px;
+}
+
+/* Berlioz control buttons: what the button does, or why it is disabled */
+.control-form small {
+  color: var(--text-muted);
+}
+
+.panel {
+  background: var(--surface-raised);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  padding: var(--panel-padding);
+}
+.panel + .panel {
+  margin-top: var(--space-7);
+}
+
+/*
+  What a control button or a property does: a popover under the info button that opened it, which
+  bzadmin.js marks as the anchor (one auto popover is open at a time)
+*/
+.info-button {
+  vertical-align: middle;
+
+  .control-form & {
+    font-size: 1.25rem;
+  }
+
+  &.popover-anchor {
+    anchor-name: --info-button;
+  }
+}
+
+.info-popover[popover] {
+  max-width: min(30rem, calc(100vw - 2rem));
+  margin: var(--space-2) 0;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-floating);
+  /*
+    The same text wherever the button is: the popover is in the top layer but still inherits from
+    the heading, table header, key metric label or form that holds it
+  */
+  color: var(--text);
+  font-family: var(--font-default);
+  font-size: 0.875rem;
+  font-style: normal;
+  font-weight: normal;
+  letter-spacing: normal;
+  line-height: 1.5;
+  text-align: start;
+  text-transform: none;
+  white-space: normal;
+  box-shadow: var(--shadow-popover);
+
+  /* Without anchor positioning, the browser centres the popover in the viewport */
+  @supports (position-area: bottom) {
+    position-anchor: --info-button;
+    position-area: bottom span-right;
+    position-try-fallbacks: flip-inline, flip-block;
+    inset: auto;
+  }
+}
+
+/* Offset keeps keyboard focus distinct from a control's fill and border. */
+:is(a[href], button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* Tables may keep their two-dimensional layout without panning the whole page. */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin-block: var(--space-3);
+}
+
+/* Expanded wording remains available to assistive technology without naming text roles. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Shared generator labels in services and application statistics. */
+.generator-origin {
+  color: var(--accent);
+}
+
+.generator-full-name {
+  overflow-wrap: anywhere;
+}
+
+.generator-name-button {
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.generator-name-popover {
+  .generator-full-name {
+    display: block;
+    margin-bottom: var(--space-3);
+    user-select: text;
+  }
+}

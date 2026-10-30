@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE services PUBLIC "-//Berlioz//DTD::Services 1.0//EN" "http://www.pageseeder.org/schema/berlioz/services-1.0.dtd">
+<!--
+  Berlioz Administration pages
+
+  Every generator checks the verdict of org.pageseeder.bzadmin.access.AdminFilter, which the host maps to these URLs:
+  the generators of Berlioz are used through org.pageseeder.bzadmin.guard.
+  Every operation is a POST service, which the filter only accepts from the admin pages of users who can operate.
+-->
+<services group="bzadmin">
+
+  <!-- BERLIOZ CONFIG ======================================================================== -->
+
+  <service id="bzadmin-config" method="get">
+    <url pattern="/bzadmin/config"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetGlobalConfig"       name="global-config"        target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListBerliozOptions"    name="berlioz-options"      target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetBerliozConfig"       name="berlioz-config"       target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetErrorHandlerConfig"  name="error-handler-config" target="main"/>
+    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"        name="berlioz-control"      target="main"/>
+  </service>
+
+  <!--
+    Berlioz reloads everything with 'berlioz-reload=true' (configuration, services, XSLT cache, ETags, redirects),
+    which the filter authorises for this service only (see AdminFilter.CONTROL_SERVICES):
+    the response says if it was authorised, and has the resulting configuration and status of the services
+  -->
+  <service id="bzadmin-config-reload" method="post">
+    <url pattern="/bzadmin/config/reload"/>
+    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"        name="berlioz-control"      target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetGlobalConfig"       name="global-config"        target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices"   name="runtime-services"     target="main"/>
+  </service>
+
+  <service id="bzadmin-services" method="get">
+    <url pattern="/bzadmin/services"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices" name="runtime-services" target="main"/>
+    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"     name="berlioz-control"  target="main"/>
+  </service>
+
+  <!-- The service matching a Berlioz path ('url', without context path or extension) and HTTP 'method' (default GET) -->
+  <service id="bzadmin-services-lookup" method="get">
+    <url pattern="/bzadmin/services/lookup"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetMatchingService" name="service-match" target="main"/>
+  </service>
+
+  <!-- Berlioz reloads the services with 'berlioz-reload=services': the response says if it was authorised -->
+  <service id="bzadmin-services-reload" method="post">
+    <url pattern="/bzadmin/services/reload"/>
+    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"     name="berlioz-control"  target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices" name="runtime-services" target="main"/>
+  </service>
+
+  <!-- CACHE ================================================================================= -->
+
+  <!-- A cache is named by provider, manager and cache (parameters `provider`, `manager`, `cache`):
+       see docs/implementation/cache-contract.md -->
+
+  <service id="bzadmin-cache-summary" method="get">
+    <url pattern="/bzadmin/cache" />
+    <generator class="org.pageseeder.bzadmin.cache.ListCaches"         name="cache-overview" target="main" />
+  </service>
+
+  <service id="bzadmin-cache-info" method="get">
+    <url pattern="/bzadmin/cache/info" />
+    <generator class="org.pageseeder.bzadmin.cache.GetCacheInfo"       name="cache-info" target="main" />
+  </service>
+
+  <!-- The recent rates of the cache information page: the output of the handler only, in any format (no envelope, no XSLT) -->
+  <service id="bzadmin-cache-info-sample" method="get">
+    <url pattern="/bzadmin/cache/info/sample" />
+    <handler class="org.pageseeder.bzadmin.cache.GetCacheInfo"/>
+  </service>
+
+  <service id="bzadmin-cache-entries" method="get">
+    <url pattern="/bzadmin/cache/entries" />
+    <generator class="org.pageseeder.bzadmin.cache.ListCacheEntries"   name="cache-entries" target="main" />
+  </service>
+
+  <!-- One cache, or every cache without parameters -->
+  <service id="bzadmin-cache-clear" method="post">
+    <url pattern="/bzadmin/cache/clear" />
+    <generator class="org.pageseeder.bzadmin.cache.ClearCache"         name="cache-clear" target="main" />
+  </service>
+
+  <service id="bzadmin-cache-statistics" method="post">
+    <url pattern="/bzadmin/cache/statistics" />
+    <generator class="org.pageseeder.bzadmin.cache.SetCacheStatistics" name="cache-statistics" target="main" />
+  </service>
+
+  <service id="bzadmin-cache-statistics-reset" method="post">
+    <url pattern="/bzadmin/cache/statistics/reset" />
+    <generator class="org.pageseeder.bzadmin.cache.ResetCacheStatistics" name="cache-statistics-reset" target="main" />
+  </service>
+
+  <service id="bzadmin-cache-entry-remove" method="post">
+    <url pattern="/bzadmin/cache/entries/remove" />
+    <generator class="org.pageseeder.bzadmin.cache.RemoveCacheEntry"   name="cache-entry-remove" target="main" />
+  </service>
+
+  <!-- FILES ================================================================================= -->
+
+  <!-- One folder at a time, with bounded work: the tree loads the folders on demand -->
+  <service id="bzadmin-files" method="get">
+    <url pattern="/bzadmin/files" />
+    <generator class="org.pageseeder.bzadmin.psml.ListPsmlFolder"  name="files"           target="main" />
+  </service>
+
+  <service id="bzadmin-files-folders" method="get">
+    <url pattern="/bzadmin/files/folders" />
+    <generator class="org.pageseeder.bzadmin.psml.ListPsmlFolder"  name="files-folders"   target="main">
+      <parameter name="folders" value="true"/>
+    </generator>
+  </service>
+
+  <service id="bzadmin-files-document" method="get">
+    <url pattern="/bzadmin/files/document" />
+    <generator class="org.pageseeder.bzadmin.psml.GetPsmlDocument" name="files-document"  target="main" />
+  </service>
+
+  <!-- XSLT ================================================================================= -->
+
+  <service id="bzadmin-xslt" method="get">
+    <url pattern="/bzadmin/xslt" />
+    <generator class="org.pageseeder.bzadmin.xslt.ListXsltFiles"       name="xslt"        target="main" />
+    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl" name="berlioz-control" target="main" />
+  </service>
+
+  <!-- Berlioz clears the cache with 'berlioz-reload=xslt': the response says if it was authorised -->
+  <service id="bzadmin-xslt-cache-clear" method="post">
+    <url pattern="/bzadmin/xslt/cache/clear" />
+    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl" name="berlioz-control" target="main" />
+  </service>
+
+  <service id="bzadmin-xslt-doc" method="get">
+    <url pattern="/bzadmin/xslt/doc" />
+    <generator class="org.pageseeder.bzadmin.xslt.GetXsltDocumentation" name="xslt-doc"    target="main" />
+  </service>
+
+  <service id="bzadmin-xslt-source" method="get">
+    <url pattern="/bzadmin/xslt/source" />
+    <generator class="org.pageseeder.bzadmin.xslt.GetXsltSource"       name="xslt-source" target="main" />
+  </service>
+
+  <!-- SYSTEM ================================================================================ -->
+
+  <!-- The threads are listed on demand (system/threads) -->
+  <service id="bzadmin-system" method="get">
+    <url pattern="/bzadmin/system" />
+    <generator class="org.pageseeder.bzadmin.system.GetSystemSummary"                name="system-summary" target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetRuntimeInfo"    name="runtime"     target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetFileSystemInfo" name="filesystem"  target="main"/>
+    <!-- Values of sensitive names redacted -->
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetSystemProperties" name="sysproperties" target="main"/>
+  </service>
+
+  <!-- Uptime, CPU, memory pools, garbage collectors and thread counts (bounded: no stack trace) -->
+  <service id="bzadmin-system-summary" method="get">
+    <url pattern="/bzadmin/system/summary" />
+    <generator class="org.pageseeder.bzadmin.system.GetSystemSummary"                name="system-summary" target="main"/>
+  </service>
+
+  <service id="bzadmin-system-runtime" method="get">
+    <url pattern="/bzadmin/system/runtime" />
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetRuntimeInfo"    name="runtime"     target="main"/>
+  </service>
+
+  <!-- The live poll of the memory: the output of the handler only, in any format (no envelope, no XSLT) -->
+  <service id="bzadmin-system-runtime-sample" method="get">
+    <url pattern="/bzadmin/system/runtime/sample" />
+    <handler class="org.pageseeder.bzadmin.guard.berlioz.system.GetRuntimeInfo"/>
+  </service>
+
+  <service id="bzadmin-system-files" method="get">
+    <url pattern="/bzadmin/system/files" />
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetFileSystemInfo" name="filesystem"  target="main"/>
+  </service>
+
+  <!-- The threads with their origin and activity, without stack (bounded: 2000 threads) -->
+  <service id="bzadmin-system-threads" method="get">
+    <url pattern="/bzadmin/system/threads" />
+    <generator class="org.pageseeder.bzadmin.system.ListThreads" name="threads"  target="main"/>
+  </service>
+
+  <!-- One thread and its stack (bounded: 256 frames) -->
+  <service id="bzadmin-system-thread" method="get">
+    <url pattern="/bzadmin/system/thread" />
+    <generator class="org.pageseeder.bzadmin.system.GetThreadInfo" name="thread"  target="main"/>
+  </service>
+
+  <service id="bzadmin-system-cpu" method="get">
+    <url pattern="/bzadmin/system/cpu" />
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetCpuSample" name="cpu-sample"  target="main"/>
+  </service>
+
+  <!-- The live poll of the CPU: the output of the handler only, in any format (no envelope, no XSLT) -->
+  <service id="bzadmin-system-cpu-sample" method="get">
+    <url pattern="/bzadmin/system/cpu/sample" />
+    <handler class="org.pageseeder.bzadmin.guard.berlioz.system.GetCpuSample"/>
+  </service>
+
+  <service id="bzadmin-system-properties" method="get">
+    <url pattern="/bzadmin/system/properties" />
+    <!-- Values of sensitive names redacted -->
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetSystemProperties" name="sysproperties"  target="main"/>
+  </service>
+
+  <!-- The Recent view, or the Files view with view=files (bzadmin/logs.xsl) -->
+  <service id="bzadmin-logs" method="get">
+    <url pattern="/bzadmin/logs" />
+    <!-- The registered log files, by ID -->
+    <generator class="org.pageseeder.bzadmin.log.ListLogFiles" name="logs-files"   target="main"/>
+    <!-- The recent events captured by the logging adapter (logback), if any -->
+    <generator class="org.pageseeder.bzadmin.log.GetRecentEvents"  name="logs-recent"  target="main"/>
+  </service>
+
+  <service id="bzadmin-logs-raw" method="get">
+    <url pattern="/bzadmin/logs/raw" />
+    <!-- Only the listed log files, by ID, with bounded work -->
+    <generator class="org.pageseeder.bzadmin.log.GetLogEntries" name="logs-raw"  target="main"/>
+  </service>
+
+  <service id="bzadmin-logs-recent" method="get">
+    <url pattern="/bzadmin/logs/recent" />
+    <generator class="org.pageseeder.bzadmin.log.GetRecentEvents" name="logs-recent"  target="main"/>
+  </service>
+
+  <service id="bzadmin-logs-recent-threshold" method="post">
+    <url pattern="/bzadmin/logs/recent/threshold" />
+    <!-- The capture threshold of the recent events, not the levels of the application's loggers -->
+    <generator class="org.pageseeder.bzadmin.log.SetRecentEventsThreshold" name="logs-threshold"  target="main"/>
+  </service>
+
+  <!-- Service parameters take precedence over request parameters: GET requests never reset the statistics -->
+  <service id="bzadmin-application" method="get">
+    <url pattern="/bzadmin/application" />
+    <!-- Versions, detected integrations and reload status: no paths or configured values -->
+    <generator class="org.pageseeder.bzadmin.application.GetApplicationSummary" name="summary"  target="main"/>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetGeneratorStatistics" name="statistics"  target="main">
+      <parameter name="reset" value="false"/>
+    </generator>
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.ListLibraries"     name="libraries"   target="main"/>
+  </service>
+
+  <!-- The summary alone, also in JSON (like the statistics) -->
+  <service id="bzadmin-application-summary" method="get">
+    <url pattern="/bzadmin/application/summary" />
+    <generator class="org.pageseeder.bzadmin.application.GetApplicationSummary" name="summary"  target="main"/>
+  </service>
+
+  <service id="bzadmin-application-statistics" method="get">
+    <url pattern="/bzadmin/application/statistics" />
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetGeneratorStatistics" name="statistics"  target="main">
+      <parameter name="reset" value="false"/>
+    </generator>
+  </service>
+  <service id="bzadmin-application-statistics-reset" method="post">
+    <url pattern="/bzadmin/application/statistics/reset" />
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetGeneratorStatistics" name="statistics"  target="main">
+      <parameter name="reset" value="true"/>
+    </generator>
+  </service>
+
+  <!-- AJAX ================================================================================= -->
+
+  <!-- Service Lookup  -->
+  <service id="ajax-berlioz-service-match" method="get" cache-control="private, no-cache, no-store, must-revalidate">
+    <url pattern="/bzadmin/service/match" />
+    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetMatchingService" name="service-match" target="ajax" />
+  </service>
+
+</services>

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+  Global configuration of the test host (berlioz.mode=test): the local configuration, plus
+  - a control key, so that tests can reload the services;
+  - the container roles of administrators (see FixtureAuthentication);
+  - non-Berlioz properties, one of them sensitive.
+-->
+<global>
+
+  <berlioz>
+    <errors handle="false" generator-catch="false"/>
+    <http cache-control="private, max-age=0, must-revalidate"/>
+    <xml parse-strict="true" header.version="1.0"/>
+    <xslt cache="false"/>
+    <nonce enable="true"/>
+    <control key="fixture-secret-control-key"/>
+    <admin>
+      <role view="fixture-admin-view" operate="fixture-admin-operate"/>
+    </admin>
+  </berlioz>
+
+  <fixture colour="blue" api-key="fixture-secret-property"/>
+
+</global>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="200" viewBox="0 0 100 200" xmlns:bx="https://boxy-svg.com">
+  <title>35-tendrils-woven-fade2</title>
+  <defs>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="0.7" stop-color="white" stop-opacity=".8"/>
+      <stop offset="1" stop-color="white" stop-opacity=".8"/>
+    </linearGradient>
+    <mask id="fade-mask">
+      <path d="M-20 -20H150V200H-20Z" fill="url(#fade)"/>
+    </mask>
+    <linearGradient id="sf1" x1="0" y1="35" x2="0" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="0.45" stop-color="white" stop-opacity=".9"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.28"/>
+    </linearGradient>
+    <mask id="strand1" maskUnits="userSpaceOnUse" x="-30" y="-20" width="200" height="220">
+      <path d="M-30 -20H170V200H-30Z" fill="url(#sf1)"/>
+    </mask>
+    <linearGradient id="sf2" x1="0" y1="35" x2="0" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="0.45" stop-color="white" stop-opacity=".9"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.55"/>
+    </linearGradient>
+    <mask id="strand2" maskUnits="userSpaceOnUse" x="-30" y="-20" width="200" height="220">
+      <path d="M-30 -20H170V200H-30Z" fill="url(#sf2)"/>
+    </mask>
+    <linearGradient id="sf4" x1="0" y1="35" x2="0" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="0.45" stop-color="white" stop-opacity=".9"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.55"/>
+    </linearGradient>
+    <mask id="strand4" maskUnits="userSpaceOnUse" x="-30" y="-20" width="200" height="220">
+      <path d="M-30 -20H170V200H-30Z" fill="url(#sf4)"/>
+    </mask>
+    <linearGradient id="sf5" x1="0" y1="35" x2="0" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="0.45" stop-color="white" stop-opacity=".9"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.28"/>
+    </linearGradient>
+    <mask id="strand5" maskUnits="userSpaceOnUse" x="-30" y="-20" width="200" height="220">
+      <path d="M-30 -20H170V200H-30Z" fill="url(#sf5)"/>
+    </mask>
+    <linearGradient id="sf7" x1="0" y1="35" x2="0" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="0.45" stop-color="white" stop-opacity=".9"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.28"/>
+    </linearGradient>
+    <mask id="strand7" maskUnits="userSpaceOnUse" x="-30" y="-20" width="200" height="220">
+      <path d="M-30 -20H170V200H-30Z" fill="url(#sf7)"/>
+    </mask>
+    <linearGradient id="sf8" x1="0" y1="35" x2="0" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="0.45" stop-color="white" stop-opacity=".9"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.55"/>
+    </linearGradient>
+    <mask id="strand8" maskUnits="userSpaceOnUse" x="-30" y="-20" width="200" height="220">
+      <path d="M-30 -20H170V200H-30Z" fill="url(#sf8)"/>
+    </mask>
+    <linearGradient id="sf10" x1="0" y1="35" x2="0" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/>
+      <stop offset="0.45" stop-color="white" stop-opacity=".9"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.55"/>
+    </linearGradient>
+    <mask id="strand10" maskUnits="userSpaceOnUse" x="-30" y="-20" width="200" height="220">
+      <path d="M-30 -20H170V200H-30Z" fill="url(#sf10)"/>
+    </mask>
+    <bx:grid x="0" y="0" width="1" height="1" divisions="2"/>
+  </defs>
+  <g mask="url(#fade-mask)" transform="scale(1 1)">
+    <path d="M 7.28 -9.89 C 7.641 -6.044 13.04 -4.733 15.74 -1.97 C 22.058 4.496 28.857 12.743 29.93 22.11 C 31.356 34.558 21.419 43.889 19.63 55.6 C 17.644 68.598 21.852 82.909 25 95.5 C 26.5 101.5 27 108 27.5 114 C 28.082 120.98 28 131.368 28 140 C 28 145.728 28 200 28 200 L 29 200 C 29 200 28.972 148.643 29 140 C 29.036 128.527 29.172 113.013 28 104 C 25.987 88.52 20.841 74.465 23.05 58.49 C 24.83 45.62 36.96 36.325 36.68 22.93 C 36.459 12.349 30.595 1.694 24 -6 C 21.402 -9.031 18.438 -13.014 14.6 -14.11 C 11.892 -14.884 7.017 -12.694 7.28 -9.89 Z" fill="white" fill-opacity="0.45"/>
+    <path d="M 23 -12 C 23 -12 31.326 -4.595 33.96 -2 C 39.033 2.998 42.714 9.457 40.89 16.74 C 37.453 30.465 21.826 37.999 19 52 C 16.268 65.538 31.617 74.338 33.94 86.85 C 35.699 96.325 32.166 104.724 31 114 C 29.964 122.248 30 132.916 30 140 L 30 200 L 31 200 C 31.15 196.005 31 140 31 140 C 30.964 133.379 30.946 129.646 31.5 123 C 32 117 32.863 110.782 34.37 105 C 36.602 96.438 38.233 88.676 35 80 C 31.587 70.841 23.179 63.566 26 53 C 30.376 36.611 53.076 28.335 52 10 C 51.512 1.681 45.83 -5.588 40 -11 C 38.464 -12.425 39 -12 39 -12 L 23 -12 Z" mask="url(#strand1)" fill="#ff438c" fill-opacity="0.78"/>
+    <path d="M 48 -12 C 48 -12 40.503 -3.69 39.53 -2.5 C 30.52 8.528 18.17 18.369 15 33 C 10.58 53.404 29.821 59.431 33 74 C 34.283 79.88 29.5 89.243 29.5 97 C 29.5 111 31.819 125.794 32 140 L 32 200 L 33 200 L 33 140 C 33.136 127.75 30 111 31 96 C 31.503 88.453 37.292 78.005 35 71 C 31.267 59.59 19.797 54.294 19 40 C 18.131 24.405 38.388 12.797 48 3 C 49.386 1.587 69 -12 69 -12 L 48 -12 Z" mask="url(#strand2)" fill="#ffcd24" fill-opacity="0.78"/>
+    <path d="M 63 -12 C 63 -12 58.437 -3.432 57.86 -2.52 C 52.307 6.251 44.565 14.103 41 24 C 35.806 38.417 44.571 51.686 44 66 C 43.598 76.066 36.918 83.872 35.5 93.5 C 33.293 108.48 34 125.488 34 140 L 34 200 L 35.037 200 L 35 140 C 35 125.488 34.865 104.218 37 93 C 38.915 82.934 45.986 75.53 47 65 C 48.334 51.15 41.751 38.813 49 25 C 54.3 14.9 62.584 6.319 68.9 -3.11 C 68.933 -3.16 75 -12 75 -12 L 63 -12 Z" fill="white" fill-opacity="0.45"/>
+    <path d="M 79 -12 C 79 -12 75.52 -3.232 75 -2 C 71.24 6.905 68.153 15.773 63 24 C 55.627 35.771 44.226 44.965 39 58 C 31.492 76.726 35.352 99.507 35.873 119 C 36.023 124.601 36 132.819 36 140 C 36 148 36 200 36 200 L 37 200 C 37 200 37 148 37 140 C 37 134.506 37.001 128.165 37 124 C 36.996 108.984 34.505 94.009 36.685 79 C 41.246 47.599 63.706 35.125 77 13 C 80.386 7.365 83.87 1.781 87 -4 C 88.428 -6.637 91 -12.059 91 -12.059 L 79 -12 Z" mask="url(#strand4)" fill="#5be4ed" fill-opacity="0.78"/>
+    <path d="M 12 -12 C 12 -12 11.494 -6.246 11.5 -6 C 11.624 -0.816 12.368 4.114 14 9 C 18.626 22.852 26.509 36.032 34 48.5 C 37.789 54.807 44.949 59.881 44.5 68 C 44.092 75.377 38.526 81.397 38.5 89 C 38.498 89.714 38 121 38 140 C 38 148.679 38 200 38 200 L 39 200 C 39 200 39 148.754 39 140 C 39 125 39.32 101.119 40 87 C 40.424 78.207 49.144 72.082 46.5 63 C 44.874 57.416 40.551 51.823 37.5 47 C 33.127 40.086 29.22 30.076 26 22 C 23.198 14.971 20.908 7.559 20 0 C 19.658 -2.847 19.543 -6.159 20 -9 C 20.173 -10.077 21 -12 21 -12 L 12 -12 Z" mask="url(#strand5)" fill="#ff6cba" fill-opacity="0.78"/>
+    <path d="M 63.5 -12 C 63.5 -12 49.271 -1.23 48 6 C 46.102 16.799 48.868 25.85 57 37 C 59.557 40.506 60.589 48.399 59.5 54 C 57.977 61.834 51.5 67.5 48 74 C 45.297 79.02 43.694 85.749 43 91 C 40.858 107.206 41.012 121.364 41 140 C 40.995 148.963 41 200 41 200 L 40 200 C 40 200 40 145 40 140 C 40 120 39.346 98.014 44 78 C 46.092 69.004 54.946 62.236 55 53 C 55.069 41.237 40.898 31.434 36.685 21 C 33.816 13.894 34.975 5.058 38 -2 C 39.5 -5.5 43 -12 43 -12 L 63.5 -12 Z" fill="white" fill-opacity="0.45"/>
+    <path d="M 53 -12 C 53 -12 56.926 -8.21 58.5 -6 C 59.845 -4.111 61.037 -2.311 62 0 C 65.093 7.424 64.89 15.303 63 23 C 60.115 34.749 50.819 44.254 48.5 56 C 45.943 68.956 47.301 83.183 46.55 96.33 C 45.693 111.338 42 120 42 140 C 42 145 42 200 42 200 L 43 200 C 43 200 43 145.06 43 140 C 43 126 45.527 115.152 46.998 105 C 49.36 88.696 48.665 71.837 53 56 C 57.009 41.352 70.049 32.04 72 16 C 72.902 8.581 72.857 0.428 69 -6 C 67.5 -8.5 64 -12.059 64 -12.059 L 53 -12 Z" mask="url(#strand7)" fill="#ffb52e" fill-opacity="0.78"/>
+    <path d="M -4 -12 C -4 -12 -0.797 -7.284 1 -5 C 5.803 1.105 10.885 9.166 12 17 C 13.518 27.664 4.879 42.205 9 54 C 13.903 68.034 36.735 69.291 42 84 C 47.12 98.307 44 123.655 44 140 C 44 149 44 200 44 200 L 45 200 C 45 200 45 145 45 140 C 45 119.806 49 99 43 81 C 39.568 70.703 26.98 66.371 19 60 C 16.122 57.702 13.715 54.725 13 51 C 10.956 40.348 19.675 29.644 20 19 C 20.29 9.499 18.294 1.54 13 -6 C 12.857 -6.204 9 -12 9 -12 L -4 -12 Z" mask="url(#strand8)" fill="#ad85ff" fill-opacity="0.78"/>
+    <path d="M 94 -12 C 94 -12 90.881 -4.813 90.4 -3.93 C 87.229 1.896 82.684 7.344 78 12 C 69.366 20.582 58.141 27.803 52.7 39.03 C 48.054 48.616 51 65.792 51 76 C 51 99 46 116.239 46 140 C 46 145 46 200 46 200 L 46.998 200 C 46.998 200 47 147 47 140 C 47 117.936 50.241 107 52.037 91 C 53.568 77.354 52.664 60.705 54 50 C 56.291 31.635 81.878 18.711 93 6 C 96.709 1.761 99.683 -1.859 102 -7 C 102.445 -7.988 104 -12 104 -12 L 94 -12 Z" fill="white" fill-opacity="0.45"/>
+    <path d="M 40 -12 C 40 -12 43.439 -8.08 44.5 -7.01 C 46.387 -5.107 47.843 -3.407 49.38 -1.23 C 53.927 5.209 55.768 12.682 55.5 20.5 C 54.92 37.39 43.122 48.478 40.75 64.22 C 38.879 76.637 48.993 90.25 51.5 102 C 53.484 111.299 48 126.886 48 140 C 48 147 48 200 48 200 L 49 200 C 49 200 49 144.909 49 140 C 49 127.971 54.229 113 53 103 C 51.546 91.173 41.694 79.252 43 67 C 44.779 50.308 60.054 40.359 61.5 18.5 C 62.126 9.033 60.5 0.5 55 -7.5 C 54.636 -8.029 52 -12.059 52 -12.059 L 40 -12 Z" mask="url(#strand10)" fill="#ffe253" fill-opacity="0.78"/>
+  </g>
+</svg>

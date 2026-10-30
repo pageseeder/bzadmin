@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         metadata-complete="false"
+         version="3.0">
+
+  <display-name>Berlioz Admin</display-name>
+
+  <!-- Filters ============================================================ -->
+
+  <!-- Security headers (CSP with nonce) -->
+  <filter>
+    <filter-name>SecurityHeadersFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.SecurityHeadersFilter</filter-class>
+  </filter>
+
+  <!-- The host's authentication: local development grants admin access to this machine only -->
+  <filter>
+    <filter-name>LocalAdminAccessFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.LocalAdminAccessFilter</filter-class>
+  </filter>
+
+  <!-- The access policy of Berlioz Admin: denies every admin request without a grant -->
+  <filter>
+    <filter-name>AdminFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.access.AdminFilter</filter-class>
+  </filter>
+
+  <!-- HTTP caching of static files (served by the container with their validators) -->
+  <filter>
+    <filter-name>StaticCacheControlFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.StaticCacheControlFilter</filter-class>
+    <init-param>
+      <param-name>cache-control</param-name>
+      <param-value>max-age=86400, stale-while-revalidate=604800</param-value>
+    </init-param>
+  </filter>
+
+  <!-- Static files served from a cache of each library, to compare them on the cache page -->
+  <filter>
+    <filter-name>DevStaticCacheFilter</filter-name>
+    <filter-class>org.pageseeder.bzadmin.DevStaticCacheFilter</filter-class>
+  </filter>
+
+  <!-- Filter Mapping ===================================================== -->
+
+  <!-- Applies to Berlioz Admin -->
+  <filter-mapping>
+    <filter-name>SecurityHeadersFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <!-- Authentication first, then the admin filter, for every dispatch to the admin services -->
+  <filter-mapping>
+    <filter-name>LocalAdminAccessFilter</filter-name>
+    <url-pattern>/bzadmin/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>FORWARD</dispatcher>
+    <dispatcher>ERROR</dispatcher>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>AdminFilter</filter-name>
+    <url-pattern>/bzadmin/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>FORWARD</dispatcher>
+    <dispatcher>ERROR</dispatcher>
+  </filter-mapping>
+
+  <!-- HTTP caching for styles, scripts and fonts -->
+  <filter-mapping>
+    <filter-name>StaticCacheControlFilter</filter-name>
+    <url-pattern>/style/*</url-pattern>
+    <url-pattern>/js/*</url-pattern>
+    <url-pattern>/css/*</url-pattern>
+    <url-pattern>/font/*</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>DevStaticCacheFilter</filter-name>
+    <url-pattern>/style/*</url-pattern>
+    <url-pattern>/js/*</url-pattern>
+    <url-pattern>/css/*</url-pattern>
+    <url-pattern>/font/*</url-pattern>
+  </filter-mapping>
+
+  <!-- Listeners ========================================================== -->
+
+  <!-- The cache managers of the application (the admin pages never create one) -->
+  <listener>
+    <listener-class>org.pageseeder.bzadmin.DevCacheManagers</listener-class>
+  </listener>
+
+  <!-- Welcome file list  -->
+  <welcome-file-list>
+    <welcome-file>/home.html</welcome-file>
+  </welcome-file-list>
+
+  <!-- Ensure cookies use httpOnly and secure flags -->
+  <session-config>
+    <cookie-config>
+      <name>__Host-JSESSIONID</name>
+      <comment>__SAME_SITE_STRICT__</comment>
+      <http-only>true</http-only>
+      <secure>true</secure>
+    </cookie-config>
+  </session-config>
+
+</web-app>

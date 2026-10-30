@@ -1,0 +1,13 @@
+.idea/
+.gradle/
+build/
+
+# macOS directory metadata
+.DS_Store
+
+# Shared contributor and agent instructions belong in the repository.
+!AGENTS.md
+!CLAUDE.md
+
+# JReleaser execution output
+out/

@@ -1,0 +1,35 @@
+/* 12-column CSS Grid replacing foundation-grid, for the columns within the page content */
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--layout-gap);
+}
+
+/* Default: full-width column */
+.columns {
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+
+/* Medium breakpoint (≥ 640px, matching Foundation's default medium: 40em) */
+@media screen and (min-width: 40em) {
+  .row {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+  .medium-4.columns {
+    grid-column: span 4;
+  }
+  .medium-5.columns {
+    grid-column: span 5;
+  }
+  .medium-6.columns {
+    grid-column: span 6;
+  }
+  .medium-7.columns {
+    grid-column: span 7;
+  }
+  .medium-8.columns {
+    grid-column: span 8;
+  }
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE service-config PUBLIC "-//Berlioz//DTD::Services 1.0//EN" "http://www.pageseeder.org/schema/berlioz/services-1.0.dtd">
+<service-config version="1.0">
+
+  <!-- Default services -->
+  <services group="default">
+
+    <service id="home" method="get">
+      <url pattern="/home"/>
+      <generator target="html" name="bundles" class="org.pageseeder.berlioz.bundler.GetWebBundles"/>
+      <!-- The content of the page, through the PSML cache -->
+      <generator name="home" target="main" class="org.pageseeder.bzadmin.GetPsmlContent">
+        <parameter name="path" value="/content/home.psml"/>
+      </generator>
+    </service>
+
+    <service id="error" method="get">
+      <url pattern="/error"/>
+      <generator target="html" name="bundles" class="org.pageseeder.berlioz.bundler.GetWebBundles"/>
+      <generator name="error" target="main"/>
+    </service>
+
+  </services>
+</service-config>
