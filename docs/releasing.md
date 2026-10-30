@@ -15,20 +15,60 @@ publishes into a local Maven staging repository, then JReleaser checks metadata,
 generates checksums and uploads. The deployer enforces Central rules and is fixed to `stage = "UPLOAD"`.
 It never publishes automatically. `skipTag` and `skipRelease` prevent GitHub release/tag creation.
 
-For local staging run `./gradlew :overlay:publishMavenPublicationToStagingRepository`.
-After authorization to upload for validation, dispatch the separate release workflow on the reviewed commit.
-Configure the protected `release` environment with required reviewers and these secrets:
-`SIGNING_KEY`, `SIGNING_PUBLIC_KEY` (ASCII-armoured PGP), `SIGNING_PASSWORD`,
-`CENTRAL_USERNAME`, `CENTRAL_PASSWORD`. They map to JReleaser's environment variables;
-`mode = "MEMORY"` avoids storing private key files. This is the only signing-mode difference from
-Berlioz's local file-based setup.
+The root build substitutes Gretty's legacy `bcprov-jdk15on` with JReleaser's
+`bcprov-jdk18on:1.85` on the plugin classpath to avoid duplicate Bouncy Castle classes
+and signing failures. This does not add an overlay runtime dependency.
 
-Set environment variables `MAVEN_NAMESPACE_VERIFIED=org.pageseeder.berlioz` and
-`SECURITY_REPORTING_URL=https://github.com/pageseeder/bzadmin/security/advisories/new`
-only after checking namespace access and testing private reporting. `jreleaserDeploy` signs and uploads
-for validation; review the resulting bundle and verify signatures using the confirmed public key.
-Public publication is a separately authorized action in Central Portal. Tags and GitHub releases also
-require authorization. Do not run `jreleaserFullRelease` as part of this preparation.
+## Local preparation
+
+Use JDK 11 and complete the qualification sequence in the [build contract](design/build-contract.md).
+Stage only the public overlay (the test host is never published):
+
+```sh
+./gradlew :overlay:publishMavenPublicationToStagingRepository
+```
+
+The local repository remains `build/staging-repo`, shared with the staged consumer checks;
+Berlioz calls its equivalent directory `build/staging-deploy`. No directory rename is needed.
+
+Use the same file-based PGP setup as Berlioz. Supply these variables in your shell or external
+JReleaser configuration; keep key files and credentials outside the checkout:
+
+- `JRELEASER_GPG_PUBLIC_KEY`: absolute path to the ASCII-armoured public key file.
+- `JRELEASER_GPG_SECRET_KEY`: absolute path to the ASCII-armoured secret key file.
+- `JRELEASER_GPG_PASSPHRASE`: signing key passphrase.
+- `JRELEASER_MAVENCENTRAL_USERNAME` and `JRELEASER_MAVENCENTRAL_PASSWORD`: Central Portal token credentials.
+- `JRELEASER_GITHUB_TOKEN`: GitHub token if required by JReleaser's GitHub configuration validation.
+
+Inspect configuration and exercise deployment locally before requesting an upload:
+
+```sh
+./gradlew jreleaserConfig
+./gradlew jreleaserDeploy --dryrun
+```
+
+A dry run does not prove Central accepts the artifacts. Review the generated bundle and signatures
+against the qualified artifacts. There is currently no release workflow; `.github/workflows/ci.yml`
+only qualifies the build. A future release workflow must use the protected `release` environment,
+provide the same credentials, and materialize signing key files outside the checkout.
+
+## First release: upload, inspect, publish
+
+After explicit authorization to upload the reviewed artifacts, run:
+
+```sh
+./gradlew jreleaserDeploy
+```
+
+The committed `stage = "UPLOAD"` uploads for validation without publishing publicly. Ensure no
+external JReleaser stage override changes it. Inspect the deployment in Central Portal, wait for
+validation, check coordinates `org.pageseeder.berlioz:pso-bzadmin`, version, POM, sources,
+Javadoc, SBOM and signatures. Preserve JReleaser's deployment ID and output outside the checkout.
+
+After a separate explicit authorization, publish that existing deployment in Central Portal;
+do not upload it again. For later releases, JReleaser also supports an explicit `FULL` stage
+override, but the checked-in default remains upload-only. Tags and GitHub releases are manual,
+separately authorized actions, as in Berlioz (`skipTag` and `skipRelease`).
 
 Central requirements and tooling:
 [required files](https://central.sonatype.org/publish/requirements/),

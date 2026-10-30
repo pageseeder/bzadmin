@@ -1,6 +1,18 @@
 /*
  * Shared settings for the overlay (`overlay`) and the wrapper application (`test-host`).
  */
+// Gretty brings the legacy provider under a different module name, so Gradle cannot
+// resolve its duplicate classes against JReleaser's Bouncy Castle automatically.
+buildscript {
+  configurations.classpath {
+    resolutionStrategy.dependencySubstitution {
+      substitute(module("org.bouncycastle:bcprov-jdk15on"))
+        .using(module("org.bouncycastle:bcprov-jdk18on:1.85"))
+        .because("Use the provider required by JReleaser 1.26.0 throughout the plugin classpath")
+    }
+  }
+}
+
 plugins {
   base
   id("org.jreleaser") version "1.26.0"
