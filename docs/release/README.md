@@ -1,7 +1,6 @@
 # Release notes
 
-Version `0.14.0` is being prepared as the first public release.
-The project has not made its first public release. A version number alone does not indicate publication or qualification.
+Version `0.14.0` is the first public release. Earlier versions were internal or development candidates.
 
 ## 0.14.0
 

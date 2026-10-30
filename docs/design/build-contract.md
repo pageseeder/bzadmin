@@ -1,6 +1,6 @@
 # Build and compatibility contract
 
-This contract defines runtime requirements, provider ownership, distribution and bounded-work rules. Version `0.14.0` is being prepared for public release; qualification must be repeated for each release artifact.
+This contract defines runtime requirements, provider ownership, distribution and bounded-work rules. Qualification must be repeated for each release artifact.
 
 ## Runtime compatibility
 
@@ -46,7 +46,7 @@ Rules:
 
 ### Distribution
 
-Version `0.14.0` is being prepared for public distribution under Apache License 2.0; publication is pending.
+Releases are distributed on Maven Central under Apache License 2.0, starting with version `0.14.0`.
 
 | Published file | Contents |
 | --- | --- |

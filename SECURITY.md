@@ -6,8 +6,8 @@ Supported versions
 
 | Version | Berlioz | Support |
 | --- | --- | --- |
-| 0.14.x (JAR overlay; first public release pending) | 0.14.5+ | Fixes on the latest stable 0.14 release once published |
-| 0.14.0-beta.N candidates | 0.14.5+ | Superseded by 0.14.0 once published |
+| 0.14.x (JAR overlay) | 0.14.5+ | Fixes on the latest stable 0.14 release |
+| 0.14.0-beta.N candidates | 0.14.5+ | None: superseded by 0.14.0 |
 | 0.13.x and earlier (WAR overlay) | 0.13 and earlier | None: upgrade to the JAR overlay |
 
 Fixes go in a new version; earlier releases and beta candidates are not patched. The runtime contract (Java 11+, `javax.servlet`
@@ -35,7 +35,7 @@ Reporting a vulnerability
 ---
 
 Do not open a public issue. Report it through [GitHub private vulnerability reporting](https://github.com/pageseeder/bzadmin/security/advisories/new), with the version, the
-host configuration (container, Berlioz version, how access is granted) and the steps to reproduce. The maintainers must enable and verify this channel before the first public release.
+host configuration (container, Berlioz version, how access is granted) and the steps to reproduce.
 
 The maintainers acknowledge a report within 5 working days, agree a disclosure date with the reporter, and
 publish the fix in a new version whose release notes describe the issue.

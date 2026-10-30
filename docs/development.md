@@ -155,7 +155,7 @@ In `test-host/` (not part of the overlay), `LocalAdminAccessFilter` grants admin
 
 ### Packaging
 
-The `bzadmin` JAR (`./gradlew :overlay:jar`) is the overlay in its resource layout, and the only distribution: the legacy WAR overlay is no longer built (Berlioz unpacks WAR overlays after the classloader is created, so they cannot add the overlay's generators). It is published with `maven-publish` as `org.pageseeder.berlioz:pso-bzadmin`; the archive base name is `pso-bzadmin`. The publication also has sources and Javadoc JARs, a CycloneDX SBOM (`-cyclonedx.json`, runtime graph only) and, when prepared by JReleaser for Central, required PGP signatures; every JAR has `META-INF/LICENSE`, `NOTICE` and `licenses/` (Apache 2.0; Quicksand font OFL) from the root. No public release yet (distribution is being prepared): see the distribution section of `docs/design/build-contract.md`.
+The `bzadmin` JAR (`./gradlew :overlay:jar`) is the overlay in its resource layout, and the only distribution: the legacy WAR overlay is no longer built (Berlioz unpacks WAR overlays after the classloader is created, so they cannot add the overlay's generators). It is published with `maven-publish` as `org.pageseeder.berlioz:pso-bzadmin`; the archive base name is `pso-bzadmin`. The publication also has sources and Javadoc JARs, a CycloneDX SBOM (`-cyclonedx.json`, runtime graph only) and, when prepared by JReleaser for Central, required PGP signatures; every JAR has `META-INF/LICENSE`, `NOTICE` and `licenses/` (Apache 2.0; Quicksand font OFL) from the root. See the distribution section of `docs/design/build-contract.md`.
 
 Everything in `test-host/` (default services, PSML content, Gretty config) is only for local development.
 

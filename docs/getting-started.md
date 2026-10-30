@@ -4,8 +4,7 @@ Berlioz Admin runs inside an existing Berlioz application. Start with Java 11, B
 
 ## Add the overlay
 
-The public coordinates are `org.pageseeder.berlioz:pso-bzadmin:0.14.0`. Publication is pending;
-use these Maven Central examples after the release is announced.
+The overlay is published on Maven Central as `org.pageseeder.berlioz:pso-bzadmin:0.14.0`.
 
 Gradle:
 

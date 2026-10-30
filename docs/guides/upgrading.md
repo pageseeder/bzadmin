@@ -22,7 +22,7 @@ Each candidate has its own bundle names, so browsers do not keep the previous JS
 ## Upgrade from 0.14.0 beta to 0.14.0
 
 1. Use Berlioz 0.14.5 or later in the 0.14 line, including matching kickstart integration.
-2. Change the overlay dependency to `org.pageseeder.berlioz:pso-bzadmin:0.14.0` once published,
+2. Change the overlay dependency to `org.pageseeder.berlioz:pso-bzadmin:0.14.0`,
    or use a locally built artifact for evaluation. Remove the previous beta JAR so only one overlay is deployed.
 3. Redeploy and repeat the [installation checks](../getting-started.md#verify-installation).
 

@@ -6,7 +6,7 @@ The overlay is distributed as a JAR. It is not a standalone server; the `test-ho
 
 ## Project status
 
-Version `0.14.0` is being prepared as the first public release at `org.pageseeder.berlioz:pso-bzadmin`. Public packages are not available until publication is announced.
+Version `0.14.0` is the first public release, available from Maven Central as `org.pageseeder.berlioz:pso-bzadmin`.
 
 ## Requirements
 
