@@ -1,5 +1,6 @@
 """Resolve the staged overlay with Maven, isolated from user settings and local artifacts."""
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 
@@ -23,6 +24,6 @@ with tempfile.TemporaryDirectory(prefix="bzadmin-maven-") as temp:
     actual = {file.name for file in (work / "libraries").glob("*.jar")}
     # Versions of transitive dependencies are read from the catalog/build resolution;
     # check module identities rather than imposing a second version policy here.
-    modules = {name.rsplit("-", 1)[0] for name in actual}
+    modules = {re.sub(r"-\d.*$", "", name) for name in actual}
     assert modules == {"pso-bzadmin", "pso-berlioz", "pso-xmlwriter", "slf4j-api"}, actual
     print("Clean Maven consumer resolved:", sorted(actual))
