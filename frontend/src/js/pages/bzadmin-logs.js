@@ -4,8 +4,8 @@ import { fetchDocument, post, reloadFragment } from '../lib/http.js';
 /** The maximum number of lines of a raw log kept in the page when new lines are added. */
 const MAX_LINES = 5000;
 
-// The Recent and Files views, and a log file on its own page
-const page = document.querySelector('.page-bzadmin-logs, .page-bzadmin-logs-raw');
+// The Recent and Files views, the recent events and a log file on their own page
+const page = document.querySelector('.page-bzadmin-logs, .page-bzadmin-logs-recent, .page-bzadmin-logs-raw');
 if (page) {
   /** Shows a log file in place of the list of files or of the log file shown. */
   const showLog = (form, id) => {
@@ -134,6 +134,35 @@ if (page) {
     }
   });
 
+  /**
+   * Reloads the recent events, their key metrics and the note on the capture threshold. Only the
+   * rows of the table are replaced, so that the sortable table keeps its current sort.
+   */
+  const reloadEvents = async () => {
+    const button = page.querySelector('#refresh-events');
+    const table = page.querySelector('table.events');
+    if (!button || !table) return;
+    dim(table, true);
+    try {
+      const doc = await fetchDocument(button.dataset.href);
+      const tbody = doc.querySelector('table.events tbody');
+      if (!tbody) throw new Error('No events in the response');
+      table.closest('sortable-table').replaceRows(tbody);
+      for (const selector of ['#recent-metrics', '#recent-threshold-note']) {
+        const fetched = doc.querySelector(selector);
+        if (fetched) page.querySelector(selector)?.replaceWith(document.adoptNode(fetched));
+      }
+      clearFlash(button);
+    } catch (error) {
+      flash(button, `Unable to load events: ${error.message}`, { type: 'error' });
+    } finally {
+      dim(table, false);
+    }
+  };
+
+  // When refreshing the recent events
+  on(page, 'click', '#refresh-events', reloadEvents);
+
   // When changing the capture threshold of the recent events (the form is part of the swapped content);
   // the levels of the application's loggers do not change
   on(page, 'submit', '#set-threshold', async (event, form) => {
@@ -142,6 +171,7 @@ if (page) {
     try {
       await post(form.action, { threshold });
       flash(form, `Capture threshold changed to ${threshold}`);
+      await reloadEvents();
     } catch (error) {
       flash(form, `Unable to change the capture threshold to ${threshold}: ${error.message}`, { type: 'error' });
     }

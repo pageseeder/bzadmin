@@ -14,6 +14,8 @@ Directory discovery scans at most 10,000 entries per directory and lists up to 1
 
 `LoggingBackends` isolates optional logback classes. `LogbackBackend` captures into a 256-event ring with INFO as its default threshold; threshold changes are operations. `RecentEvent` copies bounded text (8192 characters), names (256), causes (8) and stack steps per throwable (16), avoiding retention of arbitrary logging event objects. Backend lifecycle cleanup must remove capture resources on undeploy.
 
+The Recent view lists events most recent first; generator output stays in capture order. Refresh is manual: replacing the rows collapses any open stack trace, so the view does not poll.
+
 ## Implementation and tests
 
 Java: `overlay/src/main/java/org/pageseeder/bzadmin/log/`; frontend: `frontend/src/js/pages/bzadmin-logs.js`; XSLT: `overlay/src/main/resources/META-INF/berlioz/xslt/html/bzadmin/logs.xsl`. Adapter tests run separately with logback; `NoLogbackHostTest` checks its absence. `AdminOperationsTest` covers bounded file operations. Log4j2 live capture remains future scope.

@@ -143,7 +143,8 @@
 
 <!--
   The errors and warnings among the events kept, the last error and the events captured; a level
-  below the capture threshold is not available, since its events are not captured.
+  below the capture threshold is not available, since its events are not captured. Replaced with
+  the events when they are refreshed (#recent-metrics).
 
   @param levels The levels, from the lowest
 -->
@@ -156,7 +157,7 @@
   <xsl:variable name="last-error" select="($errors[number(@timestamp) = max($errors/@timestamp/number())])[1]"/>
   <xsl:variable name="kept" select="concat('In the last ', count(event), ' events')"/>
   <xsl:variable name="not-captured" select="concat('Not captured: the threshold is ', @threshold)"/>
-  <dl class="key-metrics">
+  <dl class="key-metrics" id="recent-metrics">
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Errors'"/>
       <xsl:with-param name="value" select="if ($errors-captured) then string(count($errors)) else ()"/>
@@ -202,13 +203,16 @@
 </xsl:template>
 
 <!--
-  The recent events, their capture threshold and the level of the application
+  The recent events, the most recent first, their capture threshold and the level of the application
 -->
 <xsl:template match="recent-logs" mode="bzadmin-recent">
   <xsl:variable name="levels" select="('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'OFF')"/>
   <xsl:apply-templates select="." mode="bzadmin-recent-key-metrics">
     <xsl:with-param name="levels" select="$levels"/>
   </xsl:apply-templates>
+  <p class="actions">
+    <button type="button" data-href="{f:to-path('/bzadmin/logs/recent')}" id="refresh-events" class="button hollow"><svg-icon name="refresh"/> Refresh</button>
+  </p>
   <div class="panel">
   <p class="recent-events-backend callout">
     <svg-icon name="info-circle"/>
@@ -219,7 +223,7 @@
   <div class="row">
     <div class="medium-8 columns">
       <p>The last events that the application logged at or above the capture threshold.</p>
-      <p class="muted">The capture threshold does not change what the application logs<xsl:if test="@root-level">: its level (root logger) is <b><xsl:value-of select="@root-level"/></b></xsl:if>.
+      <p class="muted" id="recent-threshold-note">The capture threshold does not change what the application logs<xsl:if test="@root-level">: its level (root logger) is <b><xsl:value-of select="@root-level"/></b></xsl:if>.
         <xsl:if test="@root-level and index-of($levels, @threshold) lt index-of($levels, @root-level)">Events below <xsl:value-of select="@root-level"/> are not logged, so not captured.</xsl:if></p>
     </div>
     <div class="medium-4 columns text-right">
@@ -253,7 +257,7 @@
       </tr>
     </thead>
     <tbody>
-      <xsl:for-each select="event">
+      <xsl:for-each select="reverse(event)">
         <tr class="{lower-case(@level)}">
           <td data-sort="{@timestamp}"><xsl:sequence select="f:last-modified(@datetime)"/></td>
           <td title="{@logger} ({@thread})"><xsl:sequence select="f:abbr-classname(@logger)"/></td>

@@ -149,6 +149,34 @@ final class LogsXsltTest {
   }
 
   @Test
+  void showsTheMostRecentEventsFirst() throws Exception {
+    String html = page("bzadmin-logs-recent", "logs-recent", "ok",
+        "<recent-logs backend='logback' threshold='INFO' root-level='INFO' capacity='256' captured='3'>"
+        + "<event level='INFO' logger='org.example.Service' timestamp='1792710123000' datetime='2026-10-22T23:02:03Z' message='oldest'/>"
+        + "<event level='INFO' logger='org.example.Service' timestamp='1792710124000' datetime='2026-10-22T23:02:04Z' message='same time, first'/>"
+        + "<event level='INFO' logger='org.example.Service' timestamp='1792710124000' datetime='2026-10-22T23:02:04Z' message='same time, last'/>"
+        + "</recent-logs>");
+    assertTrue(html.indexOf("same time, last") < html.indexOf("same time, first"), "Reversed, not sorted by time: " + html);
+    assertTrue(html.indexOf("same time, first") < html.indexOf("oldest"), html);
+  }
+
+  @Test
+  void refreshesTheRecentEvents() throws Exception {
+    String html = logsPage("bzadmin-logs", "", RECENT, FILES);
+    assertTrue(html.contains("<button type=\"button\" data-href=\"/ctx/bzadmin/logs/recent.html\" id=\"refresh-events\""), html);
+    assertTrue(html.contains("<dl class=\"key-metrics\" id=\"recent-metrics\">"), "Replaced with the events: " + html);
+    assertTrue(html.contains("<p class=\"muted\" id=\"recent-threshold-note\">"), "Depends on the threshold: " + html);
+    // What bzadmin-logs.js reads from the fetched page
+    String fetched = page("bzadmin-logs-recent", "logs-recent", "ok", "<recent-logs backend='logback' threshold='INFO' root-level='INFO' capacity='256' captured='0'/>");
+    assertTrue(fetched.contains("id=\"recent-metrics\""), fetched);
+    assertTrue(fetched.contains("id=\"recent-threshold-note\""), fetched);
+    assertTrue(fetched.contains("<tbody"), "An empty ring still replaces the rows: " + fetched);
+
+    assertFalse(logsPage("bzadmin-logs", "files", RECENT, FILES).contains("refresh-events"), "Not in the Files view");
+    assertFalse(page("bzadmin-logs", "logs-recent", "ok", "<no-recent-logs backend='nop'/>").contains("refresh-events"), "Nothing to refresh");
+  }
+
+  @Test
   void abbreviatesTheLoggersOfKnownPackages() throws Exception {
     String html = page("bzadmin-logs-recent", "logs-recent", "ok",
         "<recent-logs backend='logback' threshold='INFO' root-level='INFO' capacity='256' captured='4'>"
