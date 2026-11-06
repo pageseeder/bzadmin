@@ -117,6 +117,8 @@ val devLogSamples = tasks.register("devLogSamples") {
 
 tasks.withType<AppStartTask>().configureEach {
   dependsOn(devLogSamples)
+  // Gretty puts the overlay's resources folder on the classpath, without depending on the task that fills it
+  dependsOn(overlayProject.tasks.named("processResources"))
 }
 
 tasks.register<AppStartTask>("appRunJarOverlay") {
