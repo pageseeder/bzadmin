@@ -148,6 +148,27 @@ fallback login is not used when the host sets `AdminAccess`. With a hash, each w
 one PBKDF2 computation, by design, and there is no rate limit. Tested with `web-fallback.xml` behind a
 TLS-terminating proxy.
 
+#### The fallback login in production
+
+The fallback login suits a production host without authentication, when one shared administrator is enough. It
+needs a password hash, `AdminFilter` mapped as in [section 1](#1-map-the-filter), and HTTPS: either on the container
+itself, or on a proxy with the container applying the forwarded headers (see
+[proxies](#proxies-and-context-paths)). `local-proxy` has no effect with a hash.
+
+Behind a proxy:
+
+- **Only the proxy must reach the container.** Once the container applies the forwarded headers, a client that
+  connects directly can send `X-Forwarded-Proto: https` itself. Bind the container to a private interface or
+  restrict it with a firewall.
+- **Limit access to `/bzadmin` at the proxy.** There is no rate limit, so a public URL is open to password guessing
+  and to the cost of the hash computation. Add a rate limit or an IP allowlist.
+- **Do not add BASIC authentication at the proxy for these URLs.** It uses the same `Authorization` header as the
+  fallback login.
+
+The account has `OPERATE`, with no read-only access, and the audit log cannot tell people apart. BASIC has no
+logout: the browser sends the credentials with each request until it is closed. For several users, or read-only
+users, use [container authentication](#b-container-authentication-and-roles), which can apply to `/bzadmin` only.
+
 ## Proxies and context paths
 
 - **TLS-terminating proxy.** The container must apply the forwarded headers (Jetty's
