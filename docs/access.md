@@ -116,7 +116,7 @@ request is refused (403), even with the right password. There is no default user
 "From the same machine" means that the client and server addresses are loopback addresses, the URL's host is
 `localhost` or a loopback address, and the request has no forwarding header (`Forwarded`, `X-Forwarded-*`,
 `X-Real-IP`): a proxy on the same machine also connects from a loopback address, so its requests count as
-remote. See [local development proxies](#local-development-proxies).
+remote. For a development proxy, see [local development proxies](#local-development-proxies).
 
 Put the user name and password in the global configuration (`config-<mode>.xml`). For local development, the
 password itself:
@@ -177,13 +177,32 @@ devServer: {
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Pages are unstyled or have no behavior; `/js/bzadmin-*.js` is 404 | The proxy only forwards `/bzadmin` | Forward every path, or at least `/bzadmin`, `/js` and `/css` |
-| Every page is 403 with the fallback login: "not configured for this request" | The proxy adds forwarding headers (`xfwd: true`) to a plain HTTP host | Remove `xfwd`, or use the HTTPS port of the host |
+| Every page is 403 with the fallback login: "not configured for this request" | The proxy adds forwarding headers (`xfwd: true`) to a plain HTTP host, or uses a host name other than `localhost` | Remove `xfwd`, use the HTTPS port of the host, or enable `local-proxy` (below) |
 | Pages load but operations are 403: "only accepted from its own pages" | The browser does not send `Sec-Fetch-Site` (plain HTTP on a host name other than `localhost`), and the host sees another origin | Use `localhost` or HTTPS for the development server, or keep the `Host` header and the scheme (no `changeOrigin`, same scheme on both sides) |
 
-The fallback login stays refused over plain HTTP with forwarding headers, whatever their value: the host cannot
-tell a development proxy from a public proxy on the same machine, and the headers can be set by the client. A
-development proxy that always adds them, like the `proxy` field of Create React App, needs the HTTPS port of the
-host. The log says which case applies. Host authentication (A and B) does not depend on this check.
+By default, the fallback login is refused over plain HTTP with forwarding headers, whatever their value: the host
+cannot tell a development proxy from a public proxy on the same machine, and the headers can be set by the client.
+The log says which case applies. Host authentication (A and B) does not depend on this check.
+
+When the proxy cannot change, like the `proxy` field of Create React App, which always adds these headers, or for
+a host name such as `myapp.test`, state that the proxy is on this machine, in the configuration of the development
+mode only (`config-<mode>.xml`):
+
+```xml
+<berlioz>
+  <admin username="admin" password="choose-a-password" local-proxy="true"/>
+</berlioz>
+```
+
+Forwarding headers and the host name are then not checked over plain HTTP. The password is still required, and:
+
+- the connection must still be local: the client and server addresses are loopback addresses, so a proxy elsewhere
+  is refused, and so is a host in a container, which sees the address of the container gateway;
+- it is ignored with a password hash, with a warning in the log, so a configuration meant for a server does not
+  enable it;
+- a warning is logged, and the Config page shows it.
+
+Do not use it on a server: a public proxy over plain HTTP on the same machine would then send passwords unencrypted.
 
 ## Audit
 

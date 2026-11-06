@@ -73,6 +73,34 @@ final class AdminFilterTest {
   }
 
   /**
+   * Both ends of the connection must be local: a proxy elsewhere, or a server listening on another
+   * address, is not a development proxy on this machine.
+   */
+  @ParameterizedTest
+  @CsvSource(nullValues = "-", value = {
+      // Client         Server        Local
+      "127.0.0.1,       127.0.0.1,    true",
+      "::1,             ::1,          true",
+      "127.0.0.1,       ::1,          true",
+      "172.17.0.1,      172.17.0.2,   false",
+      "172.17.0.1,      127.0.0.1,    false",
+      "192.168.1.10,    127.0.0.1,    false",
+      "127.0.0.1,       192.168.1.10, false",
+      "-,               127.0.0.1,    false",
+      "127.0.0.1,       -,            false"})
+  void checksBothEndsOfTheConnection(@Nullable String client, @Nullable String server, boolean expected) {
+    HttpServletRequest request = (HttpServletRequest) Proxy.newProxyInstance(AdminFilterTest.class.getClassLoader(),
+        new Class<?>[]{HttpServletRequest.class}, (proxy, method, args) -> {
+          switch (method.getName()) {
+            case "getRemoteAddr": return client;
+            case "getLocalAddr": return server;
+            default: throw new UnsupportedOperationException(method.getName());
+          }
+        });
+    assertEquals(expected, AdminFilter.isLoopbackConnection(request));
+  }
+
+  /**
    * @return a request received by a container at {@code http://localhost:8999}.
    */
   private static HttpServletRequest request(@Nullable String requestedWith, @Nullable String site, @Nullable String origin) {

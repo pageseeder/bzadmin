@@ -53,7 +53,9 @@ import org.slf4j.LoggerFactory;
  *     properties {@value #USERNAME} and {@value #PASSWORD} (a password hash, or for local
  *     development the password itself, see {@link AdminPassword}), only
  *     over HTTPS ({@code isSecure()}: behind a proxy, the container must apply the forwarded
- *     headers), or over plain HTTP on this machine only ({@link #isLoopback(HttpServletRequest)}). It grants {@link AdminPermission#OPERATE}. Not used when unset, or when the host set
+ *     headers), or over plain HTTP on this machine only ({@link #isLoopback(HttpServletRequest)}),
+ *     also through a development proxy on this machine with {@value #LOCAL_PROXY} and a plain
+ *     password. It grants {@link AdminPermission#OPERATE}. Not used when unset, or when the host set
  *     the {@link AdminAccess} attribute.</li>
  * </ol>
  *
@@ -104,6 +106,14 @@ public final class AdminFilter implements Filter {
    */
   public static final String PASSWORD = "berlioz.admin.password";
 
+  /**
+   * The global property stating, with {@code true}, that the requests of the fallback login over
+   * plain HTTP come through a development proxy on this machine: forwarding headers and the host
+   * requested are then not checked, but the connection must still be local. It is ignored with a
+   * password hash, so a configuration meant for a server does not enable it.
+   */
+  public static final String LOCAL_PROXY = "berlioz.admin.local-proxy";
+
   /** The name of the logger recording operations. */
   public static final String AUDIT_LOGGER = "org.pageseeder.bzadmin.audit";
 
@@ -146,6 +156,16 @@ public final class AdminFilter implements Filter {
   private static final String LOGIN_FORWARDED =
       "The fallback login of Berlioz administration is refused over plain HTTP for a request with forwarding headers, "
       + "even from this machine: see the proxies section of the access guide";
+
+  /** The problem reported when the fallback login accepts a development proxy. */
+  private static final String LOCAL_PROXY_ENABLED =
+      "The fallback login of Berlioz administration accepts plain HTTP through a proxy on this machine ("
+      + LOCAL_PROXY + "): use it for local development only";
+
+  /** The problem reported when a password hash disables the development proxy option. */
+  private static final String LOCAL_PROXY_IGNORED =
+      "The property " + LOCAL_PROXY + " of Berlioz administration is ignored with a password hash: "
+      + "it is for local development, with a plain password";
 
   /** The problem reported when only the {@code Origin} header refuses an operation. */
   private static final String ORIGIN_MISMATCH =
@@ -218,7 +238,8 @@ public final class AdminFilter implements Filter {
     if (access != null) return access;
     // Not when the host set the access attribute, even without permission
     Credentials fallback = req.getAttribute(AdminAccess.ATTRIBUTE) instanceof AdminAccess ? null : fallbackLogin();
-    if (fallback != null && !req.isSecure() && !isLoopback(req)) {
+    boolean local = fallback != null && (isLoopback(req) || (fallback.localProxy && isLoopbackConnection(req)));
+    if (fallback != null && !req.isSecure() && !local) {
       report(hasForwardingHeader(req) ? LOGIN_FORWARDED : LOGIN_PLAIN_HTTP);
     } else if (fallback != null) {
       access = this.login.authenticate(req, fallback.username, fallback.password);
@@ -268,9 +289,11 @@ public final class AdminFilter implements Filter {
   private @Nullable Credentials fallbackLogin() {
     String username;
     String password;
+    boolean localProxy;
     try {
       username = GlobalSettings.get(USERNAME);
       password = GlobalSettings.get(PASSWORD);
+      localProxy = "true".equals(GlobalSettings.get(LOCAL_PROXY));
     } catch (IllegalStateException ex) {
       // Berlioz is not set up: no login is configured
       return null;
@@ -290,7 +313,8 @@ public final class AdminFilter implements Filter {
         report("The password of the fallback login of Berlioz administration (" + PASSWORD
             + ") is not hashed: use a hash outside local development, see " + AdminPassword.class.getName());
       }
-      return new Credentials(username, password);
+      if (localProxy) report(AdminPassword.isHash(password) ? LOCAL_PROXY_IGNORED : LOCAL_PROXY_ENABLED);
+      return new Credentials(username, password, localProxy && !AdminPassword.isHash(password));
     }
     return null;
   }
@@ -385,8 +409,15 @@ public final class AdminFilter implements Filter {
    * @return whether the request comes from this machine directly.
    */
   static boolean isLoopback(HttpServletRequest req) {
-    return !hasForwardingHeader(req) && isLoopbackLiteral(req.getRemoteAddr()) && isLoopbackLiteral(req.getLocalAddr())
+    return !hasForwardingHeader(req) && isLoopbackConnection(req)
         && ("localhost".equalsIgnoreCase(req.getServerName()) || isLoopbackLiteral(req.getServerName()));
+  }
+
+  /**
+   * @return whether the client and the server addresses of the connection are loopback addresses.
+   */
+  static boolean isLoopbackConnection(HttpServletRequest req) {
+    return isLoopbackLiteral(req.getRemoteAddr()) && isLoopbackLiteral(req.getLocalAddr());
   }
 
   /**
@@ -506,16 +537,19 @@ public final class AdminFilter implements Filter {
     out.flush();
   }
 
-  /** The user name and password of the fallback login. */
+  /** The user name and password of the fallback login, and whether it accepts a development proxy. */
   private static final class Credentials {
 
     final String username;
 
     final String password;
 
-    Credentials(String username, String password) {
+    final boolean localProxy;
+
+    Credentials(String username, String password, boolean localProxy) {
       this.username = username;
       this.password = password;
+      this.localProxy = localProxy;
     }
 
   }

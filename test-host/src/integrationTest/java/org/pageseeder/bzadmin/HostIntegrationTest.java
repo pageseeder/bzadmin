@@ -9,8 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -213,6 +215,81 @@ final class HostIntegrationTest {
         assertTrue(response.headers().allValues("WWW-Authenticate").isEmpty(), authorization);
       }
       assertTrue(log().contains("(berlioz.admin.password) is not a valid PBKDF2 hash"));
+    }
+
+  }
+
+  /**
+   * The option for a development proxy on this machine. The container of this host applies the
+   * forwarded headers, so {@code X-Forwarded-For} also sets the client address.
+   */
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  final class FallbackLocalProxy {
+
+    private static final String REMOTE = "203.0.113.5";
+
+    private @Nullable BerliozHost host;
+
+    @BeforeAll
+    void start() throws Exception {
+      this.host = BerliozHost.start(HostExample.FALLBACK);
+    }
+
+    @AfterAll
+    void stop() throws Exception {
+      if (this.host != null) this.host.close();
+    }
+
+    /**
+     * Applies the change to the configuration, and reloads it as the administrator.
+     */
+    private void configure(UnaryOperator<String> change, String authorization) throws Exception {
+      Path config = this.host.webInf().resolve("config/" + HostExample.FALLBACK.config());
+      Files.writeString(config, change.apply(Files.readString(config)));
+      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/config/reload.src", "berlioz-reload=true", "Authorization", authorization);
+      assertEquals(200, reload.statusCode(), reload.body());
+    }
+
+    private int get(String authorization, String... headers) throws Exception {
+      List<String> all = new ArrayList<>(List.of("Authorization", authorization));
+      all.addAll(List.of(headers));
+      return this.host.direct().as(null).get("/bzadmin/config.src", all.toArray(new String[0])).statusCode();
+    }
+
+    @Test
+    void acceptsProxiesOnThisMachineWithAPlainPasswordOnly() throws Exception {
+      String hashed = basic("operator", "fixture-secret-password-operator");
+      String plain = basic("operator", "fixture-secret-plain-password");
+      assertEquals(403, get(hashed, "X-Forwarded-Proto", "http"), "Not without the option");
+
+      // With a password hash, the option has no effect
+      configure(text -> text.replace("<admin ", "<admin local-proxy=\"true\" "), hashed);
+      assertEquals(403, get(hashed, "X-Forwarded-Proto", "http"));
+      assertEquals(403, get(hashed, "X-Real-IP", "127.0.0.1"));
+      assertTrue(log().contains("The property berlioz.admin.local-proxy of Berlioz administration is ignored with a password hash"));
+
+      // With a plain password, forwarding headers and the host are not checked
+      configure(text -> text.replaceAll("password=\"[^\"]*\"", "password=\"fixture-secret-plain-password\""), hashed);
+      for (String[] header : new String[][]{{"X-Forwarded-Proto", "http"}, {"X-Real-IP", "127.0.0.1"}, {"X-Forwarded-For", "127.0.0.1"}}) {
+        assertEquals(200, get(plain, header), header[0]);
+        assertEquals(401, get(basic("operator", "fixture-secret-wrong-password"), header), header[0]);
+      }
+      assertEquals(200, this.host.direct().as(null).postRaw("/bzadmin/cache/clear.src", "", "X-Requested-With: XMLHttpRequest",
+          "Host: myapp.test:9000", "Authorization: " + plain));
+      assertTrue(log().contains("The fallback login of Berlioz administration accepts plain HTTP through a proxy on this machine"));
+
+      // Without credentials, the login is offered; other clients are still refused
+      HttpResponse<String> anonymous = this.host.direct().as(null).get("/bzadmin/config.src", "X-Forwarded-Proto", "http");
+      assertEquals(401, anonymous.statusCode());
+      assertEquals(List.of(CHALLENGE), anonymous.headers().allValues("WWW-Authenticate"));
+      assertEquals(403, get(plain, "X-Forwarded-For", REMOTE));
+      assertEquals(403, get(plain, "Forwarded", "for=" + REMOTE));
+
+      // Only the value true enables it, and the Config page shows it
+      assertTrue(this.host.direct().as(null).get("/bzadmin/config.html", "Authorization", plain).body().contains("local-proxy"));
+      configure(text -> text.replace("local-proxy=\"true\"", "local-proxy=\"yes\""), plain);
+      assertEquals(403, get(plain, "X-Forwarded-Proto", "http"));
     }
 
   }
