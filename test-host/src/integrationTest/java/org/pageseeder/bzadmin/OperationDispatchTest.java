@@ -206,6 +206,19 @@ final class OperationDispatchTest {
     }
 
     /**
+     * Behind a proxy that changes the host or the scheme, the container sees another origin than
+     * the browser, whose {@code Sec-Fetch-Site} decides: in both directions.
+     */
+    @Test
+    void trustsTheBrowserOverTheOriginHeader() throws Exception {
+      String path = "/bzadmin/cache/clear.src";
+      assertEquals(404, host.postRaw(path, UNKNOWN_CACHE, "X-Requested-With: XMLHttpRequest", "Sec-Fetch-Site: same-origin",
+          "Origin: https://dev-proxy.example:9000"));
+      assertEquals(403, host.postRaw(path, UNKNOWN_CACHE, "X-Requested-With: XMLHttpRequest", "Sec-Fetch-Site: cross-site",
+          "Origin: " + host.origin()));
+    }
+
+    /**
      * Control parameters are rejected on every other request, even with the control key.
      */
     @ParameterizedTest

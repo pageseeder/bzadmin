@@ -63,8 +63,8 @@ import org.slf4j.LoggerFactory;
  *     fallback login applies, 403 otherwise;</li>
  *   <li>a method other than GET and HEAD is an operation: it requires {@link AdminPermission#OPERATE}
  *     (403 otherwise) and must come from a page of the same origin (403 otherwise): header
- *     {@code X-Requested-With: XMLHttpRequest}, and {@code Sec-Fetch-Site} and {@code Origin}
- *     same-origin when present;</li>
+ *     {@code X-Requested-With: XMLHttpRequest}, and {@code Sec-Fetch-Site: same-origin} or, without
+ *     that header, a same-origin {@code Origin} when present;</li>
  *   <li>a request with a Berlioz control parameter is rejected with 400, unless it is a POST to an
  *     admin service with only {@code berlioz-reload}, once, for the scopes of that service
  *     ({@link #CONTROL_SERVICES}), which is then authorised to use it
@@ -138,6 +138,23 @@ public final class AdminFilter implements Filter {
       "/bzadmin/services/reload", EnumSet.of(ReloadScope.SERVICES),
       "/bzadmin/xslt/cache/clear", EnumSet.of(ReloadScope.XSLT));
 
+  /** The problem reported when the fallback login is refused over plain HTTP, not through a proxy. */
+  private static final String LOGIN_PLAIN_HTTP =
+      "The fallback login of Berlioz administration is refused over plain HTTP, except from this machine";
+
+  /** The problem reported when the fallback login is refused over plain HTTP, through a proxy. */
+  private static final String LOGIN_FORWARDED =
+      "The fallback login of Berlioz administration is refused over plain HTTP for a request with forwarding headers, "
+      + "even from this machine: see the proxies section of the access guide";
+
+  /** The problem reported when only the {@code Origin} header refuses an operation. */
+  private static final String ORIGIN_MISMATCH =
+      "An operation of Berlioz administration was refused because its Origin is not the scheme, host and port "
+      + "of the request: behind a proxy, see the proxies section of the access guide";
+
+  /** The header with which browsers state where a request comes from. */
+  private static final String SEC_FETCH_SITE = "Sec-Fetch-Site";
+
   /** The headers that proxies add, which the container may not apply. */
   private static final List<String> FORWARDING_HEADERS =
       List.of(HttpHeaders.FORWARDED, HttpHeaders.X_FORWARDED_FOR, HttpHeaders.X_FORWARDED_HOST,
@@ -202,7 +219,7 @@ public final class AdminFilter implements Filter {
     // Not when the host set the access attribute, even without permission
     Credentials fallback = req.getAttribute(AdminAccess.ATTRIBUTE) instanceof AdminAccess ? null : fallbackLogin();
     if (fallback != null && !req.isSecure() && !isLoopback(req)) {
-      report("The fallback login of Berlioz administration is refused over plain HTTP, except from this machine");
+      report(hasForwardingHeader(req) ? LOGIN_FORWARDED : LOGIN_PLAIN_HTTP);
     } else if (fallback != null) {
       access = this.login.authenticate(req, fallback.username, fallback.password);
       if (access != null) return access;
@@ -222,13 +239,15 @@ public final class AdminFilter implements Filter {
    *
    * @return whether the request is accepted.
    */
-  private static boolean isAccepted(HttpServletRequest req, HttpServletResponse res, AdminAccess access,
+  private boolean isAccepted(HttpServletRequest req, HttpServletResponse res, AdminAccess access,
       boolean operation) throws IOException {
     if (operation && !access.has(AdminPermission.OPERATE)) {
       refuse(req, res, access, HttpServletResponse.SC_FORBIDDEN, DENIED, true);
       return false;
     }
     if (operation && !isSameOrigin(req)) {
+      // A fixed message: the Origin comes from the client, and each message is kept to be reported once
+      if (req.getHeader(SEC_FETCH_SITE) == null && !matchesOrigin(req)) report(ORIGIN_MISMATCH);
       refuse(req, res, access, HttpServletResponse.SC_FORBIDDEN, CROSS_SITE, true);
       return false;
     }
@@ -366,11 +385,18 @@ public final class AdminFilter implements Filter {
    * @return whether the request comes from this machine directly.
    */
   static boolean isLoopback(HttpServletRequest req) {
-    for (String header : FORWARDING_HEADERS) {
-      if (req.getHeader(header) != null) return false;
-    }
-    return isLoopbackLiteral(req.getRemoteAddr()) && isLoopbackLiteral(req.getLocalAddr())
+    return !hasForwardingHeader(req) && isLoopbackLiteral(req.getRemoteAddr()) && isLoopbackLiteral(req.getLocalAddr())
         && ("localhost".equalsIgnoreCase(req.getServerName()) || isLoopbackLiteral(req.getServerName()));
+  }
+
+  /**
+   * @return whether the request has a header added by a proxy.
+   */
+  private static boolean hasForwardingHeader(HttpServletRequest req) {
+    for (String header : FORWARDING_HEADERS) {
+      if (req.getHeader(header) != null) return true;
+    }
+    return false;
   }
 
   /**
@@ -400,12 +426,23 @@ public final class AdminFilter implements Filter {
    * Stateless CSRF check: cross-site pages cannot send a custom header without a CORS preflight,
    * and browsers send {@code Sec-Fetch-Site} and {@code Origin} with script requests.
    *
+   * <p>{@code Sec-Fetch-Site} decides when present: scripts cannot set it, and it describes the
+   * origin the browser sees, whereas {@code Origin} is compared with the scheme and host the
+   * container sees, which a proxy may change. Browsers only send it to secure origins (HTTPS and
+   * {@code localhost}), so {@code Origin} remains the check elsewhere.
+   *
    * @return whether the request comes from a page of the same origin.
    */
   static boolean isSameOrigin(HttpServletRequest req) {
     if (!"XMLHttpRequest".equals(req.getHeader("X-Requested-With"))) return false;
-    String site = req.getHeader("Sec-Fetch-Site");
-    if (site != null && !"same-origin".equals(site)) return false;
+    String site = req.getHeader(SEC_FETCH_SITE);
+    return site != null ? "same-origin".equals(site) : matchesOrigin(req);
+  }
+
+  /**
+   * @return whether the request has no {@code Origin} header, or the origin of the request.
+   */
+  private static boolean matchesOrigin(HttpServletRequest req) {
     String origin = req.getHeader("Origin");
     return origin == null || origin.equalsIgnoreCase(origin(req));
   }

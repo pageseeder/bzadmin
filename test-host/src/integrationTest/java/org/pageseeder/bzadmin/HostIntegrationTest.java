@@ -124,7 +124,9 @@ final class HostIntegrationTest {
               "Host: " + name), user + " " + name);
         }
       }
-      assertTrue(log().contains("The fallback login of Berlioz administration is refused over plain HTTP, except from this machine"));
+      String log = log();
+      assertTrue(log.contains("The fallback login of Berlioz administration is refused over plain HTTP, except from this machine"));
+      assertTrue(log.contains("The fallback login of Berlioz administration is refused over plain HTTP for a request with forwarding headers"));
     }
 
     /**
@@ -137,6 +139,7 @@ final class HostIntegrationTest {
       assertEquals(404, this.host.postRaw(path, unknown, "X-Requested-With: XMLHttpRequest", "Origin: " + HostExample.PROXY_ORIGIN));
       String backend = this.host.direct().origin();
       assertEquals(403, this.host.postRaw(path, unknown, "X-Requested-With: XMLHttpRequest", "Origin: " + backend));
+      assertTrue(log().contains("was refused because its Origin is not the scheme, host and port of the request"));
     }
 
     /**

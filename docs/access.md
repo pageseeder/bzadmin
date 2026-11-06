@@ -40,7 +40,7 @@ operation runs it for an administrator.
 The filter also:
 
 - requires `OPERATE` for every method other than GET and HEAD, from the admin pages only (a CSRF check on
-  `X-Requested-With`, `Sec-Fetch-Site` and `Origin`);
+  `X-Requested-With`, and on `Sec-Fetch-Site` or, for browsers that do not send it, `Origin`);
 - rejects Berlioz control parameters (`berlioz-reload`, `berlioz-profile` and the deprecated aliases
   `reload-services`, `clear-xsl-cache` and `reset-etags`) on admin URLs, except `berlioz-reload` with the
   scope of an admin reload button (`true`, `services` or `xslt`), which then needs no control key;
@@ -116,7 +116,7 @@ request is refused (403), even with the right password. There is no default user
 "From the same machine" means that the client and server addresses are loopback addresses, the URL's host is
 `localhost` or a loopback address, and the request has no forwarding header (`Forwarded`, `X-Forwarded-*`,
 `X-Real-IP`): a proxy on the same machine also connects from a loopback address, so its requests count as
-remote.
+remote. See [local development proxies](#local-development-proxies).
 
 Put the user name and password in the global configuration (`config-<mode>.xml`). For local development, the
 password itself:
@@ -152,10 +152,38 @@ TLS-terminating proxy.
 
 - **TLS-terminating proxy.** The container must apply the forwarded headers (Jetty's
   `ForwardedRequestCustomizer`, Tomcat's `RemoteIpValve`), so that `isSecure()`, the scheme and the host are the
-  proxy's. Otherwise the fallback login is refused (also with a proxy on the same machine), `CONFIDENTIAL` redirects, and operations fail the `Origin`
-  check (403). Tested with `X-Forwarded-Proto` and `X-Forwarded-Host`.
+  proxy's. Otherwise the fallback login is refused (also with a proxy on the same machine), `CONFIDENTIAL`
+  redirects, and operations from browsers that do not send `Sec-Fetch-Site` fail the `Origin` check (403). Tested
+  with `X-Forwarded-Proto` and `X-Forwarded-Host`.
 - **Context path.** Any context path works, also behind a proxy, as long as the proxy keeps the path (no prefix
   rewriting, which is untested).
+
+### Local development proxies
+
+A development server in front of the host, such as webpack-dev-server, works without any change to the host when
+it is on `localhost` or HTTPS and forwards every path. For example, with the host on `https://localhost:8444`:
+
+```js
+devServer: {
+  port: 9000,
+  server: 'https',
+  devMiddleware: { index: false }, // so that '/' reaches the host
+  proxy: [{ context: () => true, target: 'https://localhost:8444', secure: false }]
+}
+```
+
+`secure: false` accepts the self-signed certificate of a local host; use it for local development only.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Pages are unstyled or have no behavior; `/js/bzadmin-*.js` is 404 | The proxy only forwards `/bzadmin` | Forward every path, or at least `/bzadmin`, `/js` and `/css` |
+| Every page is 403 with the fallback login: "not configured for this request" | The proxy adds forwarding headers (`xfwd: true`) to a plain HTTP host | Remove `xfwd`, or use the HTTPS port of the host |
+| Pages load but operations are 403: "only accepted from its own pages" | The browser does not send `Sec-Fetch-Site` (plain HTTP on a host name other than `localhost`), and the host sees another origin | Use `localhost` or HTTPS for the development server, or keep the `Host` header and the scheme (no `changeOrigin`, same scheme on both sides) |
+
+The fallback login stays refused over plain HTTP with forwarding headers, whatever their value: the host cannot
+tell a development proxy from a public proxy on the same machine, and the headers can be set by the client. A
+development proxy that always adds them, like the `proxy` field of Create React App, needs the HTTPS port of the
+host. The log says which case applies. Host authentication (A and B) does not depend on this check.
 
 ## Audit
 
