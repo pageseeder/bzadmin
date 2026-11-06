@@ -57,6 +57,8 @@ Qualify a Berlioz 1.0 candidate when available before claiming compatibility.
 - PSML broken-link auditing.
 - Logging configuration diagnostics, to reveal an application whose logging configuration did not load correctly: the file in use, its load status and the effective levels. Temporary debug levels and reloading the configuration need further discussion.
 - Additional logging integrations, including Log4j2 recent events.
+- Easier selection among many log files: group the file selector by the date in the file names, with current logs first, or add a filter to the list of files.
+- Configurable capacity for recent log events, which are limited to the last 256: a global property with a maximum, applied after startup without losing the events already captured.
 - Support exports and deeper XSLT package analysis.
 
 ## Scope boundaries
