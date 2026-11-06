@@ -18,6 +18,7 @@ plugins {
 description = "Berlioz Admin UI"
 
 val overlay = "bzadmin"
+val frontendVersion: String by extra
 
 // Public distribution identity; Java packages and browser asset names remain unchanged.
 val publicationGroup = "org.pageseeder.berlioz"
@@ -194,7 +195,7 @@ tasks.test {
 val checkFrontendBundles = tasks.register("checkFrontendBundles") {
   description = "Checks that the static files have the frontend bundles of this version only"
   val resources = file("src/main/resources/META-INF/resources")
-  val expected = setOf("js/${overlay}-${version}.min.js", "css/${overlay}-${version}.min.css")
+  val expected = setOf("js/${overlay}-${frontendVersion}.min.js", "css/${overlay}-${frontendVersion}.min.css")
   inputs.dir(resources)
   doLast {
     val bundles = fileTree(resources) { include("js/*.min.js", "css/*.min.css") }
@@ -241,8 +242,11 @@ tasks.cyclonedxDirectBom {
 
 tasks.processResources {
   dependsOn(checkFrontendBundles)
+  // The bundle names no longer change with a snapshot, so the versions must be inputs themselves
+  inputs.property("version", version.toString())
+  inputs.property("frontendVersion", frontendVersion)
   filesMatching(listOf("**/${overlay}.xsl", "org/pageseeder/bzadmin/bzadmin.properties")) {
-    filter<ReplaceTokens>("tokens" to mapOf("VERSION" to version))
+    filter<ReplaceTokens>("tokens" to mapOf("VERSION" to version, "FRONTEND_VERSION" to frontendVersion))
   }
 }
 

@@ -39,7 +39,7 @@ final class StaticFiles {
     Matcher bundle = Pattern.compile("(?:href|src)=\"" + Pattern.quote(host.contextPrefix()) + "/((?:js|css)/[^\"]+)\"").matcher(html);
     Set<String> loaded = new TreeSet<>();
     while (bundle.find()) loaded.add(bundle.group(1));
-    String version = System.getProperty("bzadmin.version");
+    String version = System.getProperty("bzadmin.frontend.version");
     assertTrue(loaded.contains("js/bzadmin-" + version + ".min.js"), "Script of this version: " + loaded);
     assertTrue(loaded.contains("css/bzadmin-" + version + ".min.css"), "Stylesheet of this version: " + loaded);
     for (String path : new TreeSet<>(loaded)) {

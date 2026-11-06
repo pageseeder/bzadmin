@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 const path = require('path');
-const fs = require('fs');
 
-// Both bundles are named after the application version
-const appVersion = fs.readFileSync('../version.txt', 'utf8').trim();
+// Both bundles are named after the frontend version: the release version, without the JAR's snapshot suffix
+const { version: appVersion } = require('./package.json');
 
 // Webpack Plugins
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');

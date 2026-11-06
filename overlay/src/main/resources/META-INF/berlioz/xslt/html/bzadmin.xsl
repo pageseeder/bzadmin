@@ -27,7 +27,7 @@
 <xsl:output method="html" encoding="utf-8" indent="no" media-type="text/html" version="5.0"/>
 
 <!-- Berlioz administrator version -->
-<xsl:variable name="bzadmin-version" select="'@VERSION@'"/>
+<xsl:variable name="bzadmin-frontend-version" select="'@FRONTEND_VERSION@'"/>
 
 <!-- Application version -->
 <xsl:variable name="application-version" select="/root/header/app/@version"/>
@@ -44,11 +44,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="author" content="Allette Systems"/>
   <meta name="copyright" content="Copyright 2013-{format-date(current-date(), '[Y]')} Allette Systems"/>
-  <link rel="preload" href="{$context}/js/{@group}-{$bzadmin-version}.min.js" as="script">
+  <link rel="preload" href="{$context}/js/{@group}-{$bzadmin-frontend-version}.min.js" as="script">
     <xsl:if test="$nonce"><xsl:attribute name="nonce" select="$nonce"/></xsl:if>
   </link>
 <!--  <xsl:if test="not(header/location/@port = '9000')">-->
-    <link rel="stylesheet" href="{$context}/css/{@group}-{$bzadmin-version}.min.css" type="text/css">
+    <link rel="stylesheet" href="{$context}/css/{@group}-{$bzadmin-frontend-version}.min.css" type="text/css">
       <xsl:if test="$nonce"><xsl:attribute name="nonce" select="$nonce"/></xsl:if>
     </link>
 <!--  </xsl:if>-->
@@ -82,7 +82,7 @@
   <footer class="footer">
     <p>Berlioz <xsl:value-of select="header/berlioz/@version"/><xsl:if test="string($application-version)"> - App version <xsl:value-of select="$application-version"/></xsl:if></p>
   </footer>
-  <script src="{$context}/js/bzadmin-{$bzadmin-version}.min.js">
+  <script src="{$context}/js/bzadmin-{$bzadmin-frontend-version}.min.js">
     <xsl:if test="$nonce"><xsl:attribute name="nonce" select="$nonce"/></xsl:if>
   </script>
 </body>

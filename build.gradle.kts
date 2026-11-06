@@ -24,6 +24,8 @@ plugins {
 allprojects {
   group = "org.pageseeder.berlioz"
   version = File("$rootDir/version.txt").readText(Charsets.UTF_8).trim()
+  // Browser assets keep the release name during development: only the JAR is a snapshot
+  extra["frontendVersion"] = version.toString().removeSuffix("-SNAPSHOT")
 }
 
 // Gradle wrapper

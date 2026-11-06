@@ -4,7 +4,7 @@
 
 - `overlay/` — the overlay (`java-library`), with its files in `src/main/resources/`, organised as a JAR overlay:
   - `META-INF/berlioz/services.xml` — the services, which Berlioz discovers on the classpath
-  - `META-INF/berlioz/xslt/html/bzadmin.xsl` and `bzadmin/` — the stylesheets; `processResources` replaces `@VERSION@`
+  - `META-INF/berlioz/xslt/html/bzadmin.xsl` and `bzadmin/` — the stylesheets; `processResources` replaces `@FRONTEND_VERSION@`
   - `META-INF/resources/` — JS, CSS, fonts and images, which the servlet container serves from the context root
 
   Its Java code (`src/main/java`, Java 11) is generators: XSLT documentation in `org.pageseeder.bzadmin.xslt`, and the Berlioz option catalog in `org.pageseeder.bzadmin.berlioz`. Its only published dependency is `pso-berlioz` (no Bastille dependency); the host selects the XSLT processor, the logging backend and any cache library. `./gradlew :overlay:checkDependencyBoundary` (part of `check`, and run before publishing) fails on any other module in the runtime graph or POM, or a reference to Bastille or Cobble classes in the JAR.
@@ -30,7 +30,7 @@ All in `overlay/src/main/resources/META-INF/berlioz/xslt/html/`:
 - `bzadmin/_functions.xsl` — shared XPath functions (imported, so callable anywhere)
 - `bzadmin/<section>.xsl` — one file per admin section (config, services, cache, files, xslt, application, system, logs)
 
-The `@VERSION@` token in XSL files is replaced at build time by Gradle with the version from `version.txt`.
+The `@FRONTEND_VERSION@` token in XSL files is replaced at build time by Gradle with the version from `version.txt`, without any `-SNAPSHOT` suffix.
 
 ### Frontend structure
 
@@ -44,7 +44,7 @@ The `@VERSION@` token in XSL files is replaced at build time by Gradle with the 
   - Native nesting can't join selector names (`&-title`); write such selectors out in full.
   - Colours: use the role tokens in `settings.css` (`--surface`, `--background`, `--border`, `--text`, `--text-strong`, `--text-muted`, `--text-on-color` for text on blue or status backgrounds, `--link`/`--link-visited`, `--accent`/`--accent-strong` for blue text and icons that are not links), or one of the neutral greys (`--white`, `--super-light-neutral`, `--lightest-neutral` … `--darkest-neutral`, `--black`). Dark mode reverses the greys in `darkmode.css`, so `--white` becomes dark grey there: use `--surface` or `--text-on-color` rather than `--white` directly, and the roles follow automatically.
 
-The build outputs a single versioned bundle: `bzadmin-<version>.min.js` and `bzadmin-<version>.min.css`.
+The build outputs a single versioned bundle: `bzadmin-<version>.min.js` and `bzadmin-<version>.min.css`, where `<version>` has no `-SNAPSHOT` suffix.
 
 The frontend is plain ES modules with no runtime dependencies (no jQuery, no Babel/core-js; `browserslist` targets `baseline widely available`). Page module conventions:
 - Attach handlers with `on(root, …)` on a container that is not replaced, so they survive fragment swaps; behaviour that must attach to swapped-in content belongs in a custom element.
@@ -161,9 +161,9 @@ Everything in `test-host/` (default services, PSML content, Gretty config) is on
 
 ## Versioning
 
-Version is stored in `version.txt` (e.g. `0.14.0`). It is read by the root `build.gradle.kts`, substituted into XSL files via `@VERSION@` token replacement, and must match the filenames of the compiled JS/CSS assets.
+Version is stored in `version.txt` (e.g. `0.14.0`). It is read by the root `build.gradle.kts`, which derives the frontend version by removing any `-SNAPSHOT` suffix: `0.14.1-SNAPSHOT` publishes a snapshot JAR whose assets are `bzadmin-0.14.1.min.js` and `bzadmin-0.14.1.min.css`. The frontend version is substituted into XSL files via `@FRONTEND_VERSION@` and must match the filenames of the compiled JS/CSS assets; the reported component version in `bzadmin.properties` keeps the full version through `@VERSION@`.
 
-Webpack names both bundles from `version.txt`. Keep `frontend/package.json` `version` in step with it for consistency, although the build does not use it.
+Webpack names both bundles from the `version` in `frontend/package.json`, which never has the suffix. `checkFrontendBundles` fails the Gradle build if it does not match `version.txt` without the suffix.
 
 To prepare a release: update `version.txt`, `frontend/package.json` and its lockfile, run `npm run build` in `frontend/`, then run `./gradlew :overlay:jar` (or publish).
 

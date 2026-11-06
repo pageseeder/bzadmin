@@ -1,6 +1,6 @@
 {
   "name": "berlioz-bzadmin",
-  "version": "0.14.1-SNAPSHOT",
+  "version": "0.14.1",
   "description": "Frontend for the Berlioz admin overlay",
   "engines": {
     "node": ">=22.15"

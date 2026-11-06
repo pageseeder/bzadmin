@@ -82,7 +82,7 @@ Releases are distributed on Maven Central under Apache License 2.0, starting wit
 - **Frontend:** Node 22.15 or later (`engines` in `frontend/package.json`: the most demanding tool is
   webpack-dev-server; the production build alone needs Node 20.9). The bundles are committed in
   `overlay/src/main/resources/META-INF/resources`, so the Gradle build does not need Node. Gradle checks that
-  they have the names of `version.txt` (`checkFrontendBundles`); a release checks that a clean frontend build
+  they have the names of `version.txt`, without any `-SNAPSHOT` suffix (`checkFrontendBundles`); a release checks that a clean frontend build
   reproduces them (below).
 - **CI:** GitHub Actions checks the frontend, backend and staged host. Release preparation is manual and uses a protected environment. See [release procedure](../releasing.md).
 

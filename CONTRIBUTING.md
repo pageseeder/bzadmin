@@ -56,7 +56,7 @@ npm run format:check # Prettier: report unformatted files
 npm test             # Node's test runner on src/js/**/*.test.js (the poller, the rates, the CPU usage, the thread deltas, the Berlioz path, the XML tokens, the reload scopes)
 ```
 
-`npm run build` empties `js/` and `css/` under `META-INF/resources` first, and the CSS references its fonts and images relatively, so they work under any context path. `:overlay:processResources` depends on `checkFrontendBundles`, which fails unless those folders hold exactly the bundles of `version.txt`. Clean build: `npm ci && npm run build`, then Gradle.
+`npm run build` empties `js/` and `css/` under `META-INF/resources` first, and the CSS references its fonts and images relatively, so they work under any context path. `:overlay:processResources` depends on `checkFrontendBundles`, which fails unless those folders hold exactly the bundles of `version.txt` (named without any `-SNAPSHOT` suffix). Clean build: `npm ci && npm run build`, then Gradle.
 
 Prettier owns formatting (`frontend/.prettierrc.json`); `eslint-config-prettier` is last in the ESLint config so ESLint only checks code quality.
 

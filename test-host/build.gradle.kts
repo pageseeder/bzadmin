@@ -19,6 +19,7 @@ description = "Berlioz Admin UI (development application)"
 
 evaluationDependsOn(":overlay")
 val overlayProject = project(":overlay")
+val frontendVersion: String by extra
 
 // Jetty only serves META-INF/resources from JARs, but Gretty puts the overlay
 // project on the classpath as a directory: serve its static files from the sources instead
@@ -212,6 +213,7 @@ fun Test.runOnHost(war: Provider<RegularFile>) {
   inputs.file(war)
   systemProperty("bzadmin.war", war.get().asFile.path)
   systemProperty("bzadmin.version", version.toString())
+  systemProperty("bzadmin.frontend.version", frontendVersion)
   systemProperty("bzadmin.java.expected", "11")
   systemProperty("berlioz.mode", "test")
   // Disposable log directory (logback-test.xml in the fixtures), and a sensitive system property

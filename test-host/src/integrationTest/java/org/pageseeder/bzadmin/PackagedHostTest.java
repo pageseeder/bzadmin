@@ -75,7 +75,7 @@ final class PackagedHostTest {
    */
   @Test
   void cachesStaticFilesWithTheHostFilter() throws Exception {
-    HttpResponse<String> script = host.get("/js/bzadmin-" + System.getProperty("bzadmin.version") + ".min.js");
+    HttpResponse<String> script = host.get("/js/bzadmin-" + System.getProperty("bzadmin.frontend.version") + ".min.js");
     assertEquals(200, script.statusCode());
     assertEquals("max-age=86400, stale-while-revalidate=604800", script.headers().firstValue("Cache-Control").orElse(""));
     assertTrue(script.headers().firstValue("Last-Modified").isPresent() || script.headers().firstValue("ETag").isPresent(),
