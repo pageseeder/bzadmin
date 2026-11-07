@@ -31,7 +31,8 @@ mappings):
 </filter-mapping>
 ```
 
-Use `/<prefix>/bzadmin/*` if Berlioz is mapped by prefix. If the filter is missing, mapped to other URLs or
+This mapping is for Berlioz mapped by extension, the recommended setup; see also
+[Berlioz mapped by prefix](#berlioz-mapped-by-prefix). If the filter is missing, mapped to other URLs or
 placed before the authentication, the admin pages are denied, not opened. So are includes of admin pages (the
 filter does not process includes), and services of the host that use bzadmin's generators outside the admin
 URLs. An error page that is an admin URL goes through the filter: avoid them, since an error page that is an
@@ -224,6 +225,19 @@ Forwarding headers and the host name are then not checked over plain HTTP. The p
 - a warning is logged, and the Config page shows it.
 
 Do not use it on a server: a public proxy over plain HTTP on the same machine would then send passwords unencrypted.
+
+## Berlioz mapped by prefix
+
+Applications that map Berlioz by prefix, the legacy setup, must use `/html/*` and `/xml/*`. Map `AdminFilter` to
+the admin services of both:
+
+```xml
+<url-pattern>/html/bzadmin/*</url-pattern>
+<url-pattern>/xml/bzadmin/*</url-pattern>
+```
+
+The pages are then at `/html/bzadmin/`. In this version, operations and live updates from these pages do not work
+yet; see the [roadmap](../ROADMAP.md).
 
 ## Audit
 

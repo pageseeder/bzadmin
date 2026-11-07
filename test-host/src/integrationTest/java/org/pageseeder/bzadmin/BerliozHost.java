@@ -51,6 +51,9 @@ import org.jspecify.annotations.Nullable;
  */
 final class BerliozHost implements AutoCloseable {
 
+  /** The web descriptor of the host mapped by prefix, which has no kickstart servlets to override. */
+  private static final String PREFIX_DESCRIPTOR = "web-prefix.xml";
+
   private final Server server;
 
   private final WebAppContext webapp;
@@ -159,6 +162,18 @@ final class BerliozHost implements AutoCloseable {
     return start("/", "web-no-cache.xml", HostExample.FILTER, Paths.get(war));
   }
 
+  /**
+   * Starts the test host mapped by prefix, without kickstart (the {@code warPrefixHost} task), with
+   * its descriptor {@code web-prefix.xml}, when the test task provides it.
+   *
+   * @return the host, or {@code null} when not provided.
+   */
+  static @Nullable BerliozHost startMappedByPrefix() throws Exception {
+    String war = System.getProperty("bzadmin.war.prefix");
+    if (war == null) return null;
+    return start("/", PREFIX_DESCRIPTOR, HostExample.FILTER, Paths.get(war));
+  }
+
   private static BerliozHost start(String contextPath, String descriptor, HostExample example) throws Exception {
     return start(contextPath, descriptor, example, Paths.get(System.getProperty("bzadmin.war")));
   }
@@ -192,7 +207,9 @@ final class BerliozHost implements AutoCloseable {
     webapp.setWar(war.toString());
     webapp.setDescriptor(BerliozHost.class.getResource(descriptor).toExternalForm());
     // Serves *.src without Berlioz control authorization (Berlioz 0.14.5 kickstart requires it)
-    webapp.addOverrideDescriptor(BerliozHost.class.getResource("web-override.xml").toExternalForm());
+    if (!PREFIX_DESCRIPTOR.equals(descriptor)) {
+      webapp.addOverrideDescriptor(BerliozHost.class.getResource("web-override.xml").toExternalForm());
+    }
     // Processes WEB-INF/jetty-env.xml, as Gretty does with `enableNaming`
     webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration());
     server.setHandler(webapp);

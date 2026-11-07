@@ -187,6 +187,14 @@ val warMinimalHost = tasks.register<War>("warMinimalHost") {
   from(overlayProject.file("src/fixtures/webapp"))
 }
 
+// The legacy host mapped by prefix (descriptor web-prefix.xml): no kickstart, which sets up the mappings by extension
+val warPrefixHost = tasks.register<War>("warPrefixHost") {
+  description = "Assembles the test host without kickstart, for Berlioz mapped by prefix"
+  archiveClassifier.set("prefix-host")
+  setClasspath(warTestHost.map { host -> host.classpath!!.filter { !it.name.startsWith("pso-berlioz-kickstart-") } })
+  from(overlayProject.file("src/fixtures/webapp"))
+}
+
 // The self-signed certificate of 127.0.0.1 for the HTTPS connector of the test host (HostExample.CONTAINER)
 val testKeystore = tasks.register<Exec>("testKeystore") {
   description = "Creates the keystore of the packaged-host tests"
@@ -238,6 +246,9 @@ val hostTest = tasks.register<Test>("hostTest") {
   val minimal = warMinimalHost.flatMap { it.archiveFile }
   inputs.file(minimal)
   systemProperty("bzadmin.war.minimal", minimal.get().asFile.path)
+  val prefix = warPrefixHost.flatMap { it.archiveFile }
+  inputs.file(prefix)
+  systemProperty("bzadmin.war.prefix", prefix.get().asFile.path)
 }
 
 // Release qualification: the same tests on a host whose libraries a separate consumer build
