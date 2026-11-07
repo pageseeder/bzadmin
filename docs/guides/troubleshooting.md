@@ -3,6 +3,7 @@
 | Symptom | Check |
 | --- | --- |
 | Every admin page returns 403 | `AdminFilter` mapping and order, dispatchers, and the host's explicit access grant. See [access integration](../access.md). |
+| Operations or live updates fail, or a warning starting with `[BERLIOZ_INIT] WARNING Berlioz Admin` appears at startup | Berlioz must be mapped to `*.html` and `*.xml`, or to `/html/*` and `/xml/*`, with `AdminFilter` on the admin services. See [access integration](../access.md). |
 | Viewer can read but cannot change state | Mutations require `OPERATE`; `VIEW` grants reads only. |
 | Login or operations fail behind a proxy | Configure trusted proxy handling in the container so scheme and host reflect HTTPS and the public origin. See [proxy guidance](../access.md#proxies-and-context-paths). |
 | Login, operations or assets fail behind a local development proxy | Forward every path, avoid `xfwd` with a plain HTTP host, and use `localhost` or HTTPS. See [local development proxies](../access.md#local-development-proxies). |

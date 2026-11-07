@@ -266,7 +266,7 @@
   <xsl:param name="disabled-description-id" as="xs:string" select="''"/>
   <xsl:param name="description" as="node()*"/>
   <xsl:variable name="described-by" select="string-join((if (exists($disabled)) then (if ($disabled-description-id != '') then $disabled-description-id else concat($id, '-disabled')) else (), if (exists($description)) then concat($id, '-description') else ()), ' ')"/>
-  <form id="{$id}" class="control-form" method="post" action="{concat($bzheader/path/@context, $bzheader/path/@prefix, $path, '.xml')}">
+  <form id="{$id}" class="control-form" method="post" action="{f:xml-url($path)}">
     <input type="hidden" name="berlioz-reload" value="{$scope}"/>
     <p>
       <xsl:choose>

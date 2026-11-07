@@ -1,6 +1,8 @@
 package org.pageseeder.bzadmin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.pageseeder.bzadmin.PackagedHostTest.parse;
 import static org.pageseeder.bzadmin.PackagedHostTest.xpath;
 
@@ -47,10 +49,14 @@ final class ConfigReloadTest {
     assertEquals(403, host.as("viewer").post(RELOAD, "berlioz-reload=true", CONTROL).statusCode());
     assertEquals("blue", xpath(parse(host.get("/bzadmin/config.src").body()), "//properties/property[@name='fixture.colour']/@value"));
 
+    // The form of the page uses the XML mapping of the host
+    assertTrue(host.get("/bzadmin/config.html").body().contains("action=\"" + RELOAD + "\""));
+
     // The admin filter authorises the reload for operators: no control key needed
     HttpResponse<String> response = host.post(RELOAD, "berlioz-reload=true");
     // What the Config page reports: the scopes the Berlioz servlet applied (redirects are applied by filters, not mapped here)
     assertEquals("config, services, xslt, etags", response.headers().firstValue("X-Berlioz-Reload").orElse(""));
+    assertFalse(response.body().contains("<header>"), response.body());
     Document reload = parse(response.body());
     assertEquals("true", xpath(reload, "//berlioz-control/@authorized"));
     assertEquals("green", xpath(reload, "//properties/property[@name='fixture.colour']/@value"));

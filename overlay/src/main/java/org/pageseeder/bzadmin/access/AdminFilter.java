@@ -192,6 +192,7 @@ public final class AdminFilter implements Filter {
   @Override
   public void init(FilterConfig config) {
     LoggingBackends.start();
+    InstallationCheck.check(config);
   }
 
   @Override

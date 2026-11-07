@@ -13,7 +13,8 @@ The read-only repository uses `bastille.psml.root` (the property name is retaine
 ## Stylesheet overrides
 
 No host stylesheet is needed: when `WEB-INF/xslt/html/bzadmin.xsl` does not exist, Berlioz uses the
-group stylesheet of the JAR (`META-INF/berlioz/xslt/html/bzadmin.xsl`). A host can still override
+group stylesheet of the JAR (`META-INF/berlioz/xslt/html/bzadmin.xsl`), and likewise for `xslt/xml/bzadmin.xsl`,
+which removes the Berlioz header from XML responses. A host can still override
 it with that file, for example to import the overlay's and change some templates:
 
 ```xml

@@ -19,6 +19,13 @@
   @param path the path to go to regardless of context or extension.
   @return the reconstructed path
 -->
+<xsl:function name="f:xml-url" as="xs:string">
+  <xsl:param name="path" as="xs:string"/>
+  <xsl:sequence select="if ($bzheader/path/@prefix != '')
+                        then concat($bzheader/path/@context, '/xml', $path)
+                        else concat($bzheader/path/@context, $path, '.xml')"/>
+</xsl:function>
+
 <xsl:function name="f:to-path" as="xs:string">
   <xsl:param name="path" as="xs:string"/>
   <xsl:value-of select="concat($bzheader/path/@context, $bzheader/path/@prefix, $path, $bzheader/path/@extension)"/>

@@ -50,7 +50,7 @@ Releases are distributed on Maven Central under Apache License 2.0, starting wit
 
 | Published file | Contents |
 | --- | --- |
-| `<name>-<version>.jar` | The overlay, with `META-INF/LICENSE`, `META-INF/NOTICE` and `META-INF/licenses/` (Quicksand OFL) |
+| `<name>-<version>.jar` | The overlay, with `META-INF/LICENSE`, `META-INF/NOTICE`, `META-INF/licenses/` (Quicksand OFL), and the `ServletContainerInitializer` `InstallationCheck`, which only warns on the console and registers nothing |
 | `<name>-<version>-sources.jar`, `-javadoc.jar` | Sources and Javadoc of the Java code, with the same license files (`sourcesElements`, `javadocElements` in the module metadata). The sources JAR is reproducible; the Javadoc JAR is not on JDK 11 (pages without dates, `-notimestamp`, but javadoc 11 writes its `*-search-index.zip` files with the current time) |
 | `<name>-<version>.pom`, `.module` | Name, description, URL, inception year, organisation, Apache 2.0 license, developer, SCM; dependency `pso-berlioz` only |
 | `<name>-<version>-cyclonedx.json` | CycloneDX 1.6 SBOM of the published runtime graph (`cyclonedxDirectBom`, `runtimeClasspath` only); not in the module metadata; it has a timestamp, so it is not reproducible |

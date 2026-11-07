@@ -38,6 +38,10 @@ filter does not process includes), and services of the host that use bzadmin's g
 URLs. An error page that is an admin URL goes through the filter: avoid them, since an error page that is an
 operation runs it for an administrator.
 
+At startup, Berlioz Admin warns on the console, with the prefix `[BERLIOZ_INIT] WARNING`, when the filter is not
+declared or does not cover the admin services, or when Berlioz is mapped without the XML mapping that goes with
+the HTML one.
+
 The filter also:
 
 - requires `OPERATE` for every method other than GET and HEAD, from the admin pages only (a CSRF check on
@@ -236,8 +240,7 @@ the admin services of both:
 <url-pattern>/xml/bzadmin/*</url-pattern>
 ```
 
-The pages are then at `/html/bzadmin/`. In this version, operations and live updates from these pages do not work
-yet; see the [roadmap](../ROADMAP.md).
+The pages are then at `/html/bzadmin/`, and their operations and live updates use `/xml/bzadmin/`.
 
 ## Audit
 

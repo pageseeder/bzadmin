@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.pageseeder.bzadmin.PackagedHostTest.parse;
+import static org.pageseeder.bzadmin.PackagedHostTest.xpath;
 
 import java.net.http.HttpResponse;
 import java.util.Collections;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import org.jspecify.annotations.Nullable;
@@ -61,6 +64,36 @@ final class PrefixHostTest {
     assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/xml"));
     assertEquals("no-store", response.headers().firstValue("Cache-Control").orElse(""));
     assertTrue(response.body().startsWith("<cpu-sample "), response.body());
+  }
+
+  @Test
+  void servesTheXmlOfPagesWithoutTheirHeader() throws Exception {
+    HttpResponse<String> response = host.get("/xml/bzadmin/config");
+    assertEquals(200, response.statusCode(), response.body());
+    assertTrue(response.body().contains("<root service=\"bzadmin-config\""), response.body());
+    assertFalse(response.body().contains("<header>"), response.body());
+  }
+
+  /**
+   * The operations reached through the URLs that the pages render.
+   */
+  @ParameterizedTest
+  @CsvSource({
+      "/html/bzadmin/config,   /xml/bzadmin/config/reload,     true,     'config, services, xslt, etags'",
+      "/html/bzadmin/services, /xml/bzadmin/services/reload,   services, services",
+      "/html/bzadmin/xslt,     /xml/bzadmin/xslt/cache/clear,  xslt,     xslt"})
+  void reloadsThroughTheRenderedUrls(String page, String action, String scope, String applied) throws Exception {
+    assertTrue(host.get(page).body().contains("action=\"" + action + "\""), page);
+    HttpResponse<String> response = host.post(action, "berlioz-reload=" + scope);
+    assertEquals(200, response.statusCode(), response.body());
+    assertEquals(applied, response.headers().firstValue("X-Berlioz-Reload").orElse(""));
+    assertEquals("true", xpath(parse(response.body()), "//berlioz-control/@authorized"));
+  }
+
+  @Test
+  void rendersLiveUpdatesAndOperationsOnTheXmlMapping() throws Exception {
+    assertTrue(host.get("/html/bzadmin/system").body().contains("data-href=\"" + SAMPLE + "\""));
+    assertTrue(host.get("/html/bzadmin/logs/recent").body().contains("action=\"/xml/bzadmin/logs/recent/threshold\""));
   }
 
   @Test
