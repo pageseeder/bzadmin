@@ -2,6 +2,13 @@
 
 Version `0.14.0` is the first public release. Earlier versions were internal or development candidates.
 
+## 0.14.1 (unreleased)
+
+See the [draft release notes](0.14.1.md). Maintenance release requiring Berlioz 0.14.5: fallback login
+throttling, admin operations under the internal API `/bzadmin/api/`, operations with Berlioz mapped by
+prefix, support for development proxies, and interface refinements. Hosts or proxies that name admin
+operation URLs must update them.
+
 ## 0.14.0
 
 See the [stable release notes](0.14.0.md) for features, upgrade requirements and known limitations.
