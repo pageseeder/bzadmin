@@ -2,8 +2,8 @@ package org.pageseeder.bzadmin.access;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,8 +56,11 @@ final class LoginThrottle {
   /** The client of the clients beyond {@link #MAX_CLIENTS}, not an address. */
   private static final String OTHERS = "*";
 
-  /** The time at which the limit of each client is fully restored, in {@link #clock} time. */
-  private final Map<String, Long> clients = new ConcurrentHashMap<>();
+  /**
+   * The time at which the limit of each client is fully restored, in {@link #clock} time; guarded
+   * by itself, so that admitting a new client and its bound are one step.
+   */
+  private final Map<String, Long> clients = new HashMap<>();
 
   private final Semaphore checks;
 
@@ -87,30 +90,29 @@ final class LoginThrottle {
    * @return {@code 0} when the client can make the check, or else the seconds until it can.
    */
   int acquire(String client) {
-    long now = this.clock.getAsLong();
-    String key = client;
-    if (this.clients.size() >= MAX_CLIENTS && !this.clients.containsKey(key)) {
-      prune(now);
-      if (this.clients.size() >= MAX_CLIENTS) key = OTHERS;
-    }
-    long[] wait = {0};
-    this.clients.compute(key, (k, restored) -> {
-      long start = restored == null || restored - now < 0 ? now : restored;
-      long ahead = start - now;
-      if (ahead > TOLERANCE) {
-        wait[0] = ahead - TOLERANCE;
-        return restored;
+    long wait;
+    synchronized (this.clients) {
+      long now = this.clock.getAsLong();
+      String key = client;
+      if (this.clients.size() >= MAX_CLIENTS && !this.clients.containsKey(key)) {
+        prune(now);
+        if (this.clients.size() >= MAX_CLIENTS) key = OTHERS;
       }
-      return start + INTERVAL;
-    });
-    return wait[0] == 0 ? 0 : (int) Math.max(1, (wait[0] + TimeUnit.SECONDS.toNanos(1) - 1) / TimeUnit.SECONDS.toNanos(1));
+      Long restored = this.clients.get(key);
+      long start = restored == null || restored - now < 0 ? now : restored;
+      wait = start - now - TOLERANCE;
+      if (wait <= 0) this.clients.put(key, start + INTERVAL);
+    }
+    return wait <= 0 ? 0 : (int) Math.max(1, (wait + TimeUnit.SECONDS.toNanos(1) - 1) / TimeUnit.SECONDS.toNanos(1));
   }
 
   /**
    * Forgets the checks of the client, after a successful one.
    */
   void reset(String client) {
-    this.clients.remove(client);
+    synchronized (this.clients) {
+      this.clients.remove(client);
+    }
   }
 
   /**
@@ -141,7 +143,16 @@ final class LoginThrottle {
     return now - last >= REPORT_INTERVAL && this.reported.compareAndSet(last, now);
   }
 
-  /** Removes the clients whose limit is restored. */
+  /**
+   * @return the clients tracked, including the shared limit of further clients.
+   */
+  int tracked() {
+    synchronized (this.clients) {
+      return this.clients.size();
+    }
+  }
+
+  /** Removes the clients whose limit is restored; holding the lock of {@link #clients}. */
   private void prune(long now) {
     this.clients.values().removeIf(restored -> restored - now <= 0);
   }

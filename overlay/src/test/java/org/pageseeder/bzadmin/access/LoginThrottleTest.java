@@ -4,6 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -58,6 +64,36 @@ final class LoginThrottleTest {
     advance(TimeUnit.SECONDS.toNanos((long) LoginThrottle.BURST * LoginThrottle.INTERVAL_SECONDS));
     for (int i = 0; i < LoginThrottle.BURST; i++) {
       assertEquals(0, this.throttle.acquire("other-new"), "check " + i);
+    }
+  }
+
+  /**
+   * New clients arriving at once, with room for one only: one is tracked, the others share one
+   * limit.
+   */
+  @Test
+  void admitsNewClientsWithinTheBoundConcurrently() throws Exception {
+    for (int i = 0; i < LoginThrottle.MAX_CLIENTS - 1; i++) assertEquals(0, this.throttle.acquire("client-" + i));
+    int threads = 64;
+    ExecutorService executor = Executors.newFixedThreadPool(threads);
+    try {
+      CyclicBarrier start = new CyclicBarrier(threads);
+      List<Future<Integer>> waits = new ArrayList<>();
+      for (int i = 0; i < threads; i++) {
+        String client = "new-" + i;
+        waits.add(executor.submit(() -> {
+          start.await();
+          return this.throttle.acquire(client);
+        }));
+      }
+      int allowed = 0;
+      for (Future<Integer> wait : waits) {
+        if (wait.get(10, TimeUnit.SECONDS) == 0) allowed++;
+      }
+      assertEquals(LoginThrottle.MAX_CLIENTS, this.throttle.tracked() - 1, "the clients, and the shared limit");
+      assertEquals(1 + LoginThrottle.BURST, allowed);
+    } finally {
+      executor.shutdownNow();
     }
   }
 
