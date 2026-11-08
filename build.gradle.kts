@@ -31,7 +31,7 @@ allprojects {
 // Gradle wrapper
 tasks.wrapper {
   distributionType = Wrapper.DistributionType.ALL
-  gradleVersion = "8.14.5"
+  gradleVersion = "8.14.6"
 }
 
 // Same Central release tooling as Berlioz; deployment is explicitly invoked.
