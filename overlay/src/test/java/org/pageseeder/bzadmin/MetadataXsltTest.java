@@ -42,8 +42,39 @@ final class MetadataXsltTest {
     assertTrue(html.contains("<div class=\"key-metric warning\"><dt>Deprecated options</dt><dd class=\"key-metric-value\">1</dd>"
         + "<dd class=\"key-metric-detail\">berlioz.xml.header.version</dd>"), html);
     assertTrue(html.contains("<span class=\"tag warning\" title=\"Deprecated since Berlioz 0.14.0: removed in Berlioz 1.0\">deprecated</span>"), html);
+    assertTrue(html.contains("<dt>Set to default</dt><dd class=\"key-metric-value\">1</dd>"
+        + "<dd class=\"key-metric-detail\">berlioz.xml.header.version</dd>"), html);
     assertTrue(html.contains("<dt>Other properties</dt><dd class=\"key-metric-value\">4</dd></div>"), "fixture.* and berlioz.admin.role.*: " + html);
     assertFalse(render(deployment(fixture("config.xml"))).contains("key-metrics"), "Only for the global properties");
+  }
+
+  @Test
+  void marksOptionsConfiguredWithTheirDefault() throws Exception {
+    String sameAsDefault = " <span class=\"tag\" title=\"Configured with the default value: the property can be removed\">same as default</span>";
+    String html = render(fixture("config.xml"));
+    assertTrue(valueCell(html, "berlioz.xml.header.version").endsWith("<code>1.0</code>" + sameAsDefault), "Same string as the default");
+    assertFalse(valueCell(html, "berlioz.errors.handle").contains("same as default"), "Different boolean");
+    assertFalse(valueCell(html, "berlioz.xslt.cache").contains("same as default"), "Different string");
+    assertFalse(valueCell(html, "berlioz.control.key").contains("same as default"), "Redacted values cannot be compared");
+    assertFalse(valueCell(html, "berlioz.profile").contains("same as default"), "Not configured");
+
+    String xml = fixture("config.xml").replace("<property name=\"fixture.colour\" value=\"blue\"/>",
+        "<property name=\"berlioz.http.compression\" value=\"TRUE\"/><property name=\"berlioz.profile\" value=\"no\"/>"
+        + "<property name=\"berlioz.redirect.allowed-hosts\" value=\"\"/><property name=\"berlioz.errors.detail\" value=\"Minimal\"/>");
+    html = render(xml);
+    assertTrue(valueCell(html, "berlioz.http.compression").endsWith(sameAsDefault), "Booleans compare as Berlioz parses them");
+    assertFalse(valueCell(html, "berlioz.profile").contains("same as default"), "Only true or false are compared");
+    assertTrue(valueCell(html, "berlioz.redirect.allowed-hosts").endsWith("<code></code>" + sameAsDefault), "Empty default");
+    assertFalse(valueCell(html, "berlioz.errors.detail").contains("same as default"), "Strings are compared exactly");
+    assertTrue(html.contains("<dt>Set to default</dt><dd class=\"key-metric-value\">3</dd><dd class=\"key-metric-detail\">"
+        + "berlioz.http.compression, berlioz.redirect.allowed-hosts, berlioz.xml.header.version</dd>"), html);
+  }
+
+  @Test
+  void countsNoOptionSetToDefault() throws Exception {
+    String html = render(fixture("config.xml").replace("<property name=\"berlioz.xml.header.version\" value=\"1.0\"/>", ""));
+    assertTrue(html.contains("<dt>Set to default</dt><dd class=\"key-metric-value muted\">0</dd>"
+        + "<dd class=\"key-metric-detail\">No option configured with its default</dd>"), html);
   }
 
   @Test

@@ -44,6 +44,23 @@
   <explanation name="berlioz.xslt.sensitivity">XSLT diagnostics that make compilation or execution fail: <code>fatal</code>, <code>error</code> or <code>warning</code></explanation>
 </xsl:variable>
 
+<!--
+  Whether a configured option value is the default of the option, so that the property can be
+  removed without changing what Berlioz uses. Booleans compare as Berlioz parses them
+  (`Boolean.parseBoolean`), when the value is `true` or `false` in any case; other values must be
+  identical. Redacted values cannot be compared.
+
+  @param option The Berlioz option
+  @param value  The configured value
+-->
+<xsl:function name="f:config-is-default" as="xs:boolean">
+  <xsl:param name="option" as="element(option)"/>
+  <xsl:param name="value" as="xs:string"/>
+  <xsl:sequence select="if ($value = '[REDACTED]') then false()
+    else if ($option/@type = 'boolean') then lower-case($value) = ('true', 'false') and lower-case($value) = string($option/@default)
+    else $value = string($option/@default)"/>
+</xsl:function>
+
 <!-- The views of the configuration, selected by the 'view' parameter -->
 <xsl:template match="content[@name='global-config']" mode="bzadmin-secondary-nav">
   <xsl:variable name="view" select="string(/root/header/http-parameters/parameter[@name = 'view'][1])"/>
@@ -129,7 +146,10 @@
           </th>
           <td data-sort="{if ($configured) then $configured/@value else ''}">
             <xsl:choose>
-              <xsl:when test="$configured"><code><xsl:value-of select="$configured/@value"/></code></xsl:when>
+              <xsl:when test="$configured">
+                <code><xsl:value-of select="$configured/@value"/></code>
+                <xsl:if test="f:config-is-default(., $configured/@value)"><xsl:text> </xsl:text><span class="tag" title="Configured with the default value: the property can be removed">same as default</span></xsl:if>
+              </xsl:when>
               <xsl:otherwise>
                 <span class="tag" title="Not configured: Berlioz uses the default">default</span>
                 <xsl:text> </xsl:text>
@@ -152,7 +172,8 @@
 </xsl:template>
 
 <!--
-  The mode, the Berlioz options configured (deprecated ones call for attention) and the other properties
+  The mode, the Berlioz options configured (deprecated ones call for attention), those configured
+  with their default value and the other properties
 
   @param properties The configured global properties
   @param options    The options of this Berlioz version
@@ -162,6 +183,7 @@
   <xsl:param name="options" as="element(option)*"/>
   <xsl:variable name="configured" select="$options[@property = $properties/@name]"/>
   <xsl:variable name="deprecated" select="$configured[@deprecated]"/>
+  <xsl:variable name="defaults" select="$configured[for $option in . return f:config-is-default($option, string(($properties[@name = $option/@property])[1]/@value))]"/>
   <xsl:variable name="others" select="$properties[not(@name = $options/@property)]"/>
   <dl class="key-metrics">
     <xsl:call-template name="bzadmin-key-metric">
@@ -179,6 +201,16 @@
       <xsl:with-param name="value" select="string(count($deprecated))"/>
       <xsl:with-param name="detail" select="if ($deprecated) then string-join($deprecated/@property, ', ') else 'None configured'"/>
       <xsl:with-param name="warning" select="exists($deprecated)"/>
+    </xsl:call-template>
+    <xsl:call-template name="bzadmin-key-metric">
+      <xsl:with-param name="label" select="'Set to default'"/>
+      <xsl:with-param name="value" select="string(count($defaults))"/>
+      <xsl:with-param name="detail" as="xs:string">
+        <xsl:choose>
+          <xsl:when test="$defaults"><xsl:value-of separator=", "><xsl:perform-sort select="$defaults/@property/string()"><xsl:sort/></xsl:perform-sort></xsl:value-of></xsl:when>
+          <xsl:otherwise>No option configured with its default</xsl:otherwise>
+        </xsl:choose>
+      </xsl:with-param>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Other properties'"/>
