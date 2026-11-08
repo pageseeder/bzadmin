@@ -6,7 +6,7 @@ Version `0.14.0` is the first public release, at `org.pageseeder.berlioz:pso-bza
 
 ## Next: 0.14.x maintenance
 
-- Address [known limitations](docs/release/0.14.0.md#known-limitations) of 0.14.0 where they can be fixed within the overlay, such as the response to unauthenticated POSTs under container BASIC authentication. The fallback login now limits password checks.
+- Address [known limitations](docs/release/0.14.0.md#known-limitations) of 0.14.0 where they can be fixed within the overlay, The fallback login now limits password checks. The response to unauthenticated POSTs under container BASIC authentication comes from Berlioz's error handling; hosts can avoid it with an [error page for 401](docs/access.md#error-page-for-401) until Berlioz preserves the challenge.
 - Qualify Tomcat 9 and newer JDKs before advertising them as tested. Java 11 and Jetty 10 remain the reference environment.
 - Extend CI beyond the current qualification workflow: a JDK and container matrix, root and non-root context paths, with and without optional providers, browser smoke tests and build reproducibility.
 - Keep refining keyboard navigation, dialogs, errors, refresh behavior and accessibility based on feedback.

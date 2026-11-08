@@ -120,6 +120,26 @@ Then name the roles (comma-separated) in the global configuration (`config-<mode
 
 Without these properties, roles grant nothing. Tested with `web-container.xml` next to `web.xml`.
 
+#### Error page for 401
+
+Declare an error page for 401 that Berlioz does not serve, such as a static file with an extension
+that Berlioz is not mapped to:
+
+```xml
+<error-page>
+  <error-code>401</error-code>
+  <location>/401.txt</location>
+</error-page>
+```
+
+Without it, the container sends its challenges to Berlioz's general error page, which renders the
+error for GET and HEAD only. A POST or other request without credentials then receives a 401 Berlioz
+error document without `WWW-Authenticate`, so a client that sends credentials only when challenged,
+such as a script or a browser that has not signed in yet, fails instead of asking for them. With the
+error page, every method receives the challenge; other errors are still rendered by Berlioz. Responses
+of `AdminFilter`, including the fallback login's challenge, do not use error pages and are unaffected.
+Tested with `web-container-401.xml`.
+
 ### C. The fallback login
 
 For hosts without any authentication: one administrator, with `OPERATE`, by BASIC credentials, **over HTTPS**,

@@ -131,6 +131,15 @@ final class BerliozHost implements AutoCloseable {
   }
 
   /**
+   * Starts the packaged test host of a host example with another web descriptor.
+   *
+   * @param descriptor The name of the web descriptor next to this class.
+   */
+  static BerliozHost startWithDescriptor(HostExample example, String descriptor) throws Exception {
+    return start(example.contextPath(), descriptor, example);
+  }
+
+  /**
    * Starts the packaged test host without logback (the {@code warNoLogbackHost} task), when the
    * test task provides it.
    *

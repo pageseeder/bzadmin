@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -430,6 +431,103 @@ final class AccessPolicyTest {
       super(HostExample.CONTAINER);
     }
 
+    /**
+     * Known defect (0.14.0 known limitations): an anonymous POST is challenged by the container,
+     * whose general error page ({@code /error.auto}, Berlioz's {@code ErrorHandlerServlet}) only
+     * allows GET and HEAD. It replaces the response with a Berlioz problem document, keeping the
+     * 401 but not the {@code WWW-Authenticate} challenge, so a client is never asked for
+     * credentials. The admin filter never sees the request. A GET keeps its challenge.
+     *
+     * <p>Replace with the expected challenge when fixing it.
+     */
+    @Test
+    @Tag("known-defect")
+    void anonymousPostLosesContainerChallenge() throws Exception {
+      HttpResponse<String> get = host().as(null).get("/bzadmin/config.src");
+      assertEquals(401, get.statusCode());
+      assertEquals(List.of("basic realm=\"berlioz administration\""),
+          get.headers().allValues("WWW-Authenticate").stream().map(c -> c.toLowerCase(Locale.ROOT)).collect(Collectors.toList()));
+
+      for (String path : new String[]{"/bzadmin/api/cache/clear.src", "/bzadmin/api/config/reload.json", "/bzadmin/config.html"}) {
+        for (String form : new String[]{"", null}) {
+          String label = "POST " + path + (form == null ? " (no body)" : "");
+          HttpResponse<String> response = host().as(null).send("POST", path, form, "X-Requested-With", "XMLHttpRequest");
+          assertEquals(401, response.statusCode(), label);
+          assertTrue(response.headers().allValues("WWW-Authenticate").isEmpty(), "No challenge: " + label);
+          assertEquals("no-store", response.headers().firstValue("Cache-Control").orElse(""), label);
+          if (!path.endsWith(".html")) {
+            assertTrue(response.body().contains("Only the following are allowed: GET,HEAD"), label);
+          }
+          assertNoAdminData(response.body(), label);
+        }
+      }
+    }
+
+  }
+
+  /**
+   * The container host with the workaround: a static error page for 401 in the host's descriptor.
+   */
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  final class ContainerLoginWithErrorPage {
+
+    private @Nullable BerliozHost host;
+
+    @BeforeAll
+    void start() throws Exception {
+      this.host = BerliozHost.startWithDescriptor(HostExample.CONTAINER, "web-container-401.xml");
+    }
+
+    @AfterAll
+    void stop() throws Exception {
+      if (this.host != null) this.host.close();
+    }
+
+    /**
+     * Anonymous and unknown users are challenged for every method, with the static page and
+     * {@code WWW-Authenticate}, never stored and with no admin data.
+     */
+    @Test
+    void challengesEveryMethod() throws Exception {
+      String[][] requests = {
+          {null, "GET", "/bzadmin/config.src", null},
+          {null, "POST", "/bzadmin/api/cache/clear.src", ""},
+          {null, "POST", "/bzadmin/api/config/reload.json", ""},
+          {null, "POST", "/bzadmin/config.html", null},
+          {"unknown", "POST", "/bzadmin/api/cache/clear.src", ""},
+          {null, "PUT", "/bzadmin/config.src", ""},
+          {null, "DELETE", "/bzadmin/config.src", null}};
+      for (String[] r : requests) {
+        String label = r[0] + ": " + r[1] + " " + r[2];
+        HttpResponse<String> response = this.host.as(r[0]).send(r[1], r[2], r[3], "X-Requested-With", "XMLHttpRequest");
+        assertEquals(401, response.statusCode(), label);
+        assertEquals(List.of("basic realm=\"berlioz administration\""),
+            response.headers().allValues("WWW-Authenticate").stream().map(c -> c.toLowerCase(Locale.ROOT)).collect(Collectors.toList()), label);
+        assertTrue(response.headers().firstValue("ETag").isEmpty(), "No ETag: " + label);
+        if (!response.body().isEmpty()) {
+          // The static page (GET and POST; Jetty's default servlet writes no body for the others)
+          assertEquals("Authentication required.", response.body().trim(), label);
+          assertTrue(response.headers().firstValue("Cache-Control").orElse("").contains("no-store"), label);
+        }
+        assertNoAdminData(response.body(), label);
+      }
+    }
+
+    /**
+     * The error page does not change the admin filter's responses (written with their status, not
+     * sent as errors), nor the other errors, still rendered by Berlioz.
+     */
+    @Test
+    void leavesOtherResponses() throws Exception {
+      HttpResponse<String> denied = this.host.as("user").post("/bzadmin/api/cache/clear.src", "");
+      assertDeniedByFilter(denied, "user");
+      assertEquals(200, this.host.as("operator").get("/bzadmin/config.src").statusCode());
+      assertEquals(200, this.host.as("operator").post("/bzadmin/api/config/reload.json", "").statusCode());
+      HttpResponse<String> error = this.host.as(null).get("/fixture-error/503");
+      assertEquals(503, error.statusCode());
+      assertFalse(error.body().contains("Authentication required."));
+    }
   }
 
   /**
