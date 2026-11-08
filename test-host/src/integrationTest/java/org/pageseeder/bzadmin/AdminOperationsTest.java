@@ -304,14 +304,14 @@ final class AdminOperationsTest {
   @Test
   void redactsSensitiveSystemProperties() throws Exception {
     for (String format : new String[]{".src", ".json", ".html"}) {
-      HttpResponse<String> response = host.get("/bzadmin/system/properties" + format);
+      HttpResponse<String> response = host.get("/bzadmin/system" + format + "?view=properties");
       assertEquals(200, response.statusCode(), format);
       assertFalse(response.body().contains("fixture-secret"), format);
       assertTrue(response.body().contains("fixture.database.password"), format);
     }
-    assertJson(host.get("/bzadmin/system/properties.json").body(),
+    assertJson(host.get("/bzadmin/system.json?view=properties").body(),
         "\"name\":\"fixture.database.password\",\"value\":\"[REDACTED]\"");
-    Document xml = parse(host.get("/bzadmin/system/properties.src").body());
+    Document xml = parse(host.get("/bzadmin/system.src?view=properties").body());
     assertEquals("[REDACTED]", xpath(xml, "//property[@name='fixture.database.password']/@value"));
     assertEquals(System.getProperty("java.version"), xpath(xml, "//property[@name='java.version']/@value"));
   }
@@ -397,6 +397,33 @@ final class AdminOperationsTest {
     int query = path.indexOf('?');
     String target = query < 0 ? path + ".src" : path.substring(0, query) + ".src" + path.substring(query);
     assertEquals(404, host.get(target).statusCode(), target);
+  }
+
+  /**
+   * The routes that the pages did not use, and the paths of the internal API before it moved to
+   * {@code /bzadmin/api/}, are gone: the pages keep their URLs and formats.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "/bzadmin/system/summary", "/bzadmin/system/runtime", "/bzadmin/system/cpu", "/bzadmin/system/properties",
+      "/bzadmin/application/summary", "/bzadmin/service/match?url=/bzadmin/config.html",
+      "/bzadmin/system/cpu/sample", "/bzadmin/system/runtime/sample",
+      "/bzadmin/cache/info/sample?" + AccessPolicyTest.CACHE})
+  void hasNoRemovedRoute(String path) throws Exception {
+    int query = path.indexOf('?');
+    for (String format : new String[]{".src", ".json"}) {
+      String target = query < 0 ? path + format : path.substring(0, query) + format + path.substring(query);
+      assertEquals(404, host.get(target).statusCode(), target);
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {
+      "/bzadmin/cache/clear", "/bzadmin/cache/entries/remove", "/bzadmin/cache/statistics",
+      "/bzadmin/cache/statistics/reset", "/bzadmin/logs/recent/threshold", "/bzadmin/application/statistics/reset",
+      "/bzadmin/config/reload", "/bzadmin/services/reload", "/bzadmin/xslt/cache/clear"})
+  void hasNoOperationOutsideTheApi(String path) throws Exception {
+    assertEquals(404, host.post(path + ".src", "").statusCode(), path);
   }
 
   private static HttpResponse<String> raw(String name, String query) throws Exception {

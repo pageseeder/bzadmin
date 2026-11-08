@@ -10,7 +10,6 @@ Version `0.14.0` is the first public release, at `org.pageseeder.berlioz:pso-bza
 - Qualify Tomcat 9 and newer JDKs before advertising them as tested. Java 11 and Jetty 10 remain the reference environment.
 - Extend CI beyond the current qualification workflow: a JDK and container matrix, root and non-root context paths, with and without optional providers, browser smoke tests and build reproducibility.
 - Keep refining keyboard navigation, dialogs, errors, refresh behavior and accessibility based on feedback.
-- **Internal API paths.** Move the services that return only data, the live samples and the POST operations, to `/bzadmin/api/`, as Berlioz direct services without the envelope or XSLT, so they are clearly separate from the pages. These endpoints are internal to bzadmin, and hosts should not rely on them. Remove the routes that nothing uses. Pages keep their URLs, including their `.xml` and `.json` representations.
 
 Fixes ship in new versions; see [security and support](SECURITY.md).
 

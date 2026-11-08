@@ -73,7 +73,6 @@ final class AccessPolicyTest {
         Arguments.of("GET", "/bzadmin/xslt/source", "path=xslt/html/bzadmin.xsl"),
         Arguments.of("GET", "/bzadmin/files/document", "path=/content/home.psml"),
         Arguments.of("GET", "/bzadmin/logs/raw", "id=" + LogIds.fixture("fixture.log")),
-        Arguments.of("GET", "/bzadmin/service/match", "url=/bzadmin/config.html"),
         Arguments.of("GET", "/bzadmin/services/lookup", "url=/bzadmin/config"),
         Arguments.of("POST", "/bzadmin/api/config/reload", ""),
         Arguments.of("POST", "/bzadmin/api/services/reload", ""),
@@ -631,7 +630,7 @@ final class AccessPolicyTest {
      */
     @Test
     void hasETagWhenAllowed() throws Exception {
-      assertTrue(this.host.get("/bzadmin/service/match.src?url=/bzadmin/config.html").headers().firstValue("ETag").isPresent());
+      assertTrue(this.host.get("/bzadmin/services/lookup.src?url=/bzadmin/config").headers().firstValue("ETag").isPresent());
     }
 
     /**

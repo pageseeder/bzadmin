@@ -421,8 +421,8 @@ final class OperationDispatchTest {
         errors.add(host.get("/bzadmin/no-such-page" + format));
         errors.add(host.post("/bzadmin/api/cache/clear" + format, UNKNOWN_CACHE));
       }
-      // A service with its own cache control and an ETag (an AJAX lookup, without HTML page)
-      responses.add(host.get("/bzadmin/service/match.src?url=/bzadmin/config.html"));
+      // A service with an ETag, which the admin filter does not let browsers or proxies cache
+      responses.add(host.get("/bzadmin/services/lookup.src?url=/bzadmin/config"));
       for (HttpResponse<String> response : responses) {
         assertSecured(response, response.request().method() + " " + response.uri() + " " + response.statusCode());
       }
@@ -431,7 +431,7 @@ final class OperationDispatchTest {
         String cacheControl = response.headers().firstValue("Cache-Control").orElse("");
         assertTrue(cacheControl.equals("no-store") || cacheControl.equals("no-cache"), response.uri() + ": " + cacheControl);
       }
-      assertTrue(host.get("/bzadmin/service/match.src?url=/bzadmin/config.html").headers().firstValue("ETag").isPresent(), "ETag kept");
+      assertTrue(host.get("/bzadmin/services/lookup.src?url=/bzadmin/config").headers().firstValue("ETag").isPresent(), "ETag kept");
       HttpResponse<String> html = host.get("/bzadmin/config.html");
       assertEquals(2, html.headers().allValues("Content-Security-Policy").size(), "The policy of the host and the admin policy");
     }
@@ -448,7 +448,7 @@ final class OperationDispatchTest {
       paths.addAll(AccessPolicyTest.HANDLERS);
       paths.addAll(List.of("/bzadmin/logs/raw?id=" + LogIds.fixture("fixture.log"), "/bzadmin/logs/raw?id=" + LogIds.fixture("missing.log"),
           "/bzadmin/xslt/doc?path=xslt/errors/missing-import.xsl", "/bzadmin/cache/entries?" + AccessPolicyTest.CACHE,
-          "/bzadmin/service/match?url=/bzadmin/config.html", "/bzadmin/no-such-page", "/bzadmin/config?view=deployment"));
+          "/bzadmin/services/lookup?url=/bzadmin/config", "/bzadmin/no-such-page", "/bzadmin/config?view=deployment"));
       for (String path : paths) {
         for (String format : FORMATS) {
           int query = path.indexOf('?');

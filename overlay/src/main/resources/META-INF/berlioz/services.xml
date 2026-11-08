@@ -103,17 +103,6 @@
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetSystemProperties" name="sysproperties" target="main"/>
   </service>
 
-  <!-- Uptime, CPU, memory pools, garbage collectors and thread counts (bounded: no stack trace) -->
-  <service id="bzadmin-system-summary" method="get">
-    <url pattern="/bzadmin/system/summary" />
-    <generator class="org.pageseeder.bzadmin.system.GetSystemSummary"                name="system-summary" target="main"/>
-  </service>
-
-  <service id="bzadmin-system-runtime" method="get">
-    <url pattern="/bzadmin/system/runtime" />
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetRuntimeInfo"    name="runtime"     target="main"/>
-  </service>
-
   <service id="bzadmin-system-files" method="get">
     <url pattern="/bzadmin/system/files" />
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetFileSystemInfo" name="filesystem"  target="main"/>
@@ -129,17 +118,6 @@
   <service id="bzadmin-system-thread" method="get">
     <url pattern="/bzadmin/system/thread" />
     <generator class="org.pageseeder.bzadmin.system.GetThreadInfo" name="thread"  target="main"/>
-  </service>
-
-  <service id="bzadmin-system-cpu" method="get">
-    <url pattern="/bzadmin/system/cpu" />
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetCpuSample" name="cpu-sample"  target="main"/>
-  </service>
-
-  <service id="bzadmin-system-properties" method="get">
-    <url pattern="/bzadmin/system/properties" />
-    <!-- Values of sensitive names redacted -->
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetSystemProperties" name="sysproperties"  target="main"/>
   </service>
 
   <!-- The Recent view, or the Files view with view=files (bzadmin/logs.xsl) -->
@@ -173,25 +151,11 @@
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.ListLibraries"     name="libraries"   target="main"/>
   </service>
 
-  <!-- The summary alone, also in JSON (like the statistics) -->
-  <service id="bzadmin-application-summary" method="get">
-    <url pattern="/bzadmin/application/summary" />
-    <generator class="org.pageseeder.bzadmin.application.GetApplicationSummary" name="summary"  target="main"/>
-  </service>
-
   <service id="bzadmin-application-statistics" method="get">
     <url pattern="/bzadmin/application/statistics" />
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetGeneratorStatistics" name="statistics"  target="main">
       <parameter name="reset" value="false"/>
     </generator>
-  </service>
-
-  <!-- AJAX ================================================================================= -->
-
-  <!-- Service Lookup  -->
-  <service id="ajax-berlioz-service-match" method="get" cache-control="private, no-cache, no-store, must-revalidate">
-    <url pattern="/bzadmin/service/match" />
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetMatchingService" name="service-match" target="ajax" />
   </service>
 
   <!-- INTERNAL API ========================================================================== -->

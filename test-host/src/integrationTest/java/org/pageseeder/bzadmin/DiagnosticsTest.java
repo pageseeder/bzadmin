@@ -66,14 +66,12 @@ final class DiagnosticsTest {
 
   @Test
   void showsTheSummaryInEveryFormat() throws Exception {
-    for (String path : new String[]{"/bzadmin/application", "/bzadmin/application/summary"}) {
-      for (String format : new String[]{".src", ".xml", ".json", ".html"}) {
-        HttpResponse<String> response = host.get(path + format);
-        assertEquals(200, response.statusCode(), path + format);
-        assertFalse(response.body().contains("fixture-secret"), path + format);
-      }
+    for (String format : new String[]{".src", ".xml", ".json", ".html"}) {
+      HttpResponse<String> response = host.get("/bzadmin/application" + format);
+      assertEquals(200, response.statusCode(), format);
+      assertFalse(response.body().contains("fixture-secret"), format);
     }
-    String json = host.get("/bzadmin/application/summary.json").body();
+    String json = host.get("/bzadmin/application.json").body();
     assertTrue(json.contains("\"components\":[{\"name\":\"bzadmin\""), json);
     assertTrue(json.contains("\"cacheProviders\":["), json);
     String html = host.get("/bzadmin/application.html").body();
@@ -83,7 +81,7 @@ final class DiagnosticsTest {
 
   @Test
   void summarisesTheJvm() throws Exception {
-    HttpResponse<String> response = host.get("/bzadmin/system/summary.src");
+    HttpResponse<String> response = host.get("/bzadmin/system.src");
     assertEquals(200, response.statusCode(), response.body());
     Document xml = parse(response.body());
     String summary = "/root/content[@name='system-summary']/system-summary";
@@ -98,7 +96,7 @@ final class DiagnosticsTest {
     assertFalse(xpath(xml, summary + "/cpu/@process-time-ms").isEmpty());
     // Bounded: no thread names or stack traces
     assertEquals("0", xpath(xml, "count(//thread)"));
-    assertEquals(200, host.get("/bzadmin/system/summary.json").statusCode());
+    assertEquals(200, host.get("/bzadmin/system.json").statusCode());
   }
 
   @Test
@@ -144,7 +142,7 @@ final class DiagnosticsTest {
 
   @Test
   void pollsTheLiveValuesWithoutCaching() throws Exception {
-    for (String path : new String[]{"/bzadmin/api/system/runtime.xml", "/bzadmin/api/system/cpu.xml", "/bzadmin/system/summary.xml"}) {
+    for (String path : new String[]{"/bzadmin/api/system/runtime.xml", "/bzadmin/api/system/cpu.xml", "/bzadmin/system.xml"}) {
       HttpResponse<String> response = host.get(path);
       assertEquals(200, response.statusCode(), path);
       assertEquals("no-store", response.headers().firstValue("Cache-Control").orElse(""), path);
@@ -173,7 +171,7 @@ final class DiagnosticsTest {
     }
     String json = host.get("/bzadmin/api/system/cpu.json").body();
     assertTrue(json.startsWith("{\"processors\":"), json);
-    assertEquals("root", parse(host.get("/bzadmin/system/cpu.xml").body()).getDocumentElement().getNodeName());
+    assertEquals("root", parse(host.get("/bzadmin/system.xml").body()).getDocumentElement().getNodeName());
   }
 
   static Document summary(BerliozHost host) throws Exception {

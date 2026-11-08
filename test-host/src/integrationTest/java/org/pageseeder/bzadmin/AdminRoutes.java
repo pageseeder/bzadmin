@@ -24,18 +24,13 @@ final class AdminRoutes {
         Arguments.of("/bzadmin/files/document", 400),
         Arguments.of("/bzadmin/xslt", 200),
         Arguments.of("/bzadmin/system", 200),
-        Arguments.of("/bzadmin/system/summary", 200),
-        Arguments.of("/bzadmin/system/runtime", 200),
         Arguments.of("/bzadmin/system/files", 200),
         Arguments.of("/bzadmin/system/threads", 200),
         Arguments.of("/bzadmin/system/thread", 400),
-        Arguments.of("/bzadmin/system/cpu", 200),
-        Arguments.of("/bzadmin/system/properties", 200),
         Arguments.of("/bzadmin/logs", 200),
         Arguments.of("/bzadmin/logs/raw", 400),
         Arguments.of("/bzadmin/logs/recent", 200),
         Arguments.of("/bzadmin/application", 200),
-        Arguments.of("/bzadmin/application/summary", 200),
         Arguments.of("/bzadmin/application/statistics", 200));
   }
 
