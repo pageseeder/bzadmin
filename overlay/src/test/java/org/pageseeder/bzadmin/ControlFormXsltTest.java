@@ -18,7 +18,7 @@ final class ControlFormXsltTest {
   @Test
   void manualCacheWithControl() throws Exception {
     String html = renderXslt("true", "manual");
-    assertTrue(html.contains("action=\"/ctx/bzadmin/xslt/cache/clear.xml\""), html);
+    assertTrue(html.contains("action=\"/ctx/bzadmin/api/xslt/cache/clear.xml\""), html);
     assertTrue(html.contains("name=\"berlioz-reload\" value=\"xslt\""), html);
     assertTrue(html.contains("class=\"button success\""), "Main action");
     assertFalse(html.contains("clear-xslt-cache-disabled"), html);
@@ -51,7 +51,7 @@ final class ControlFormXsltTest {
   @Test
   void reloadServicesWithControl() throws Exception {
     String html = renderServices("true");
-    assertTrue(html.contains("action=\"/ctx/bzadmin/services/reload.xml\""), html);
+    assertTrue(html.contains("action=\"/ctx/bzadmin/api/services/reload.xml\""), html);
     assertTrue(html.contains("name=\"berlioz-reload\" value=\"services\""), html);
     assertFalse(html.contains("reload-services-disabled"), html);
   }
@@ -66,7 +66,7 @@ final class ControlFormXsltTest {
   @Test
   void reloadEverythingWithControl() throws Exception {
     String html = renderConfig("true");
-    assertTrue(html.contains("action=\"/ctx/bzadmin/config/reload.xml\""), html);
+    assertTrue(html.contains("action=\"/ctx/bzadmin/api/config/reload.xml\""), html);
     assertTrue(html.contains("name=\"berlioz-reload\" value=\"true\""), html);
     assertFalse(html.contains("berlioz-reload-disabled"), html);
     assertTrue(html.contains("aria-describedby=\"berlioz-reload-description\""), html);

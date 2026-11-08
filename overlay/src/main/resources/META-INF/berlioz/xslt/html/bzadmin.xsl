@@ -246,7 +246,7 @@
   disabled with the reason when it would have no effect.
 
   @param id       The id of the form
-  @param path     The path of the service, e.g. '/bzadmin/xslt/cache/clear'
+  @param path     The path of the service, e.g. '/bzadmin/api/xslt/cache/clear'
   @param scope    The scopes of 'berlioz-reload' (see AdminFilter.CONTROL_SERVICES), e.g. 'xslt', or 'true' for all
   @param label    The label of the button
   @param icon     The name of the icon

@@ -92,25 +92,26 @@ export function post(url, params = {}) {
 }
 
 /**
- * Post a Berlioz control form (from the `bzadmin-control-form` template) to its overlay service,
- * which returns `<berlioz-control authorized="…">`: the admin filter authorises the control
- * parameter for users who can operate, and Berlioz applies it before the service runs, listing
- * the scopes it applied in the `X-Berlioz-Reload` header.
+ * Post a Berlioz control form (from the `bzadmin-control-form` template) to its service of the
+ * internal API, which returns `<berlioz-control authorized="…" services="…">`: the admin filter
+ * authorises the control parameter for users who can operate, and Berlioz applies it before the
+ * service runs, listing the scopes it applied in the `X-Berlioz-Reload` header.
  *
  * @param {HTMLFormElement} form
- * @returns {Promise<{authorized: boolean, applied: string[], doc: Document}>} whether the user can
- *   operate, the scopes Berlioz applied, and the XML response
+ * @returns {Promise<{authorized: boolean, applied: string[], services: ?string}>} whether the user
+ *   can operate, the scopes Berlioz applied, and the load status of the services after the request
+ *   (`reload-failed` when Berlioz keeps running the last valid services)
  */
 export async function postControl(form) {
   const xhr = await load(form.action, 'application/xml', {
     method: 'POST',
     body: new URLSearchParams(new FormData(form))
   });
-  const doc = xhr.response;
+  const control = xhr.response.querySelector('berlioz-control');
   return {
-    authorized: doc.querySelector('berlioz-control')?.getAttribute('authorized') === 'true',
+    authorized: control?.getAttribute('authorized') === 'true',
     applied: reloadScopes(xhr.getResponseHeader(RELOAD_HEADER)),
-    doc
+    services: control?.getAttribute('services') ?? null
   };
 }
 

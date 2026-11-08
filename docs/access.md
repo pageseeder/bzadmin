@@ -248,7 +248,7 @@ the admin services of both:
 <url-pattern>/xml/bzadmin/*</url-pattern>
 ```
 
-The pages are then at `/html/bzadmin/`, and their operations and live updates use `/xml/bzadmin/`.
+The pages are then at `/html/bzadmin/`, and their operations and live updates use the internal API at `/xml/bzadmin/api/`.
 
 ## Audit
 
@@ -256,8 +256,8 @@ The logger `org.pageseeder.bzadmin.audit` records every operation, rejected cont
 login, with the method, the path (no query or parameter value), the user and the status code:
 
 ```
-INFO  org.pageseeder.bzadmin.audit - POST /bzadmin/cache/clear.xml user=admin status=200
-WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/cache/clear.xml user=viewer status=403
+INFO  org.pageseeder.bzadmin.audit - POST /bzadmin/api/cache/clear.xml user=admin status=200
+WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/api/cache/clear.xml user=viewer status=403
 WARN  org.pageseeder.bzadmin.audit - Login failed: GET /bzadmin/config.html
 ```
 

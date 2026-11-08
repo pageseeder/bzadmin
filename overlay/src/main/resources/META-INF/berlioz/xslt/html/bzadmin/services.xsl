@@ -55,7 +55,7 @@
   <section>
     <xsl:call-template name="bzadmin-control-form">
       <xsl:with-param name="id"       select="'reload-services'"/>
-      <xsl:with-param name="path"     select="'/bzadmin/services/reload'"/>
+      <xsl:with-param name="path"     select="'/bzadmin/api/services/reload'"/>
       <xsl:with-param name="scope"    select="'services'"/>
       <xsl:with-param name="label"    select="'Reload services'"/>
       <xsl:with-param name="icon"     select="'refresh'"/>

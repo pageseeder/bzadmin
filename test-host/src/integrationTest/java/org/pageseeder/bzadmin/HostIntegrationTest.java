@@ -93,9 +93,9 @@ final class HostIntegrationTest {
     void allowsPlainHttpOnLoopback() throws Exception {
       BerliozHost local = this.host.direct();
       assertEquals(200, local.get("/bzadmin/config.src").statusCode());
-      assertEquals(200, local.post("/bzadmin/cache/clear.src", "").statusCode());
-      assertEquals(200, local.postRaw("/bzadmin/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Host: localhost"));
-      assertEquals(200, local.postRaw("/bzadmin/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Host: [::1]"));
+      assertEquals(200, local.post("/bzadmin/api/cache/clear.src", "").statusCode());
+      assertEquals(200, local.postRaw("/bzadmin/api/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Host: localhost"));
+      assertEquals(200, local.postRaw("/bzadmin/api/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Host: [::1]"));
       HttpResponse<String> anonymous = local.as(null).get("/bzadmin/config.src");
       assertEquals(401, anonymous.statusCode());
       assertEquals(List.of(CHALLENGE), anonymous.headers().allValues("WWW-Authenticate"));
@@ -122,7 +122,7 @@ final class HostIntegrationTest {
           }
         }
         for (String name : new String[]{"admin.example.org", "127.0.0.1.nip.io", "localhost.example.org", "10.0.0.1"}) {
-          assertEquals(403, this.host.direct().as(user).postRaw("/bzadmin/cache/clear.src", "", "X-Requested-With: XMLHttpRequest",
+          assertEquals(403, this.host.direct().as(user).postRaw("/bzadmin/api/cache/clear.src", "", "X-Requested-With: XMLHttpRequest",
               "Host: " + name), user + " " + name);
         }
       }
@@ -136,7 +136,7 @@ final class HostIntegrationTest {
      */
     @Test
     void checksTheOriginOfTheProxy() throws Exception {
-      String path = "/bzadmin/cache/clear.src";
+      String path = "/bzadmin/api/cache/clear.src";
       String unknown = "provider=ehcache2&manager=__DEFAULT__&cache=no-such-cache";
       assertEquals(404, this.host.postRaw(path, unknown, "X-Requested-With: XMLHttpRequest", "Origin: " + HostExample.PROXY_ORIGIN));
       String backend = this.host.direct().origin();
@@ -185,7 +185,7 @@ final class HostIntegrationTest {
     private void configure(String password, String authorization) throws Exception {
       Path config = this.host.webInf().resolve("config/" + HostExample.FALLBACK.config());
       Files.writeString(config, Files.readString(config).replaceAll("password=\"[^\"]*\"", "password=\"" + password.replace("$", "\\$") + "\""));
-      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/config/reload.src", "berlioz-reload=true", "Authorization", authorization);
+      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/api/config/reload.src", "berlioz-reload=true", "Authorization", authorization);
       assertEquals(200, reload.statusCode(), reload.body());
     }
 
@@ -247,7 +247,7 @@ final class HostIntegrationTest {
     private void configure(UnaryOperator<String> change, String authorization) throws Exception {
       Path config = this.host.webInf().resolve("config/" + HostExample.FALLBACK.config());
       Files.writeString(config, change.apply(Files.readString(config)));
-      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/config/reload.src", "berlioz-reload=true", "Authorization", authorization);
+      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/api/config/reload.src", "berlioz-reload=true", "Authorization", authorization);
       assertEquals(200, reload.statusCode(), reload.body());
     }
 
@@ -275,7 +275,7 @@ final class HostIntegrationTest {
         assertEquals(200, get(plain, header), header[0]);
         assertEquals(401, get(basic("operator", "fixture-secret-wrong-password"), header), header[0]);
       }
-      assertEquals(200, this.host.direct().as(null).postRaw("/bzadmin/cache/clear.src", "", "X-Requested-With: XMLHttpRequest",
+      assertEquals(200, this.host.direct().as(null).postRaw("/bzadmin/api/cache/clear.src", "", "X-Requested-With: XMLHttpRequest",
           "Host: myapp.test:9000", "Authorization: " + plain));
       assertTrue(log().contains("The fallback login of Berlioz administration accepts plain HTTP through a proxy on this machine"));
 
@@ -320,9 +320,9 @@ final class HostIntegrationTest {
       assertTrue(page.body().contains("/host/bzadmin/"), "Links in the context");
       assertEquals(401, this.host.as(null).get("/bzadmin/config.html").statusCode());
       assertEquals(403, this.host.direct().get("/bzadmin/config.html", "X-Forwarded-For", "203.0.113.5").statusCode());
-      assertEquals(200, this.host.post("/bzadmin/cache/clear.src", "", "Sec-Fetch-Site", "same-origin").statusCode());
-      assertEquals(200, this.host.postRaw("/bzadmin/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Origin: " + HostExample.PROXY_ORIGIN));
-      assertEquals(403, this.host.postRaw("/bzadmin/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Origin: " + HostExample.PROXY_ORIGIN + "/host"));
+      assertEquals(200, this.host.post("/bzadmin/api/cache/clear.src", "", "Sec-Fetch-Site", "same-origin").statusCode());
+      assertEquals(200, this.host.postRaw("/bzadmin/api/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Origin: " + HostExample.PROXY_ORIGIN));
+      assertEquals(403, this.host.postRaw("/bzadmin/api/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Origin: " + HostExample.PROXY_ORIGIN + "/host"));
     }
 
   }
@@ -359,7 +359,7 @@ final class HostIntegrationTest {
           assertTrue(response.headers().firstValue("Location").orElse("").startsWith(this.host.origin() + path), user + " " + path);
           assertFalse(response.body().contains("page-bzadmin"), user + " " + path);
         }
-        assertEquals(3, this.host.plain().as(user).post("/bzadmin/cache/clear.src", "").statusCode() / 100, user);
+        assertEquals(3, this.host.plain().as(user).post("/bzadmin/api/cache/clear.src", "").statusCode() / 100, user);
       }
     }
 
@@ -395,21 +395,21 @@ final class HostIntegrationTest {
     @Test
     void recordsOperations() throws Exception {
       String key = "fixture-secret-cache-key";
-      assertEquals(200, this.host.post("/bzadmin/cache/entries/remove.json", AccessPolicyTest.CACHE + "&key=" + key).statusCode());
-      assertEquals(403, this.host.as("viewer").post("/bzadmin/cache/clear.xml", "").statusCode());
-      assertEquals(403, this.host.send("POST", "/bzadmin/logs/recent/threshold.src", "threshold=ERROR").statusCode());
-      assertEquals(403, this.host.as(null).post("/bzadmin/application/statistics/reset.src", "").statusCode());
+      assertEquals(200, this.host.post("/bzadmin/api/cache/entries/remove.json", AccessPolicyTest.CACHE + "&key=" + key).statusCode());
+      assertEquals(403, this.host.as("viewer").post("/bzadmin/api/cache/clear.xml", "").statusCode());
+      assertEquals(403, this.host.send("POST", "/bzadmin/api/logs/recent/threshold.src", "threshold=ERROR").statusCode());
+      assertEquals(403, this.host.as(null).post("/bzadmin/api/application/statistics/reset.src", "").statusCode());
       assertEquals(400, this.host.get("/bzadmin/config.src?berlioz-reload=true").statusCode());
-      assertEquals(404, this.host.post("/bzadmin/cache/clear.src?key=" + key, "provider=ehcache2&manager=__DEFAULT__&cache=no-such-cache").statusCode());
+      assertEquals(404, this.host.post("/bzadmin/api/cache/clear.src?key=" + key, "provider=ehcache2&manager=__DEFAULT__&cache=no-such-cache").statusCode());
       assertEquals(200, this.host.get("/bzadmin/config.src").statusCode());
       String log = log();
       for (String entry : new String[]{
-          "INFO  org.pageseeder.bzadmin.audit - POST /bzadmin/cache/entries/remove.json user=operator status=200",
-          "WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/cache/clear.xml user=viewer status=403",
-          "WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/logs/recent/threshold.src user=operator status=403",
-          "WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/application/statistics/reset.src user=- status=403",
+          "INFO  org.pageseeder.bzadmin.audit - POST /bzadmin/api/cache/entries/remove.json user=operator status=200",
+          "WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/api/cache/clear.xml user=viewer status=403",
+          "WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/api/logs/recent/threshold.src user=operator status=403",
+          "WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/api/application/statistics/reset.src user=- status=403",
           "WARN  org.pageseeder.bzadmin.audit - GET /bzadmin/config.src user=operator status=400",
-          "WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/cache/clear.src user=operator status=404"}) {
+          "WARN  org.pageseeder.bzadmin.audit - POST /bzadmin/api/cache/clear.src user=operator status=404"}) {
         assertTrue(log.contains(entry), entry);
       }
       assertFalse(log.contains(key), "No parameter value");

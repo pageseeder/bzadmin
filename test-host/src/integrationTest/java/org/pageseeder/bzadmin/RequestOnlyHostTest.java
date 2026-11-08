@@ -16,9 +16,9 @@ final class RequestOnlyHostTest {
         assertEquals(403, host.as(null).get("/bzadmin/config" + format).statusCode(), format);
         assertEquals(403, host.as("user").get("/bzadmin/config" + format).statusCode(), format);
       }
-      assertEquals(403, host.as("viewer").post("/bzadmin/config/reload.src", "berlioz-reload=true").statusCode());
-      assertEquals(403, host.send("POST", "/bzadmin/config/reload.src", "berlioz-reload=true").statusCode());
-      assertEquals(200, host.post("/bzadmin/config/reload.src", "berlioz-reload=true").statusCode());
+      assertEquals(403, host.as("viewer").post("/bzadmin/api/config/reload.src", "berlioz-reload=true").statusCode());
+      assertEquals(403, host.send("POST", "/bzadmin/api/config/reload.src", "berlioz-reload=true").statusCode());
+      assertEquals(200, host.post("/bzadmin/api/config/reload.src", "berlioz-reload=true").statusCode());
     }
   }
 }

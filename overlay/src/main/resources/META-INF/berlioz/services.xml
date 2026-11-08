@@ -5,7 +5,8 @@
 
   Every generator checks the verdict of org.pageseeder.bzadmin.access.AdminFilter, which the host maps to these URLs:
   the generators of Berlioz are used through org.pageseeder.bzadmin.guard.
-  Every operation is a POST service, which the filter only accepts from the admin pages of users who can operate.
+  Every operation is a POST service of the internal API (/bzadmin/api/), which the filter only accepts from the admin
+  pages of users who can operate.
 -->
 <services group="bzadmin">
 
@@ -20,18 +21,6 @@
     <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"        name="berlioz-control"      target="main"/>
   </service>
 
-  <!--
-    Berlioz reloads everything with 'berlioz-reload=true' (configuration, services, XSLT cache, ETags, redirects),
-    which the filter authorises for this service only (see AdminFilter.CONTROL_SERVICES):
-    the response says if it was authorised, and has the resulting configuration and status of the services
-  -->
-  <service id="bzadmin-config-reload" method="post">
-    <url pattern="/bzadmin/config/reload"/>
-    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"        name="berlioz-control"      target="main"/>
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetGlobalConfig"       name="global-config"        target="main"/>
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices"   name="runtime-services"     target="main"/>
-  </service>
-
   <service id="bzadmin-services" method="get">
     <url pattern="/bzadmin/services"/>
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices" name="runtime-services" target="main"/>
@@ -42,13 +31,6 @@
   <service id="bzadmin-services-lookup" method="get">
     <url pattern="/bzadmin/services/lookup"/>
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetMatchingService" name="service-match" target="main"/>
-  </service>
-
-  <!-- Berlioz reloads the services with 'berlioz-reload=services': the response says if it was authorised -->
-  <service id="bzadmin-services-reload" method="post">
-    <url pattern="/bzadmin/services/reload"/>
-    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"     name="berlioz-control"  target="main"/>
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices" name="runtime-services" target="main"/>
   </service>
 
   <!-- CACHE ================================================================================= -->
@@ -66,36 +48,9 @@
     <generator class="org.pageseeder.bzadmin.cache.GetCacheInfo"       name="cache-info" target="main" />
   </service>
 
-  <!-- The recent rates of the cache information page: the output of the handler only, in any format (no envelope, no XSLT) -->
-  <service id="bzadmin-cache-info-sample" method="get">
-    <url pattern="/bzadmin/cache/info/sample" />
-    <handler class="org.pageseeder.bzadmin.cache.GetCacheInfo"/>
-  </service>
-
   <service id="bzadmin-cache-entries" method="get">
     <url pattern="/bzadmin/cache/entries" />
     <generator class="org.pageseeder.bzadmin.cache.ListCacheEntries"   name="cache-entries" target="main" />
-  </service>
-
-  <!-- One cache, or every cache without parameters -->
-  <service id="bzadmin-cache-clear" method="post">
-    <url pattern="/bzadmin/cache/clear" />
-    <generator class="org.pageseeder.bzadmin.cache.ClearCache"         name="cache-clear" target="main" />
-  </service>
-
-  <service id="bzadmin-cache-statistics" method="post">
-    <url pattern="/bzadmin/cache/statistics" />
-    <generator class="org.pageseeder.bzadmin.cache.SetCacheStatistics" name="cache-statistics" target="main" />
-  </service>
-
-  <service id="bzadmin-cache-statistics-reset" method="post">
-    <url pattern="/bzadmin/cache/statistics/reset" />
-    <generator class="org.pageseeder.bzadmin.cache.ResetCacheStatistics" name="cache-statistics-reset" target="main" />
-  </service>
-
-  <service id="bzadmin-cache-entry-remove" method="post">
-    <url pattern="/bzadmin/cache/entries/remove" />
-    <generator class="org.pageseeder.bzadmin.cache.RemoveCacheEntry"   name="cache-entry-remove" target="main" />
   </service>
 
   <!-- FILES ================================================================================= -->
@@ -123,12 +78,6 @@
   <service id="bzadmin-xslt" method="get">
     <url pattern="/bzadmin/xslt" />
     <generator class="org.pageseeder.bzadmin.xslt.ListXsltFiles"       name="xslt"        target="main" />
-    <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl" name="berlioz-control" target="main" />
-  </service>
-
-  <!-- Berlioz clears the cache with 'berlioz-reload=xslt': the response says if it was authorised -->
-  <service id="bzadmin-xslt-cache-clear" method="post">
-    <url pattern="/bzadmin/xslt/cache/clear" />
     <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl" name="berlioz-control" target="main" />
   </service>
 
@@ -165,12 +114,6 @@
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetRuntimeInfo"    name="runtime"     target="main"/>
   </service>
 
-  <!-- The live poll of the memory: the output of the handler only, in any format (no envelope, no XSLT) -->
-  <service id="bzadmin-system-runtime-sample" method="get">
-    <url pattern="/bzadmin/system/runtime/sample" />
-    <handler class="org.pageseeder.bzadmin.guard.berlioz.system.GetRuntimeInfo"/>
-  </service>
-
   <service id="bzadmin-system-files" method="get">
     <url pattern="/bzadmin/system/files" />
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetFileSystemInfo" name="filesystem"  target="main"/>
@@ -191,12 +134,6 @@
   <service id="bzadmin-system-cpu" method="get">
     <url pattern="/bzadmin/system/cpu" />
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetCpuSample" name="cpu-sample"  target="main"/>
-  </service>
-
-  <!-- The live poll of the CPU: the output of the handler only, in any format (no envelope, no XSLT) -->
-  <service id="bzadmin-system-cpu-sample" method="get">
-    <url pattern="/bzadmin/system/cpu/sample" />
-    <handler class="org.pageseeder.bzadmin.guard.berlioz.system.GetCpuSample"/>
   </service>
 
   <service id="bzadmin-system-properties" method="get">
@@ -225,12 +162,6 @@
     <generator class="org.pageseeder.bzadmin.log.GetRecentEvents" name="logs-recent"  target="main"/>
   </service>
 
-  <service id="bzadmin-logs-recent-threshold" method="post">
-    <url pattern="/bzadmin/logs/recent/threshold" />
-    <!-- The capture threshold of the recent events, not the levels of the application's loggers -->
-    <generator class="org.pageseeder.bzadmin.log.SetRecentEventsThreshold" name="logs-threshold"  target="main"/>
-  </service>
-
   <!-- Service parameters take precedence over request parameters: GET requests never reset the statistics -->
   <service id="bzadmin-application" method="get">
     <url pattern="/bzadmin/application" />
@@ -254,12 +185,6 @@
       <parameter name="reset" value="false"/>
     </generator>
   </service>
-  <service id="bzadmin-application-statistics-reset" method="post">
-    <url pattern="/bzadmin/application/statistics/reset" />
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetGeneratorStatistics" name="statistics"  target="main">
-      <parameter name="reset" value="true"/>
-    </generator>
-  </service>
 
   <!-- AJAX ================================================================================= -->
 
@@ -267,6 +192,98 @@
   <service id="ajax-berlioz-service-match" method="get" cache-control="private, no-cache, no-store, must-revalidate">
     <url pattern="/bzadmin/service/match" />
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetMatchingService" name="service-match" target="ajax" />
+  </service>
+
+  <!-- INTERNAL API ========================================================================== -->
+
+  <!--
+    The data the admin pages read or change by script: direct services (<handler>), whose response is
+    the output of their generator only, in XML or JSON (no envelope, no XSLT, whatever the extension).
+    They are internal to bzadmin: hosts should not rely on them. Every operation is a POST service.
+  -->
+
+  <!-- Live samples -->
+
+  <!-- The recent rates of the cache information page -->
+  <service id="bzadmin-api-cache-info" method="get">
+    <url pattern="/bzadmin/api/cache/info" />
+    <handler class="org.pageseeder.bzadmin.cache.GetCacheInfo"/>
+  </service>
+
+  <!-- The live poll of the memory -->
+  <service id="bzadmin-api-system-runtime" method="get">
+    <url pattern="/bzadmin/api/system/runtime" />
+    <handler class="org.pageseeder.bzadmin.guard.berlioz.system.GetRuntimeInfo"/>
+  </service>
+
+  <!-- The live poll of the CPU -->
+  <service id="bzadmin-api-system-cpu" method="get">
+    <url pattern="/bzadmin/api/system/cpu" />
+    <handler class="org.pageseeder.bzadmin.guard.berlioz.system.GetCpuSample"/>
+  </service>
+
+  <!-- Berlioz controls -->
+
+  <!--
+    Berlioz applies 'berlioz-reload' before the service runs, which the filter authorises for these services only
+    (see AdminFilter.CONTROL_SERVICES): the response says if it was authorised and the load status of the services;
+    the X-Berlioz-Reload header lists the scopes Berlioz applied
+  -->
+
+  <!-- Everything with 'berlioz-reload=true' (configuration, services, XSLT cache, ETags, redirects) -->
+  <service id="bzadmin-api-config-reload" method="post">
+    <url pattern="/bzadmin/api/config/reload"/>
+    <handler class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"/>
+  </service>
+
+  <!-- The services with 'berlioz-reload=services' -->
+  <service id="bzadmin-api-services-reload" method="post">
+    <url pattern="/bzadmin/api/services/reload"/>
+    <handler class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"/>
+  </service>
+
+  <!-- The XSLT cache with 'berlioz-reload=xslt' -->
+  <service id="bzadmin-api-xslt-cache-clear" method="post">
+    <url pattern="/bzadmin/api/xslt/cache/clear" />
+    <handler class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"/>
+  </service>
+
+  <!-- Cache operations: see docs/design/cache-contract.md -->
+
+  <!-- One cache, or every cache without parameters -->
+  <service id="bzadmin-api-cache-clear" method="post">
+    <url pattern="/bzadmin/api/cache/clear" />
+    <handler class="org.pageseeder.bzadmin.cache.ClearCache"/>
+  </service>
+
+  <service id="bzadmin-api-cache-statistics" method="post">
+    <url pattern="/bzadmin/api/cache/statistics" />
+    <handler class="org.pageseeder.bzadmin.cache.SetCacheStatistics"/>
+  </service>
+
+  <service id="bzadmin-api-cache-statistics-reset" method="post">
+    <url pattern="/bzadmin/api/cache/statistics/reset" />
+    <handler class="org.pageseeder.bzadmin.cache.ResetCacheStatistics"/>
+  </service>
+
+  <service id="bzadmin-api-cache-entry-remove" method="post">
+    <url pattern="/bzadmin/api/cache/entries/remove" />
+    <handler class="org.pageseeder.bzadmin.cache.RemoveCacheEntry"/>
+  </service>
+
+  <!-- Other operations -->
+
+  <!-- The capture threshold of the recent events, not the levels of the application's loggers -->
+  <service id="bzadmin-api-logs-recent-threshold" method="post">
+    <url pattern="/bzadmin/api/logs/recent/threshold" />
+    <handler class="org.pageseeder.bzadmin.log.SetRecentEventsThreshold"/>
+  </service>
+
+  <service id="bzadmin-api-application-statistics-reset" method="post">
+    <url pattern="/bzadmin/api/application/statistics/reset" />
+    <handler class="org.pageseeder.bzadmin.guard.berlioz.system.GetGeneratorStatistics">
+      <parameter name="reset" value="true"/>
+    </handler>
   </service>
 
 </services>

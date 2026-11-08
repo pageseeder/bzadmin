@@ -132,7 +132,7 @@ final class LogsXsltTest {
     assertFalse(html.contains("2 shown"), html);
     assertTrue(html.contains("its level (root logger) is <b>INFO</b>"), html);
     assertTrue(html.contains("Events below INFO are not logged, so not captured."), html);
-    assertTrue(html.contains("action=\"/ctx/bzadmin/logs/recent/threshold.xml\""), html);
+    assertTrue(html.contains("action=\"/ctx/bzadmin/api/logs/recent/threshold.xml\""), html);
     assertTrue(html.contains("<option value=\"DEBUG\" selected>Debug</option>"), html);
     assertTrue(html.contains("<option value=\"TRACE\">Trace</option>"), html);
     assertTrue(html.contains("&lt;script&gt;"), "Escaped");

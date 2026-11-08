@@ -263,12 +263,12 @@ final class AdminOperationsTest {
   @Test
   void setsTheRecentEventsThreshold() throws Exception {
     try {
-      HttpResponse<String> response = host.post("/bzadmin/logs/recent/threshold.src", "threshold=WARN");
+      HttpResponse<String> response = host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=WARN");
       assertEquals(200, response.statusCode(), response.body());
       assertEquals("WARN", xpath(parse(response.body()), "//recent-logs-threshold/@level"));
-      assertEquals(400, host.post("/bzadmin/logs/recent/threshold.src", "threshold=BOGUS").statusCode());
+      assertEquals(400, host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=BOGUS").statusCode());
     } finally {
-      host.post("/bzadmin/logs/recent/threshold.src", "threshold=INFO");
+      host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=INFO");
     }
   }
 
@@ -278,9 +278,9 @@ final class AdminOperationsTest {
    */
   @Test
   void capturesRecentEvents() throws Exception {
-    assertEquals(200, host.post("/bzadmin/logs/recent/threshold.src", "threshold=INFO").statusCode());
+    assertEquals(200, host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=INFO").statusCode());
     String audit = "count(//event[@logger='org.pageseeder.bzadmin.audit'][@level='INFO']"
-        + "[contains(@message, 'POST /bzadmin/logs/recent/threshold.src user=operator status=200')])";
+        + "[contains(@message, 'POST /bzadmin/api/logs/recent/threshold.src user=operator status=200')])";
     Document xml = null;
     for (int attempt = 0; attempt < 20; attempt++) {
       xml = parse(host.get("/bzadmin/logs/recent.src").body());
@@ -327,7 +327,7 @@ final class AdminOperationsTest {
     host.get("/bzadmin/application.src?reset=true");
     host.get("/bzadmin/application/statistics.src?reset=true");
     assertEquals("1", xpath(parse(host.get("/bzadmin/application/statistics.src").body()), "count(" + listLibraries + ")"));
-    HttpResponse<String> reset = host.post("/bzadmin/application/statistics/reset.src", "");
+    HttpResponse<String> reset = host.post("/bzadmin/api/application/statistics/reset.src", "");
     assertEquals(200, reset.statusCode(), reset.body());
     assertEquals("0", xpath(parse(host.get("/bzadmin/application/statistics.src").body()), "count(" + listLibraries + ")"));
   }
@@ -343,15 +343,15 @@ final class AdminOperationsTest {
     assertEquals(200, host.get("/bzadmin/cache/info.src?" + cache).statusCode());
     assertEquals(200, host.get("/bzadmin/cache/entries.src?" + cache + "&offset=2147483647&limit=2147483647").statusCode());
 
-    HttpResponse<String> removed = host.post("/bzadmin/cache/entries/remove.src", cache + "&key=" + encode(key));
+    HttpResponse<String> removed = host.post("/bzadmin/api/cache/entries/remove.src", cache + "&key=" + encode(key));
     assertEquals(200, removed.statusCode(), removed.body());
     assertEquals("true", xpath(parse(removed.body()), "//remove-cache-entry/@removed"));
 
     assertEquals(200, host.get("/css/fixture.css").statusCode());
-    assertEquals(200, host.post("/bzadmin/cache/clear.src", cache).statusCode());
+    assertEquals(200, host.post("/bzadmin/api/cache/clear.src", cache).statusCode());
     assertEquals("0", xpath(parse(host.get("/bzadmin/cache/entries.src?" + cache).body()), "count(//entries/entry)"));
-    assertEquals(200, host.post("/bzadmin/cache/clear.src", "").statusCode());
-    assertJson(host.post("/bzadmin/cache/clear.json", "").body(), "\"caches\":[{\"provider\":\"");
+    assertEquals(200, host.post("/bzadmin/api/cache/clear.src", "").statusCode());
+    assertJson(host.post("/bzadmin/api/cache/clear.json", "").body(), "\"caches\":[{\"provider\":\"");
   }
 
   @Test
@@ -376,10 +376,10 @@ final class AdminOperationsTest {
   @Test
   void changesUnknownCache() throws Exception {
     String unknown = "provider=ehcache2&manager=__DEFAULT__&cache=no-such-cache";
-    assertEquals(404, host.post("/bzadmin/cache/entries/remove.src", unknown + "&key=x").statusCode());
-    assertEquals(404, host.post("/bzadmin/cache/clear.src", unknown).statusCode());
-    assertEquals(400, host.post("/bzadmin/cache/clear.src", "cache=no-such-cache").statusCode());
-    HttpResponse<String> json = host.post("/bzadmin/cache/clear.json", unknown);
+    assertEquals(404, host.post("/bzadmin/api/cache/entries/remove.src", unknown + "&key=x").statusCode());
+    assertEquals(404, host.post("/bzadmin/api/cache/clear.src", unknown).statusCode());
+    assertEquals(400, host.post("/bzadmin/api/cache/clear.src", "cache=no-such-cache").statusCode());
+    HttpResponse<String> json = host.post("/bzadmin/api/cache/clear.json", unknown);
     assertEquals(404, json.statusCode());
     assertJson(json.body(), "\"problem\":\"unknown-cache\"");
   }
@@ -389,10 +389,10 @@ final class AdminOperationsTest {
    */
   @ParameterizedTest
   @ValueSource(strings = {
-      "/bzadmin/cache/clear", "/bzadmin/cache/entries/remove?key=x", "/bzadmin/cache/statistics?enable=true",
-      "/bzadmin/cache/statistics/reset",
-      "/bzadmin/logs/recent/threshold?threshold=WARN", "/bzadmin/application/statistics/reset",
-      "/bzadmin/config/reload", "/bzadmin/services/reload", "/bzadmin/xslt/cache/clear"})
+      "/bzadmin/api/cache/clear", "/bzadmin/api/cache/entries/remove?key=x", "/bzadmin/api/cache/statistics?enable=true",
+      "/bzadmin/api/cache/statistics/reset",
+      "/bzadmin/api/logs/recent/threshold?threshold=WARN", "/bzadmin/api/application/statistics/reset",
+      "/bzadmin/api/config/reload", "/bzadmin/api/services/reload", "/bzadmin/api/xslt/cache/clear"})
   void rejectsGetForOperations(String path) throws Exception {
     int query = path.indexOf('?');
     String target = query < 0 ? path + ".src" : path.substring(0, query) + ".src" + path.substring(query);

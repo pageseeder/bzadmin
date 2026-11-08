@@ -50,11 +50,15 @@ final class AccessPolicyTest {
   static final String CACHE = "provider=ehcache2&manager=__DEFAULT__&cache=static-web-caching";
 
   /**
-   * The services of a handler, which write its output only, whatever the format (no envelope or
-   * XSLT), with the query that would run it.
+   * The GET services of the internal API, with the query that would run them: like its POST
+   * services, they write the output of their handler only, whatever the format (no envelope or
+   * XSLT).
    */
-  static final List<String> HANDLERS = List.of("/bzadmin/system/cpu/sample", "/bzadmin/system/runtime/sample",
-      "/bzadmin/cache/info/sample?" + CACHE);
+  static final List<String> HANDLERS = List.of("/bzadmin/api/system/cpu", "/bzadmin/api/system/runtime",
+      "/bzadmin/api/cache/info?" + CACHE);
+
+  /** The prefix of the services of the internal API, which are all direct services. */
+  static final String API = "/bzadmin/api/";
 
   /**
    * Every admin service: the GET routes without parameter, and the others with the parameters they
@@ -71,16 +75,16 @@ final class AccessPolicyTest {
         Arguments.of("GET", "/bzadmin/logs/raw", "id=" + LogIds.fixture("fixture.log")),
         Arguments.of("GET", "/bzadmin/service/match", "url=/bzadmin/config.html"),
         Arguments.of("GET", "/bzadmin/services/lookup", "url=/bzadmin/config"),
-        Arguments.of("POST", "/bzadmin/config/reload", ""),
-        Arguments.of("POST", "/bzadmin/services/reload", ""),
-        Arguments.of("POST", "/bzadmin/xslt/cache/clear", ""),
-        Arguments.of("POST", "/bzadmin/cache/clear", ""),
-        Arguments.of("POST", "/bzadmin/cache/clear", CACHE),
-        Arguments.of("POST", "/bzadmin/cache/entries/remove", CACHE + "&key=x"),
-        Arguments.of("POST", "/bzadmin/logs/recent/threshold", "level=WARN"),
-        Arguments.of("POST", "/bzadmin/application/statistics/reset", ""),
-        Arguments.of("POST", "/bzadmin/cache/statistics", CACHE + "&enable=true"),
-        Arguments.of("POST", "/bzadmin/cache/statistics/reset", CACHE));
+        Arguments.of("POST", "/bzadmin/api/config/reload", ""),
+        Arguments.of("POST", "/bzadmin/api/services/reload", ""),
+        Arguments.of("POST", "/bzadmin/api/xslt/cache/clear", ""),
+        Arguments.of("POST", "/bzadmin/api/cache/clear", ""),
+        Arguments.of("POST", "/bzadmin/api/cache/clear", CACHE),
+        Arguments.of("POST", "/bzadmin/api/cache/entries/remove", CACHE + "&key=x"),
+        Arguments.of("POST", "/bzadmin/api/logs/recent/threshold", "level=WARN"),
+        Arguments.of("POST", "/bzadmin/api/application/statistics/reset", ""),
+        Arguments.of("POST", "/bzadmin/api/cache/statistics", CACHE + "&enable=true"),
+        Arguments.of("POST", "/bzadmin/api/cache/statistics/reset", CACHE));
     Stream<Arguments> handlers = HANDLERS.stream().map(path -> path.split("\\?", 2))
         .map(path -> Arguments.of("GET", path[0], path.length > 1 ? path[1] : ""));
     return Stream.of(routes, others, handlers).flatMap(s -> s);
@@ -129,7 +133,8 @@ final class AccessPolicyTest {
 
   /**
    * Denied by the generators: 403, no ETag, the content of every generator empty, the denial page
-   * in HTML; for a handler, nothing in any format but JSON, which has an empty object.
+   * in HTML; for a service of the internal API, nothing in any format but JSON, which has an empty
+   * object.
    */
   private static void assertDeniedByGenerators(HttpResponse<String> response, String format, String label) throws Exception {
     assertEquals(403, response.statusCode(), label);
@@ -137,7 +142,7 @@ final class AccessPolicyTest {
     String body = response.body();
     assertFalse(body.contains("fixture-secret"), label);
     String path = response.request().uri().getPath();
-    if (HANDLERS.stream().anyMatch(handler -> path.endsWith(handler.split("\\?", 2)[0] + format))) {
+    if (path.contains(API)) {
       assertEquals(".json".equals(format) ? "{}" : "", body.trim(), "No handler output: " + label);
       return;
     }
@@ -503,7 +508,7 @@ final class AccessPolicyTest {
     @ValueSource(strings = {"PUT", "DELETE", "PATCH", "OPTIONS"})
     void deniesOtherMethodsWithoutGrant(String method) throws Exception {
       for (String user : new String[]{null, "user", "unknown"}) {
-        for (String path : new String[]{"/bzadmin/config.src", "/bzadmin/cache/clear.src", "/bzadmin/config/reload.json"}) {
+        for (String path : new String[]{"/bzadmin/config.src", "/bzadmin/api/cache/clear.src", "/bzadmin/api/config/reload.json"}) {
           String label = user + ": " + method + " " + path;
           HttpResponse<String> response = this.host.as(user).send(method, path, "", "X-Requested-With", "XMLHttpRequest");
           assertEquals(this.example.deniedStatus(user), response.statusCode(), label);
@@ -592,16 +597,16 @@ final class AccessPolicyTest {
     void deniesOperationsToViewers() throws Exception {
       assumeFalse(this.example.viewers().isEmpty(), "No viewer: the fallback login grants the permission to operate");
       String[][] operations = {
-          {"POST", "/bzadmin/cache/clear", ""},
-          {"POST", "/bzadmin/cache/clear", CACHE},
-          {"POST", "/bzadmin/cache/entries/remove", CACHE + "&key=x"},
-          {"POST", "/bzadmin/logs/recent/threshold", "level=WARN"},
-          {"POST", "/bzadmin/application/statistics/reset", ""},
-          {"POST", "/bzadmin/cache/statistics", CACHE + "&enable=true"},
-          {"POST", "/bzadmin/cache/statistics/reset", CACHE},
-          {"POST", "/bzadmin/config/reload", "berlioz-reload=true"},
-          {"POST", "/bzadmin/services/reload", "berlioz-reload=services"},
-          {"POST", "/bzadmin/xslt/cache/clear", "berlioz-reload=xslt"}};
+          {"POST", "/bzadmin/api/cache/clear", ""},
+          {"POST", "/bzadmin/api/cache/clear", CACHE},
+          {"POST", "/bzadmin/api/cache/entries/remove", CACHE + "&key=x"},
+          {"POST", "/bzadmin/api/logs/recent/threshold", "level=WARN"},
+          {"POST", "/bzadmin/api/application/statistics/reset", ""},
+          {"POST", "/bzadmin/api/cache/statistics", CACHE + "&enable=true"},
+          {"POST", "/bzadmin/api/cache/statistics/reset", CACHE},
+          {"POST", "/bzadmin/api/config/reload", "berlioz-reload=true"},
+          {"POST", "/bzadmin/api/services/reload", "berlioz-reload=services"},
+          {"POST", "/bzadmin/api/xslt/cache/clear", "berlioz-reload=xslt"}};
       for (String user : this.example.viewers()) {
         BerliozHost viewer = this.host.as(user);
         for (String[] operation : operations) {
@@ -615,9 +620,9 @@ final class AccessPolicyTest {
     @Test
     void allowsOperationsToOperators() throws Exception {
       for (String user : this.example.operators()) {
-        HttpResponse<String> response = this.host.as(user).post("/bzadmin/cache/clear.src", "");
+        HttpResponse<String> response = this.host.as(user).post("/bzadmin/api/cache/clear.src", "");
         assertEquals(200, response.statusCode(), user + ": " + response.body());
-        assertEquals("ok", xpath(parse(response.body()), "/root/content[@name='cache-clear']/@status"), user);
+        assertEquals("clear-cache", parse(response.body()).getDocumentElement().getNodeName(), user);
       }
     }
 

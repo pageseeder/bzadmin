@@ -78,7 +78,7 @@
   <div class="medium-4 columns text-right">
     <xsl:call-template name="bzadmin-control-form">
       <xsl:with-param name="id"       select="'clear-xslt-cache'"/>
-      <xsl:with-param name="path"     select="'/bzadmin/xslt/cache/clear'"/>
+      <xsl:with-param name="path"     select="'/bzadmin/api/xslt/cache/clear'"/>
       <xsl:with-param name="scope"    select="'xslt'"/>
       <xsl:with-param name="label"    select="'Clear XSLT cache'"/>
       <xsl:with-param name="icon"     select="'recycle'"/>

@@ -140,16 +140,16 @@ final class OperationDispatchTest {
      */
     Stream<Arguments> operations() {
       return Stream.of(
-          Arguments.of("/bzadmin/cache/clear", ""),
-          Arguments.of("/bzadmin/cache/clear", AccessPolicyTest.CACHE),
-          Arguments.of("/bzadmin/cache/entries/remove", AccessPolicyTest.CACHE + "&key=GET_/css/fixture.css"),
-          Arguments.of("/bzadmin/cache/statistics", JCACHE + "&enable=false"),
-          Arguments.of("/bzadmin/cache/statistics/reset", JCACHE),
-          Arguments.of("/bzadmin/logs/recent/threshold", "threshold=ERROR"),
-          Arguments.of("/bzadmin/application/statistics/reset", ""),
-          Arguments.of("/bzadmin/config/reload", "berlioz-reload=true"),
-          Arguments.of("/bzadmin/services/reload", "berlioz-reload=services"),
-          Arguments.of("/bzadmin/xslt/cache/clear", "berlioz-reload=xslt"));
+          Arguments.of("/bzadmin/api/cache/clear", ""),
+          Arguments.of("/bzadmin/api/cache/clear", AccessPolicyTest.CACHE),
+          Arguments.of("/bzadmin/api/cache/entries/remove", AccessPolicyTest.CACHE + "&key=GET_/css/fixture.css"),
+          Arguments.of("/bzadmin/api/cache/statistics", JCACHE + "&enable=false"),
+          Arguments.of("/bzadmin/api/cache/statistics/reset", JCACHE),
+          Arguments.of("/bzadmin/api/logs/recent/threshold", "threshold=ERROR"),
+          Arguments.of("/bzadmin/api/application/statistics/reset", ""),
+          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=true"),
+          Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=services"),
+          Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload=xslt"));
     }
 
     /**
@@ -197,7 +197,7 @@ final class OperationDispatchTest {
      */
     @Test
     void acceptsOperationsFromTheSameOrigin() throws Exception {
-      String path = "/bzadmin/cache/clear.src";
+      String path = "/bzadmin/api/cache/clear.src";
       assertEquals(404, host.send("POST", path, UNKNOWN_CACHE, "X-Requested-With", "XMLHttpRequest").statusCode());
       assertEquals(404, host.send("POST", path, UNKNOWN_CACHE, "X-Requested-With", "XMLHttpRequest", "Sec-Fetch-Site", "same-origin").statusCode());
       assertEquals(404, host.postRaw(path, UNKNOWN_CACHE, "X-Requested-With: XMLHttpRequest", "Origin: " + host.origin()));
@@ -211,7 +211,7 @@ final class OperationDispatchTest {
      */
     @Test
     void trustsTheBrowserOverTheOriginHeader() throws Exception {
-      String path = "/bzadmin/cache/clear.src";
+      String path = "/bzadmin/api/cache/clear.src";
       assertEquals(404, host.postRaw(path, UNKNOWN_CACHE, "X-Requested-With: XMLHttpRequest", "Sec-Fetch-Site: same-origin",
           "Origin: https://dev-proxy.example:9000"));
       assertEquals(403, host.postRaw(path, UNKNOWN_CACHE, "X-Requested-With: XMLHttpRequest", "Sec-Fetch-Site: cross-site",
@@ -254,24 +254,24 @@ final class OperationDispatchTest {
 
     Stream<Arguments> misplacedControls() {
       return Stream.of(
-          Arguments.of("/bzadmin/cache/clear", "berlioz-reload=true"),
-          Arguments.of("/bzadmin/application/statistics/reset", "berlioz-reload=services"),
+          Arguments.of("/bzadmin/api/cache/clear", "berlioz-reload=true"),
+          Arguments.of("/bzadmin/api/application/statistics/reset", "berlioz-reload=services"),
           // Other scopes than those of the service
-          Arguments.of("/bzadmin/services/reload", "berlioz-reload=true"),
-          Arguments.of("/bzadmin/services/reload", "berlioz-reload=services,xslt"),
-          Arguments.of("/bzadmin/xslt/cache/clear", "berlioz-reload=services"),
-          Arguments.of("/bzadmin/config/reload", "berlioz-reload=config"),
-          Arguments.of("/bzadmin/xslt/cache/clear", "berlioz-reload=xslt,unknown"),
-          Arguments.of("/bzadmin/xslt/cache/clear", "berlioz-reload="),
+          Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=true"),
+          Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=services,xslt"),
+          Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload=services"),
+          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=config"),
+          Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload=xslt,unknown"),
+          Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload="),
           // The deprecated aliases, even on the service of their scope
-          Arguments.of("/bzadmin/services/reload", "reload-services=true"),
-          Arguments.of("/bzadmin/xslt/cache/clear", "clear-xsl-cache=true"),
-          Arguments.of("/bzadmin/config/reload", "reset-etags=true"),
+          Arguments.of("/bzadmin/api/services/reload", "reload-services=true"),
+          Arguments.of("/bzadmin/api/xslt/cache/clear", "clear-xsl-cache=true"),
+          Arguments.of("/bzadmin/api/config/reload", "reset-etags=true"),
           // Other control parameters, or more than one value
-          Arguments.of("/bzadmin/config/reload", "berlioz-reload=true&berlioz-profile=true"),
-          Arguments.of("/bzadmin/services/reload", "berlioz-reload=services&reset-etags=true"),
-          Arguments.of("/bzadmin/services/reload?berlioz-reload=services", "berlioz-reload=services"),
-          Arguments.of("/bzadmin/services/reload", "berlioz-reload=services&berlioz-reload=services"),
+          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=true&berlioz-profile=true"),
+          Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=services&reset-etags=true"),
+          Arguments.of("/bzadmin/api/services/reload?berlioz-reload=services", "berlioz-reload=services"),
+          Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=services&berlioz-reload=services"),
           Arguments.of("/bzadmin/no-such-service", "berlioz-reload=xslt"));
     }
 
@@ -283,13 +283,13 @@ final class OperationDispatchTest {
       assertEquals(200, host.get("/fixture-forward/config.src").statusCode());
       assertEquals(this.example.deniedStatus(null), host.as(null).get("/fixture-forward/config.src").statusCode());
       for (String viewer : this.example.viewers()) {
-        assertEquals(403, host.as(viewer).post("/fixture-forward/cache/clear.src", "").statusCode(), viewer);
+        assertEquals(403, host.as(viewer).post("/fixture-forward/api/cache/clear.src", "").statusCode(), viewer);
       }
-      HttpResponse<String> crossSite = host.send("POST", "/fixture-forward/cache/clear.src", "");
+      HttpResponse<String> crossSite = host.send("POST", "/fixture-forward/api/cache/clear.src", "");
       assertEquals(403, crossSite.statusCode());
       assertTrue(crossSite.body().contains(CROSS_SITE));
       assertEquals(400, host.get("/fixture-forward/config.src?berlioz-reload=true", control()).statusCode());
-      assertEquals(400, host.post("/fixture-forward/cache/clear.src", "berlioz-reload=true", control()).statusCode());
+      assertEquals(400, host.post("/fixture-forward/api/cache/clear.src", "berlioz-reload=true", control()).statusCode());
       assertEquals(state(), initial);
     }
 
@@ -414,12 +414,12 @@ final class OperationDispatchTest {
         responses.add(host.get("/bzadmin/xslt/doc" + format + "?path=xslt/errors/missing-import.xsl"));
         // Anonymous requests to the container example are challenged by the container
         if (this.example.deniedByFilter(null)) responses.add(host.as(null).get("/bzadmin/config" + format));
-        for (String viewer : this.example.viewers()) responses.add(host.as(viewer).post("/bzadmin/cache/clear" + format, ""));
-        responses.add(host.post("/bzadmin/cache/clear" + format, ""));
+        for (String viewer : this.example.viewers()) responses.add(host.as(viewer).post("/bzadmin/api/cache/clear" + format, ""));
+        responses.add(host.post("/bzadmin/api/cache/clear" + format, ""));
         errors.add(host.get("/bzadmin/logs/raw" + format));
         errors.add(host.get("/bzadmin/logs/raw" + format + "?id=" + LogIds.fixture("missing.log")));
         errors.add(host.get("/bzadmin/no-such-page" + format));
-        errors.add(host.post("/bzadmin/cache/clear" + format, UNKNOWN_CACHE));
+        errors.add(host.post("/bzadmin/api/cache/clear" + format, UNKNOWN_CACHE));
       }
       // A service with its own cache control and an ETag (an AJAX lookup, without HTML page)
       responses.add(host.get("/bzadmin/service/match.src?url=/bzadmin/config.html"));
@@ -458,7 +458,7 @@ final class OperationDispatchTest {
         }
       }
       for (String format : FORMATS) {
-        assertNoSecret(host.post("/bzadmin/config/reload" + format, "", control()).body(), format);
+        assertNoSecret(host.post("/bzadmin/api/config/reload" + format, "", control()).body(), format);
       }
     }
 

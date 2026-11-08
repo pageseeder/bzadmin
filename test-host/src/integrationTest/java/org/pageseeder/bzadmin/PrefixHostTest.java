@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  */
 final class PrefixHostTest {
 
-  private static final String SAMPLE = "/xml/bzadmin/system/cpu/sample";
+  private static final String SAMPLE = "/xml/bzadmin/api/system/cpu";
 
   private static @Nullable BerliozHost host;
 
@@ -79,9 +79,9 @@ final class PrefixHostTest {
    */
   @ParameterizedTest
   @CsvSource({
-      "/html/bzadmin/config,   /xml/bzadmin/config/reload,     true,     'config, services, xslt, etags'",
-      "/html/bzadmin/services, /xml/bzadmin/services/reload,   services, services",
-      "/html/bzadmin/xslt,     /xml/bzadmin/xslt/cache/clear,  xslt,     xslt"})
+      "/html/bzadmin/config,   /xml/bzadmin/api/config/reload,     true,     'config, services, xslt, etags'",
+      "/html/bzadmin/services, /xml/bzadmin/api/services/reload,   services, services",
+      "/html/bzadmin/xslt,     /xml/bzadmin/api/xslt/cache/clear,  xslt,     xslt"})
   void reloadsThroughTheRenderedUrls(String page, String action, String scope, String applied) throws Exception {
     assertTrue(host.get(page).body().contains("action=\"" + action + "\""), page);
     HttpResponse<String> response = host.post(action, "berlioz-reload=" + scope);
@@ -93,7 +93,7 @@ final class PrefixHostTest {
   @Test
   void rendersLiveUpdatesAndOperationsOnTheXmlMapping() throws Exception {
     assertTrue(host.get("/html/bzadmin/system").body().contains("data-href=\"" + SAMPLE + "\""));
-    assertTrue(host.get("/html/bzadmin/logs/recent").body().contains("action=\"/xml/bzadmin/logs/recent/threshold\""));
+    assertTrue(host.get("/html/bzadmin/logs/recent").body().contains("action=\"/xml/bzadmin/api/logs/recent/threshold\""));
   }
 
   @Test
@@ -109,7 +109,7 @@ final class PrefixHostTest {
 
   @Test
   void acceptsOperationsOnlyFromOperatorsAndTheAdminPages() throws Exception {
-    String reload = "/xml/bzadmin/config/reload";
+    String reload = "/xml/bzadmin/api/config/reload";
     assertEquals(403, host.as("viewer").post(reload, "berlioz-reload=true").statusCode());
     assertEquals(403, host.send("POST", reload, "berlioz-reload=true").statusCode());
   }

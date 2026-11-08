@@ -144,9 +144,9 @@ public final class AdminFilter implements Filter {
    * {@code berlioz-reload=true} is every scope.
    */
   static final Map<String, Set<ReloadScope>> CONTROL_SERVICES = Map.of(
-      "/bzadmin/config/reload", EnumSet.allOf(ReloadScope.class),
-      "/bzadmin/services/reload", EnumSet.of(ReloadScope.SERVICES),
-      "/bzadmin/xslt/cache/clear", EnumSet.of(ReloadScope.XSLT));
+      "/bzadmin/api/config/reload", EnumSet.allOf(ReloadScope.class),
+      "/bzadmin/api/services/reload", EnumSet.of(ReloadScope.SERVICES),
+      "/bzadmin/api/xslt/cache/clear", EnumSet.of(ReloadScope.XSLT));
 
   /** The problem reported when the fallback login is refused over plain HTTP, not through a proxy. */
   private static final String LOGIN_PLAIN_HTTP =

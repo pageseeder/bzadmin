@@ -89,7 +89,7 @@
   </error-page>
   <error-page>
     <error-code>451</error-code>
-    <location>/bzadmin/cache/clear.src</location>
+    <location>/bzadmin/api/cache/clear.src</location>
   </error-page>
 
   <filter-mapping>

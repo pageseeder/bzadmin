@@ -47,15 +47,15 @@ final class XsltCacheTest {
 
   @Test
   void clearReportsWhetherBerliozAppliedIt() throws Exception {
-    assertEquals(403, host.as("viewer").post("/bzadmin/xslt/cache/clear.src", "berlioz-reload=xslt", CONTROL).statusCode());
+    assertEquals(403, host.as("viewer").post("/bzadmin/api/xslt/cache/clear.src", "berlioz-reload=xslt", CONTROL).statusCode());
 
-    HttpResponse<String> cleared = host.post("/bzadmin/xslt/cache/clear.src", "berlioz-reload=xslt");
+    HttpResponse<String> cleared = host.post("/bzadmin/api/xslt/cache/clear.src", "berlioz-reload=xslt");
     assertEquals(200, cleared.statusCode(), cleared.body());
     assertEquals("true", xpath(parse(cleared.body()), "//berlioz-control/@authorized"));
     assertEquals("xslt", cleared.headers().firstValue("X-Berlioz-Reload").orElse(""), "Only the XSLT scope");
 
     // The frontend posts to the '.xml' URL
-    HttpResponse<String> xml = host.post("/bzadmin/xslt/cache/clear.xml", "berlioz-reload=xslt");
+    HttpResponse<String> xml = host.post("/bzadmin/api/xslt/cache/clear.xml", "berlioz-reload=xslt");
     assertEquals(200, xml.statusCode(), xml.body());
     assertEquals("true", xpath(parse(xml.body()), "//berlioz-control/@authorized"), xml.body());
   }

@@ -85,7 +85,7 @@
   <section>
     <xsl:call-template name="bzadmin-control-form">
       <xsl:with-param name="id"       select="'berlioz-reload'"/>
-      <xsl:with-param name="path"     select="'/bzadmin/config/reload'"/>
+      <xsl:with-param name="path"     select="'/bzadmin/api/config/reload'"/>
       <xsl:with-param name="scope"    select="'true'"/>
       <xsl:with-param name="label"    select="'Reload everything'"/>
       <xsl:with-param name="icon"     select="'refresh'"/>

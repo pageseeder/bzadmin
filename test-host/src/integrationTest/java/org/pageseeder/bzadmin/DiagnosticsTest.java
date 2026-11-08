@@ -144,15 +144,15 @@ final class DiagnosticsTest {
 
   @Test
   void pollsTheLiveValuesWithoutCaching() throws Exception {
-    for (String path : new String[]{"/bzadmin/system/runtime/sample.xml", "/bzadmin/system/cpu/sample.xml", "/bzadmin/system/summary.xml"}) {
+    for (String path : new String[]{"/bzadmin/api/system/runtime.xml", "/bzadmin/api/system/cpu.xml", "/bzadmin/system/summary.xml"}) {
       HttpResponse<String> response = host.get(path);
       assertEquals(200, response.statusCode(), path);
       assertEquals("no-store", response.headers().firstValue("Cache-Control").orElse(""), path);
     }
-    Document cpu = parse(host.get("/bzadmin/system/cpu/sample.xml").body());
+    Document cpu = parse(host.get("/bzadmin/api/system/cpu.xml").body());
     assertFalse(xpath(cpu, "/cpu-sample/@processors").isEmpty());
     assertFalse(xpath(cpu, "/cpu-sample/@uptime-ms").isEmpty());
-    Document runtime = parse(host.get("/bzadmin/system/runtime/sample.xml").body());
+    Document runtime = parse(host.get("/bzadmin/api/system/runtime.xml").body());
     for (String name : new String[]{"free", "total", "max"}) {
       assertFalse(xpath(runtime, "/runtime/memory/@" + name).isEmpty(), name);
     }
@@ -165,13 +165,13 @@ final class DiagnosticsTest {
   @Test
   void writesTheSamplesDirectly() throws Exception {
     for (String format : new String[]{".xml", ".src", ".html"}) {
-      HttpResponse<String> cpu = host.get("/bzadmin/system/cpu/sample" + format);
+      HttpResponse<String> cpu = host.get("/bzadmin/api/system/cpu" + format);
       assertEquals(200, cpu.statusCode(), format);
       assertTrue(cpu.headers().firstValue("Content-Type").orElse("").startsWith("application/xml"), format);
       assertEquals("cpu-sample", parse(cpu.body()).getDocumentElement().getNodeName(), format);
-      assertEquals("runtime", parse(host.get("/bzadmin/system/runtime/sample" + format).body()).getDocumentElement().getNodeName(), format);
+      assertEquals("runtime", parse(host.get("/bzadmin/api/system/runtime" + format).body()).getDocumentElement().getNodeName(), format);
     }
-    String json = host.get("/bzadmin/system/cpu/sample.json").body();
+    String json = host.get("/bzadmin/api/system/cpu.json").body();
     assertTrue(json.startsWith("{\"processors\":"), json);
     assertEquals("root", parse(host.get("/bzadmin/system/cpu.xml").body()).getDocumentElement().getNodeName());
   }

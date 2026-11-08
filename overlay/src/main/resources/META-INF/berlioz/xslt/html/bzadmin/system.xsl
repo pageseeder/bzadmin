@@ -332,7 +332,7 @@
 <section class="panel">
   <div id="cpu-live" class="live-panel">
     <h2>Live CPU usage<xsl:call-template name="system-info"><xsl:with-param name="name" select="'cpu-live'"/><xsl:with-param name="label" select="'Live CPU usage'"/></xsl:call-template></h2>
-    <p class="actions"><button type="button" data-href="{f:xml-url('/bzadmin/system/cpu/sample')}" class="button hollow toggle-poll"><svg-icon name="play-circle"/> <span>Start</span></button></p>
+    <p class="actions"><button type="button" data-href="{f:xml-url('/bzadmin/api/system/cpu')}" class="button hollow toggle-poll"><svg-icon name="play-circle"/> <span>Start</span></button></p>
     <div class="live-chart">
       <line-chart series="3" title="Machine, process and GC (%)" role="img" aria-label="CPU usage history" aria-details="cpu-current-values" aria-describedby="cpu-history" history-target="cpu-history"/>
       <div class="table-scroll" tabindex="0" role="group" aria-label="CPU usage values"><table class="basic-table" id="cpu-current-values" aria-label="CPU usage: current, minimum and maximum">
@@ -489,7 +489,7 @@
   <section class="panel">
     <div id="memory-live" class="live-panel">
       <h2>Live memory usage</h2>
-      <p class="actions"><button type="button" data-href="{f:xml-url('/bzadmin/system/runtime/sample')}" class="button hollow toggle-poll"><svg-icon name="play-circle"/> <span>Start</span></button></p>
+      <p class="actions"><button type="button" data-href="{f:xml-url('/bzadmin/api/system/runtime')}" class="button hollow toggle-poll"><svg-icon name="play-circle"/> <span>Start</span></button></p>
       <div class="live-chart">
         <line-chart series="2" title="Heap committed and used (% of max)" role="img" aria-label="Heap usage history" aria-details="memory-current-values" aria-describedby="memory-history" history-target="memory-history"/>
         <div class="table-scroll" tabindex="0" role="group" aria-label="Heap usage values"><table class="basic-table" id="memory-current-values" aria-label="Heap usage: current, minimum and maximum">

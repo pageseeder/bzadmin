@@ -204,7 +204,7 @@
   <xsl:apply-templates select="statistics" mode="bzadmin-application-key-metrics"/>
   <p class="actions">
     <button type="button" data-href="{f:to-path('/bzadmin/application/statistics')}" id="refresh-statistics" class="button hollow"><svg-icon name="refresh"/> Refresh</button>
-    <button type="button" data-href="{f:to-path('/bzadmin/application/statistics/reset')}" id="reset-statistics" class="button alert"><svg-icon name="trash"/> Reset statistics</button>
+    <button type="button" data-href="{f:xml-url('/bzadmin/api/application/statistics/reset')}" id="reset-statistics" class="button alert"><svg-icon name="trash"/> Reset statistics</button>
   </p>
   <xsl:for-each select="statistics">
     <div class="table-scroll" tabindex="0" role="group" aria-label="Generator statistics"><sortable-table>

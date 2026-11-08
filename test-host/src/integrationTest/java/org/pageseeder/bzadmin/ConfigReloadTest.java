@@ -26,7 +26,7 @@ final class ConfigReloadTest {
   /** The control key in the configuration of the test host. */
   private static final String[] CONTROL = {"Authorization", "Berlioz fixture-secret-control-key"};
 
-  private static final String RELOAD = "/bzadmin/config/reload.xml";
+  private static final String RELOAD = "/bzadmin/api/config/reload.xml";
 
   private static @Nullable BerliozHost host;
 
@@ -47,7 +47,7 @@ final class ConfigReloadTest {
 
     // Viewers cannot reload, even with the control key
     assertEquals(403, host.as("viewer").post(RELOAD, "berlioz-reload=true", CONTROL).statusCode());
-    assertEquals("blue", xpath(parse(host.get("/bzadmin/config.src").body()), "//properties/property[@name='fixture.colour']/@value"));
+    assertEquals("blue", colour());
 
     // The form of the page uses the XML mapping of the host
     assertTrue(host.get("/bzadmin/config.html").body().contains("action=\"" + RELOAD + "\""));
@@ -56,17 +56,23 @@ final class ConfigReloadTest {
     HttpResponse<String> response = host.post(RELOAD, "berlioz-reload=true");
     // What the Config page reports: the scopes the Berlioz servlet applied (redirects are applied by filters, not mapped here)
     assertEquals("config, services, xslt, etags", response.headers().firstValue("X-Berlioz-Reload").orElse(""));
-    assertFalse(response.body().contains("<header>"), response.body());
+    // A direct service of the internal API: the output of its generator only
     Document reload = parse(response.body());
-    assertEquals("true", xpath(reload, "//berlioz-control/@authorized"));
-    assertEquals("green", xpath(reload, "//properties/property[@name='fixture.colour']/@value"));
-    assertEquals("ready", xpath(reload, "//live-services/@load-status"));
+    assertEquals("berlioz-control", reload.getDocumentElement().getNodeName(), response.body());
+    assertEquals("true", xpath(reload, "/berlioz-control/@authorized"));
+    assertEquals("ready", xpath(reload, "/berlioz-control/@services"));
+    assertEquals("green", colour());
 
     // A configuration that fails to load keeps the last valid properties (Berlioz 0.14.5)
     Files.writeString(config, "<global><berlioz>");
     Document broken = parse(host.post(RELOAD, "berlioz-reload=true").body());
-    assertEquals("true", xpath(broken, "//berlioz-control/@authorized"));
-    assertEquals("green", xpath(broken, "//properties/property[@name='fixture.colour']/@value"));
+    assertEquals("true", xpath(broken, "/berlioz-control/@authorized"));
+    assertEquals("green", colour());
+  }
+
+  /** The value of the property {@code fixture.colour} on the Config page. */
+  private static String colour() throws Exception {
+    return xpath(parse(host.get("/bzadmin/config.src").body()), "//properties/property[@name='fixture.colour']/@value");
   }
 
 }

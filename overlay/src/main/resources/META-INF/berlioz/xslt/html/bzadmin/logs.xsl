@@ -227,7 +227,7 @@
         <xsl:if test="@root-level and index-of($levels, @threshold) lt index-of($levels, @root-level)">Events below <xsl:value-of select="@root-level"/> are not logged, so not captured.</xsl:if></p>
     </div>
     <div class="medium-4 columns text-right">
-      <form id="set-threshold" action="{f:xml-url('/bzadmin/logs/recent/threshold')}" method="post">
+      <form id="set-threshold" action="{f:xml-url('/bzadmin/api/logs/recent/threshold')}" method="post">
         <div class="input-group">
           <span class="input-group-label">Capture threshold</span>
           <select class="input-group-field" name="threshold">

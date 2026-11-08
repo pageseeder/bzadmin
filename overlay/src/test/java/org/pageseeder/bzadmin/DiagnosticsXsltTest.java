@@ -219,7 +219,7 @@ final class DiagnosticsXsltTest {
     // No table repeating the metrics, the live chart
     assertFalse(html.contains("cpu-table"), html);
     assertTrue(html.contains("id=\"cpu-live\""), html);
-    assertTrue(html.contains("data-href=\"/ctx/bzadmin/system/cpu/sample.xml\""), html);
+    assertTrue(html.contains("data-href=\"/ctx/bzadmin/api/system/cpu.xml\""), html);
     assertTrue(html.contains("<line-chart series=\"3\""), html);
     assertTrue(html.contains("aria-details=\"cpu-current-values\" aria-describedby=\"cpu-history\""), html);
     assertTrue(html.contains("<p id=\"cpu-history\" class=\"chart-history\">0 samples</p>"), html);

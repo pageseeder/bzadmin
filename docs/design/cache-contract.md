@@ -245,7 +245,7 @@ match them with the library's documentation and the host's configuration files.
   The counters usually run from the creation of the cache: a warning describes that period, which the page says
   next to the recent rates.
 - **Rates** are computed by the page, never kept on the server: the cache information page reads the XML of
-  `GetCacheInfo` from a handler service (`/bzadmin/cache/info/sample.xml`: no envelope, no XSLT) every 5 seconds while it is visible (`poller`) and shows requests, hit ratio, puts,
+  `GetCacheInfo` from a handler service (`/bzadmin/api/cache/info.xml`: no envelope, no XSLT) every 5 seconds while it is visible (`poller`) and shows requests, hit ratio, puts,
   evictions, expirations and removals per second (or per minute) over the last minute (`counterWindow` in
   `rates.js`). A counter that decreases (statistics reset) starts the window again.
 - Statistics never read entries: counts are the provider's own counters; byte sizes only when the provider tracks
@@ -299,18 +299,19 @@ Problems and statuses: `missing-parameter` 400, `invalid-key` 400, `unknown-prov
 ## Services
 
 Parameters `provider`, `manager`, `cache` name the cache. Reads are GET (`VIEW`), operations POST (`OPERATE`, the
-admin filter's CSRF check, audited).
+admin filter's CSRF check, audited). The operations and the recent rates are services of bzadmin's internal API
+(`/bzadmin/api/`, handler services: the output of the generator only), which hosts should not rely on.
 
 | Service | Route | Generator | Notes |
 | --- | --- | --- | --- |
 | `bzadmin-cache-summary` | GET `/bzadmin/cache` | `ListCaches` | Every provider, manager and cache, with statistics |
 | `bzadmin-cache-info` | GET `/bzadmin/cache/info` | `GetCacheInfo` | One cache with its configuration |
-| `bzadmin-cache-info-sample` | GET `/bzadmin/cache/info/sample` | `GetCacheInfo` (handler) | The same, without envelope or XSLT, for the recent rates |
+| `bzadmin-api-cache-info` | GET `/bzadmin/api/cache/info` | `GetCacheInfo` (handler) | The same, without envelope or XSLT, for the recent rates |
 | `bzadmin-cache-entries` | GET `/bzadmin/cache/entries` | `ListCacheEntries` | `offset`, `limit`; `entries` capability |
-| `bzadmin-cache-clear` | POST `/bzadmin/cache/clear` | `ClearCache` | One cache, or every cache without parameters (a partial identity is 400) |
-| `bzadmin-cache-statistics` | POST `/bzadmin/cache/statistics` | `SetCacheStatistics` | `enable` (required); `statistics-toggle` capability |
-| `bzadmin-cache-statistics-reset` | POST `/bzadmin/cache/statistics/reset` | `ResetCacheStatistics` | `statistics-reset` capability |
-| `bzadmin-cache-entry-remove` | POST `/bzadmin/cache/entries/remove` | `RemoveCacheEntry` | `key` (required), `key-type` (`string` by default) |
+| `bzadmin-api-cache-clear` | POST `/bzadmin/api/cache/clear` | `ClearCache` (handler) | One cache, or every cache without parameters (a partial identity is 400) |
+| `bzadmin-api-cache-statistics` | POST `/bzadmin/api/cache/statistics` | `SetCacheStatistics` (handler) | `enable` (required); `statistics-toggle` capability |
+| `bzadmin-api-cache-statistics-reset` | POST `/bzadmin/api/cache/statistics/reset` | `ResetCacheStatistics` (handler) | `statistics-reset` capability |
+| `bzadmin-api-cache-entry-remove` | POST `/bzadmin/api/cache/entries/remove` | `RemoveCacheEntry` (handler) | `key` (required), `key-type` (`string` by default) |
 
 The routes that named a cache by name only (`/bzadmin/cache/{name}/…`) are gone: they reached the cache of
 `CacheManager.getInstance()` (creating that manager when absent) and could not tell managers apart.

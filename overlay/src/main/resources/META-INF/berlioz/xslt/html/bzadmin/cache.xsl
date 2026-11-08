@@ -15,7 +15,7 @@
   Every provider, manager and cache
 -->
 <xsl:template match="content[@name='cache-overview']" mode="bzadmin-content">
-<section class="cache-overview" data-clear="{f:xml-url('/bzadmin/cache/clear')}">
+<section class="cache-overview" data-clear="{f:xml-url('/bzadmin/api/cache/clear')}">
   <xsl:choose>
     <xsl:when test="not(cache-providers/cache-provider)">
       <div class="callout">
@@ -231,9 +231,9 @@
   One cache: statistics, configuration and operations
 -->
 <xsl:template match="content[@name='cache-info']" mode="bzadmin-content">
-<section class="cache-details" data-clear="{f:xml-url('/bzadmin/cache/clear')}" data-statistics="{f:xml-url('/bzadmin/cache/statistics')}"
-         data-reset-statistics="{f:xml-url('/bzadmin/cache/statistics/reset')}"
-         data-remove="{f:xml-url('/bzadmin/cache/entries/remove')}">
+<section class="cache-details" data-clear="{f:xml-url('/bzadmin/api/cache/clear')}" data-statistics="{f:xml-url('/bzadmin/api/cache/statistics')}"
+         data-reset-statistics="{f:xml-url('/bzadmin/api/cache/statistics/reset')}"
+         data-remove="{f:xml-url('/bzadmin/api/cache/entries/remove')}">
   <xsl:for-each select="cache-info">
     <xsl:call-template name="cache-heading"/>
     <xsl:apply-templates select="cache/warning[1]" mode="bzadmin-content-cache"/>
@@ -470,7 +470,7 @@
   <xsl:variable name="info" select="../.."/>
   <xsl:variable name="counters" select="metric[@name = ('hits', 'misses', 'puts', 'evictions', 'expirations', 'removals')]/@name"/>
   <xsl:if test="exists($counters)">
-    <div class="cache-rates" hidden="hidden" data-source="{f:xml-url('/bzadmin/cache/info/sample')}{f:cache-query($info/@provider, $info/@manager, ../@name)}">
+    <div class="cache-rates" hidden="hidden" data-source="{f:xml-url('/bzadmin/api/cache/info')}{f:cache-query($info/@provider, $info/@manager, ../@name)}">
       <h3>Recent activity</h3>
       <div class="table-scroll" tabindex="0" role="group" aria-label="Recent cache activity"><table class="basic-table summary-table properties-table" aria-label="Recent cache activity">
         <tbody>
@@ -531,7 +531,7 @@
   A range of the keys of a cache
 -->
 <xsl:template match="content[@name='cache-entries']" mode="bzadmin-content">
-<section class="cache-details" data-clear="{f:xml-url('/bzadmin/cache/clear')}" data-remove="{f:xml-url('/bzadmin/cache/entries/remove')}">
+<section class="cache-details" data-clear="{f:xml-url('/bzadmin/api/cache/clear')}" data-remove="{f:xml-url('/bzadmin/api/cache/entries/remove')}">
   <xsl:for-each select="cache-entries">
     <xsl:call-template name="cache-heading"/>
     <xsl:variable name="query" select="f:cache-query(@provider, @manager, cache/@name)"/>

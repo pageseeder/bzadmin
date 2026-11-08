@@ -67,10 +67,10 @@ final class NoLogbackHostTest {
 
   @Test
   void reportsTheThresholdAsNotImplemented() throws Exception {
-    HttpResponse<String> response = host.post("/bzadmin/logs/recent/threshold.src", "threshold=WARN");
+    HttpResponse<String> response = host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=WARN");
     assertEquals(501, response.statusCode(), response.body());
     assertFalse(xpath(parse(response.body()), "//no-recent-logs/@backend").isEmpty());
-    assertEquals(400, host.post("/bzadmin/logs/recent/threshold.src", "threshold=BOGUS").statusCode());
+    assertEquals(400, host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=BOGUS").statusCode());
   }
 
   @Test

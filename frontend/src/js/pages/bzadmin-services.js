@@ -13,7 +13,7 @@ if (page) {
     const button = form.querySelector('button');
     button.disabled = true;
     try {
-      const { authorized, applied, doc } = await postControl(form);
+      const { authorized, applied, services } = await postControl(form);
       if (!authorized) {
         flash(button, 'Services not reloaded: requires the permission to operate', { type: 'error' });
         return;
@@ -27,7 +27,7 @@ if (page) {
         anchor: button,
         error: 'Unable to load services'
       });
-      if (doc.querySelector('live-services')?.getAttribute('load-status') === 'reload-failed') {
+      if (services === 'reload-failed') {
         flash(button, 'Reload failed: Berlioz keeps running the last valid services', { type: 'error' });
       } else if (shown) {
         flash(button, 'Services reloaded');

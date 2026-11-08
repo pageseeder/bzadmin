@@ -136,8 +136,8 @@ final class CacheAdminTest {
     assertTrue(html.contains("No limit"), "The Caffeine cache has no maximum");
     assertTrue(html.contains("Unbounded: </strong>"), html);
     // The recent activity reads the XML of the same cache, from the handler (no envelope)
-    assertTrue(ehcache.contains("<div class=\"cache-rates\" hidden data-source=\"/bzadmin/cache/info/sample.xml?" + FIXTURE.replace("&", "&amp;") + "\""), ehcache);
-    HttpResponse<String> source = host.get("/bzadmin/cache/info/sample.xml?" + FIXTURE);
+    assertTrue(ehcache.contains("<div class=\"cache-rates\" hidden data-source=\"/bzadmin/api/cache/info.xml?" + FIXTURE.replace("&", "&amp;") + "\""), ehcache);
+    HttpResponse<String> source = host.get("/bzadmin/api/cache/info.xml?" + FIXTURE);
     assertEquals(200, source.statusCode());
     assertEquals("no-store", source.headers().firstValue("Cache-Control").orElse(""));
     Document info = parse(source.body());
@@ -183,22 +183,22 @@ final class CacheAdminTest {
   @Order(1)
   void reportsProblems() throws Exception {
     assertProblem(host.get("/bzadmin/cache/entries.src?" + JCACHE), 501, "unsupported");
-    assertProblem(host.post("/bzadmin/cache/statistics.src", FIXTURE + "&enable=false"), 501, "unsupported");
-    assertProblem(host.post("/bzadmin/cache/statistics/reset.src", FIXTURE), 501, "unsupported");
-    assertProblem(host.post("/bzadmin/cache/statistics/reset.src", "provider=jcache&manager=fixture-caffeine"), 400, "missing-parameter");
-    assertProblem(host.post("/bzadmin/cache/entries/remove.src", JCACHE_LONGS + "&key=42"), 400, "invalid-key");
-    assertProblem(host.post("/bzadmin/cache/entries/remove.src", JCACHE_LONGS + "&key=42&key-type=integer"), 400, "invalid-key");
-    assertProblem(host.post("/bzadmin/cache/entries/remove.src", FIXTURE + "&key=x&key-type=uuid"), 400, "invalid-key");
-    assertProblem(host.post("/bzadmin/cache/entries/remove.src", FIXTURE + "&key=x&key-type=long"), 400, "invalid-key");
-    assertProblem(host.post("/bzadmin/cache/entries/remove.src", FIXTURE), 400, "invalid-key");
+    assertProblem(host.post("/bzadmin/api/cache/statistics.src", FIXTURE + "&enable=false"), 501, "unsupported");
+    assertProblem(host.post("/bzadmin/api/cache/statistics/reset.src", FIXTURE), 501, "unsupported");
+    assertProblem(host.post("/bzadmin/api/cache/statistics/reset.src", "provider=jcache&manager=fixture-caffeine"), 400, "missing-parameter");
+    assertProblem(host.post("/bzadmin/api/cache/entries/remove.src", JCACHE_LONGS + "&key=42"), 400, "invalid-key");
+    assertProblem(host.post("/bzadmin/api/cache/entries/remove.src", JCACHE_LONGS + "&key=42&key-type=integer"), 400, "invalid-key");
+    assertProblem(host.post("/bzadmin/api/cache/entries/remove.src", FIXTURE + "&key=x&key-type=uuid"), 400, "invalid-key");
+    assertProblem(host.post("/bzadmin/api/cache/entries/remove.src", FIXTURE + "&key=x&key-type=long"), 400, "invalid-key");
+    assertProblem(host.post("/bzadmin/api/cache/entries/remove.src", FIXTURE), 400, "invalid-key");
     assertProblem(host.get("/bzadmin/cache/info.src?provider=jcache&manager=fixture&cache=PSML"), 404, "unknown-manager");
     assertProblem(host.get("/bzadmin/cache/info.src?provider=ehcache2&manager=fixture-caffeine&cache=PSML"), 404, "unknown-manager");
     assertProblem(host.get("/bzadmin/cache/info.src?provider=ehcache2&manager=fixture&cache=psml"), 404, "unknown-cache");
     assertProblem(host.get("/bzadmin/cache/info.src?provider=ehcache2&cache=PSML"), 400, "missing-parameter");
     // The same statuses from the handler
-    assertProblem(host.get("/bzadmin/cache/info/sample.xml?provider=ehcache2&manager=fixture&cache=psml"), 404, "unknown-cache");
-    assertProblem(host.get("/bzadmin/cache/info/sample.xml?provider=ehcache2&cache=PSML"), 400, "missing-parameter");
-    assertEquals(400, host.post("/bzadmin/cache/statistics.src", JCACHE).statusCode(), "enable is required");
+    assertProblem(host.get("/bzadmin/api/cache/info.xml?provider=ehcache2&manager=fixture&cache=psml"), 404, "unknown-cache");
+    assertProblem(host.get("/bzadmin/api/cache/info.xml?provider=ehcache2&cache=PSML"), 400, "missing-parameter");
+    assertEquals(400, host.post("/bzadmin/api/cache/statistics.src", JCACHE).statusCode(), "enable is required");
     String html = host.get("/bzadmin/cache/info.html?provider=ehcache2&manager=fixture&cache=psml").body();
     assertTrue(html.contains("No such cache in this cache manager."), html);
   }
@@ -206,7 +206,7 @@ final class CacheAdminTest {
   @Test
   @Order(1)
   void togglesJCacheStatistics() throws Exception {
-    HttpResponse<String> disabled = host.post("/bzadmin/cache/statistics.src", JCACHE_LONGS + "&enable=false");
+    HttpResponse<String> disabled = host.post("/bzadmin/api/cache/statistics.src", JCACHE_LONGS + "&enable=false");
     assertEquals(200, disabled.statusCode(), disabled.body());
     assertEquals("false", xpath(parse(disabled.body()), "//cache-statistics/@enabled"));
     Document info = parse(host.get("/bzadmin/cache/info.src?" + JCACHE_LONGS).body());
@@ -214,14 +214,14 @@ final class CacheAdminTest {
     assertEquals("0", xpath(info, "count(//cache/statistics/metric[@name != 'entries'])"), "Counters unavailable, not zero");
     assertEquals("1", xpath(info, "count(//cache/statistics/metric[@name = 'entries'])"), "Caffeine still counts its entries");
     assertTrue(host.get("/bzadmin/cache/info.html?" + JCACHE_LONGS).body().contains("Enable statistics"));
-    assertEquals(200, host.post("/bzadmin/cache/statistics.src", JCACHE_LONGS + "&enable=true").statusCode());
+    assertEquals(200, host.post("/bzadmin/api/cache/statistics.src", JCACHE_LONGS + "&enable=true").statusCode());
     assertEquals("true", xpath(parse(host.get("/bzadmin/cache/info.src?" + JCACHE_LONGS).body()), "//cache/statistics/@enabled"));
   }
 
   @Test
   @Order(1)
   void resetsJCacheStatistics() throws Exception {
-    HttpResponse<String> reset = host.post("/bzadmin/cache/statistics/reset.src", JCACHE_LONGS);
+    HttpResponse<String> reset = host.post("/bzadmin/api/cache/statistics/reset.src", JCACHE_LONGS);
     assertEquals(200, reset.statusCode(), reset.body());
     assertEquals("long-keys", xpath(parse(reset.body()), "//reset-cache-statistics/@name"));
     Document info = parse(host.get("/bzadmin/cache/info.src?" + JCACHE_LONGS).body());
@@ -248,7 +248,7 @@ final class CacheAdminTest {
     assertTrue(keys(FIXTURE).contains("fixture-key"));
     assertTrue(keys(DEFAULT).contains("fixture-key"));
 
-    assertEquals(200, host.post("/bzadmin/cache/clear.src", FIXTURE).statusCode());
+    assertEquals(200, host.post("/bzadmin/api/cache/clear.src", FIXTURE).statusCode());
     assertEquals("", keys(FIXTURE));
     assertTrue(keys(DEFAULT).contains("fixture-key"));
     assertTrue(keys("provider=ehcache2&manager=fixture&cache=clear-me").contains("fixture-key"));
@@ -258,7 +258,7 @@ final class CacheAdminTest {
   @Test
   @Order(3)
   void clearsEveryCache() throws Exception {
-    HttpResponse<String> response = host.post("/bzadmin/cache/clear.src", "");
+    HttpResponse<String> response = host.post("/bzadmin/api/cache/clear.src", "");
     assertEquals(200, response.statusCode(), response.body());
     Document xml = parse(response.body());
     for (String[] cache : new String[][] {{"ehcache2", "__DEFAULT__", "PSML"}, {"ehcache2", "fixture", "clear-me"}, {"jcache", "fixture-caffeine", "long-keys"}}) {
@@ -270,7 +270,7 @@ final class CacheAdminTest {
   }
 
   private static String removed(String form) throws Exception {
-    HttpResponse<String> response = host.post("/bzadmin/cache/entries/remove.src", form);
+    HttpResponse<String> response = host.post("/bzadmin/api/cache/entries/remove.src", form);
     assertEquals(200, response.statusCode(), form + ": " + response.body());
     return xpath(parse(response.body()), "//remove-cache-entry/@removed");
   }

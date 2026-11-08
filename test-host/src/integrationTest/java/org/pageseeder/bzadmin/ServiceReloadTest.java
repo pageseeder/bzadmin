@@ -42,15 +42,15 @@ final class ServiceReloadTest {
     Files.writeString(host.webInf().resolve("config/services!broken.xml"), "<services group=\"broken\"><service id=\"broken\"");
 
     // Viewers cannot reload the services, even with the control key
-    assertEquals(403, host.as("viewer").post("/bzadmin/services/reload.src", "berlioz-reload=services", CONTROL).statusCode());
+    assertEquals(403, host.as("viewer").post("/bzadmin/api/services/reload.src", "berlioz-reload=services", CONTROL).statusCode());
     assertEquals("ready", loadStatus("unauthorised"));
 
     // The response of the reload, authorised by the admin filter, has the resulting status
-    HttpResponse<String> response = host.post("/bzadmin/services/reload.src", "berlioz-reload=services");
+    HttpResponse<String> response = host.post("/bzadmin/api/services/reload.src", "berlioz-reload=services");
     assertEquals("services", response.headers().firstValue("X-Berlioz-Reload").orElse(""), "Only the services scope");
     Document reload = parse(response.body());
-    assertEquals("true", xpath(reload, "//berlioz-control/@authorized"));
-    assertEquals("reload-failed", xpath(reload, "//live-services/@load-status"));
+    assertEquals("true", xpath(reload, "/berlioz-control/@authorized"));
+    assertEquals("reload-failed", xpath(reload, "/berlioz-control/@services"));
 
     Document xml = parse(host.get("/bzadmin/services.src?view=reload-failed").body());
     assertEquals("reload-failed", xpath(xml, "//live-services/@load-status"));

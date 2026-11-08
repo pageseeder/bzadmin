@@ -64,8 +64,8 @@ final class NoCacheHostTest {
     HttpResponse<String> info = host.get("/bzadmin/cache/info.src?provider=ehcache2&manager=__DEFAULT__&cache=PSML");
     assertEquals(404, info.statusCode(), info.body());
     assertEquals("unknown-provider", xpath(parse(info.body()), "//no-cache/@problem"));
-    assertEquals(404, host.post("/bzadmin/cache/clear.src", "provider=jcache&manager=main&cache=PSML").statusCode());
-    HttpResponse<String> all = host.post("/bzadmin/cache/clear.src", "");
+    assertEquals(404, host.post("/bzadmin/api/cache/clear.src", "provider=jcache&manager=main&cache=PSML").statusCode());
+    HttpResponse<String> all = host.post("/bzadmin/api/cache/clear.src", "");
     assertEquals(200, all.statusCode(), all.body());
     assertEquals("0", xpath(parse(all.body()), "count(//clear-cache/cache)"));
   }
