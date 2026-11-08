@@ -19,9 +19,6 @@
   <filter-mapping>
     <filter-name>AdminFilter</filter-name>
     <url-pattern>/bzadmin/*</url-pattern>
-    <dispatcher>REQUEST</dispatcher>
-    <dispatcher>FORWARD</dispatcher>
-    <dispatcher>ERROR</dispatcher>
   </filter-mapping>
 
 </web-app>

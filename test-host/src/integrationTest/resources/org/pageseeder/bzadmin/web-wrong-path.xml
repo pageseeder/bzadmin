@@ -42,17 +42,11 @@
   <filter-mapping>
     <filter-name>FixtureAuthentication</filter-name>
     <url-pattern>/*</url-pattern>
-    <dispatcher>REQUEST</dispatcher>
-    <dispatcher>FORWARD</dispatcher>
-    <dispatcher>ERROR</dispatcher>
   </filter-mapping>
 
   <filter-mapping>
     <filter-name>AdminFilter</filter-name>
     <url-pattern>/admin/*</url-pattern>
-    <dispatcher>REQUEST</dispatcher>
-    <dispatcher>FORWARD</dispatcher>
-    <dispatcher>ERROR</dispatcher>
   </filter-mapping>
 
   <filter-mapping>

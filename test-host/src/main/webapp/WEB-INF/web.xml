@@ -51,20 +51,14 @@
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 
-  <!-- Authentication first, then the admin filter, for every dispatch to the admin services -->
+  <!-- Authentication first, then the admin filter, for direct requests to the admin services -->
   <filter-mapping>
     <filter-name>LocalAdminAccessFilter</filter-name>
     <url-pattern>/bzadmin/*</url-pattern>
-    <dispatcher>REQUEST</dispatcher>
-    <dispatcher>FORWARD</dispatcher>
-    <dispatcher>ERROR</dispatcher>
   </filter-mapping>
   <filter-mapping>
     <filter-name>AdminFilter</filter-name>
     <url-pattern>/bzadmin/*</url-pattern>
-    <dispatcher>REQUEST</dispatcher>
-    <dispatcher>FORWARD</dispatcher>
-    <dispatcher>ERROR</dispatcher>
   </filter-mapping>
 
   <!-- HTTP caching for styles, scripts and fonts -->

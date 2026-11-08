@@ -25,18 +25,26 @@ mappings):
 <filter-mapping>
   <filter-name>AdminFilter</filter-name>
   <url-pattern>/bzadmin/*</url-pattern>
-  <dispatcher>REQUEST</dispatcher>
-  <dispatcher>FORWARD</dispatcher>
-  <dispatcher>ERROR</dispatcher>
 </filter-mapping>
 ```
+
+With no dispatcher elements, the mapping defaults to `REQUEST`, which is sufficient when the host serves
+admin URLs only through direct client requests. If the host forwards to admin URLs, explicitly add both
+`<dispatcher>REQUEST</dispatcher>` and `<dispatcher>FORWARD</dispatcher>` inside the mapping. If it uses an
+admin URL as an error page, explicitly include `REQUEST` and `ERROR` instead (plus `FORWARD` if needed).
+Map the host's authentication filter
+to the same dispatcher types before `AdminFilter`.
+
+The default `REQUEST` mapping is exercised by `RequestOnlyHostTest` with `web-request-only.xml` in the
+packaged-host tests. The forwarding and error-page integrations retain explicit mappings and are covered
+by `OperationDispatchTest`.
 
 This mapping is for Berlioz mapped by extension, the recommended setup; see also
 [Berlioz mapped by prefix](#berlioz-mapped-by-prefix). If the filter is missing, mapped to other URLs or
 placed before the authentication, the admin pages are denied, not opened. So are includes of admin pages (the
 filter does not process includes), and services of the host that use bzadmin's generators outside the admin
-URLs. An error page that is an admin URL goes through the filter: avoid them, since an error page that is an
-operation runs it for an administrator.
+URLs. With the `ERROR` mapping, an error page that is an admin URL goes through the filter: avoid such error
+pages, since an error page that is an operation runs it for an administrator.
 
 At startup, Berlioz Admin warns on the console, with the prefix `[BERLIOZ_INIT] WARNING`, when the filter is not
 declared or does not cover the admin services, or when Berlioz is mapped without the XML mapping that goes with
