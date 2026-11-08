@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Checking a password against a hash is slow by design ({@link AdminPassword}), and browsers send
  * the credentials with every request: the last credentials verified are remembered as a keyed
  * digest (the key is random and only in memory), for the same configured user name and password.
+ * Other credentials are checked within the limits of a {@link LoginThrottle}.
  */
 final class FallbackLogin {
 
@@ -29,45 +30,61 @@ final class FallbackLogin {
   /** The last credentials verified, or {@code null}. */
   private final AtomicReference<@Nullable Verified> verified = new AtomicReference<>();
 
+  private final LoginThrottle throttle;
+
   FallbackLogin() {
+    this(new LoginThrottle());
+  }
+
+  FallbackLogin(LoginThrottle throttle) {
     new SecureRandom().nextBytes(this.key);
+    this.throttle = throttle;
   }
 
   /**
    * @param req        The request.
    * @param username   The user name of the configuration.
    * @param configured The password of the configuration: a valid hash, or a plain password.
-   * @return the access of the administrator, or {@code null} unless the request has their BASIC
+   * @return the outcome: the access of the administrator when the request has their BASIC
    *   credentials.
    */
-  @Nullable AdminAccess authenticate(HttpServletRequest req, String username, String configured) {
+  Outcome authenticate(HttpServletRequest req, String username, String configured) {
     byte[] credentials = credentials(req);
-    if (credentials == null) return null;
+    if (credentials == null) return Outcome.NONE;
     String decoded = new String(credentials, StandardCharsets.UTF_8);
     int colon = decoded.indexOf(':');
-    if (colon < 0) return null;
+    if (colon < 0) return Outcome.FAILED;
     byte[] digest = digest(configured, credentials);
     Verified last = this.verified.get();
-    boolean valid;
     if (last != null && last.username.equals(username) && last.configured.equals(configured)
         && MessageDigest.isEqual(last.digest, digest)) {
-      valid = true;
-    } else {
+      return Outcome.granted(username);
+    }
+    String client = LoginThrottle.client(req.getRemoteAddr());
+    int wait = this.throttle.acquire(client);
+    if (wait > 0) return Outcome.throttled(wait);
+    if (!this.throttle.begin()) return Outcome.throttled(1);
+    boolean valid;
+    try {
       // Both checks always run, so that the time does not tell whether the user name is right
       boolean user = MessageDigest.isEqual(decoded.substring(0, colon).getBytes(StandardCharsets.UTF_8),
           username.getBytes(StandardCharsets.UTF_8));
       boolean password = AdminPassword.verify(decoded.substring(colon + 1).toCharArray(), configured);
       valid = user && password;
-      if (valid) this.verified.set(new Verified(username, configured, digest));
+    } finally {
+      this.throttle.end();
     }
-    return valid ? AdminAccess.of(username, AdminPermission.OPERATE) : null;
+    if (!valid) return Outcome.FAILED;
+    this.throttle.reset(client);
+    this.verified.set(new Verified(username, configured, digest));
+    return Outcome.granted(username);
   }
 
   /**
-   * @return whether the request has BASIC credentials, valid or not.
+   * @return whether to report a throttled login now (see {@link LoginThrottle#report()}).
    */
-  static boolean hasCredentials(HttpServletRequest req) {
-    return credentials(req) != null;
+  boolean reportThrottled() {
+    return this.throttle.report();
   }
 
   /**
@@ -95,6 +112,41 @@ final class FallbackLogin {
       // Every Java runtime has it
       throw new IllegalStateException("HmacSHA256 is not available", ex);
     }
+  }
+
+  /**
+   * The outcome of a login: the access granted, failed credentials, throttled credentials (not
+   * checked), or no credentials.
+   */
+  static final class Outcome {
+
+    static final Outcome NONE = new Outcome(null, false, 0);
+
+    static final Outcome FAILED = new Outcome(null, true, 0);
+
+    /** The access of the administrator, or {@code null}. */
+    final @Nullable AdminAccess access;
+
+    /** Whether the request has BASIC credentials, valid or not. */
+    final boolean credentials;
+
+    /** The seconds after which to try again when the credentials were not checked, or {@code 0}. */
+    final int retryAfter;
+
+    private Outcome(@Nullable AdminAccess access, boolean credentials, int retryAfter) {
+      this.access = access;
+      this.credentials = credentials;
+      this.retryAfter = retryAfter;
+    }
+
+    static Outcome granted(String username) {
+      return new Outcome(AdminAccess.of(username, AdminPermission.OPERATE), true, 0);
+    }
+
+    static Outcome throttled(int seconds) {
+      return new Outcome(null, true, seconds);
+    }
+
   }
 
   private static final class Verified {

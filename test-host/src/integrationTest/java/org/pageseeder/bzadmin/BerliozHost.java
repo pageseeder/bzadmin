@@ -16,6 +16,7 @@ import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -53,6 +54,9 @@ final class BerliozHost implements AutoCloseable {
 
   /** The web descriptor of the host mapped by prefix, which has no kickstart servlets to override. */
   private static final String PREFIX_DESCRIPTOR = "web-prefix.xml";
+
+  /** The client addresses forwarded by the proxy so far. */
+  private static final AtomicInteger CLIENTS = new AtomicInteger();
 
   private final Server server;
 
@@ -300,16 +304,27 @@ final class BerliozHost implements AutoCloseable {
   }
 
   /**
-   * @return the headers identifying the user and, through the proxy, the forwarded ones.
+   * @return the headers identifying the user and, through the proxy, the forwarded ones: each
+   *   request comes from its own client address, so that the fallback login does not throttle the
+   *   failed logins of the policy cases.
    */
   private List<String> identity() {
     List<String> headers = new ArrayList<>();
     String[] credentials = this.example.credentials(this.user);
     if (credentials != null) headers.addAll(List.of(credentials));
     if (this.proxied) {
-      headers.addAll(List.of("X-Forwarded-Proto", "https", "X-Forwarded-Host", URI.create(HostExample.PROXY_ORIGIN).getHost()));
+      headers.addAll(List.of("X-Forwarded-Proto", "https", "X-Forwarded-Host", URI.create(HostExample.PROXY_ORIGIN).getHost(),
+          "X-Forwarded-For", nextClient()));
     }
     return headers;
+  }
+
+  /**
+   * @return a new client address of the benchmarking range ({@code 198.18.0.0/15}).
+   */
+  private static String nextClient() {
+    int n = CLIENTS.getAndIncrement() & 0x1ffff;
+    return "198." + (18 + (n >> 16)) + "." + ((n >> 8) & 0xff) + "." + (n & 0xff);
   }
 
   /**

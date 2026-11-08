@@ -157,9 +157,21 @@ access is denied and a warning is logged, rather than the value becoming the pas
 password, and a warning that it is not hashed is logged once.
 
 The Config page hides the password. Requests without valid credentials get a 401 BASIC challenge. The
-fallback login is not used when the host sets `AdminAccess`. With a hash, each wrong password costs the server
-one PBKDF2 computation, by design, and there is no rate limit. Tested with `web-fallback.xml` behind a
+fallback login is not used when the host sets `AdminAccess`. Tested with `web-fallback.xml` behind a
 TLS-terminating proxy.
+
+With a hash, each password check costs the server one PBKDF2 computation, by design, so checks are limited:
+
+- **By client.** A client can make 10 checks at once, then one every 6 seconds, until one succeeds. Beyond that,
+  requests with credentials get `429 Too Many Requests` with `Retry-After`, without checking them, even when they
+  are right. The client is the address of the connection, or its `/64` network for IPv6. At most 1024 clients
+  are tracked; further ones share one limit.
+- **Overall.** Half of the processors, at least one, check passwords at a time; a request that cannot start its
+  check within one second gets `429` too.
+
+Credentials already verified are remembered, so a signed-in administrator is not affected, from any address.
+The audit log records throttled logins once a minute at most. Behind a proxy, the container must apply the
+forwarded headers so that the address is the client's: otherwise every client shares the proxy's limit.
 
 #### The fallback login in production
 
@@ -173,8 +185,9 @@ Behind a proxy:
 - **Only the proxy must reach the container.** Once the container applies the forwarded headers, a client that
   connects directly can send `X-Forwarded-Proto: https` itself. Bind the container to a private interface or
   restrict it with a firewall.
-- **Limit access to `/bzadmin` at the proxy.** There is no rate limit, so a public URL is open to password guessing
-  and to the cost of the hash computation. Add a rate limit or an IP allowlist.
+- **Limit access to `/bzadmin` at the proxy.** The [limits of the fallback login](#c-the-fallback-login) slow
+  password guessing from one address, but a public URL still lets anyone use up the shared limits, which
+  delays the administrator's own sign-in. Add an IP allowlist, or a rate limit at the proxy.
 - **Do not add BASIC authentication at the proxy for these URLs.** It uses the same `Authorization` header as the
   fallback login.
 

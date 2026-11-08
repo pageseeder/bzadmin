@@ -56,7 +56,9 @@ import org.slf4j.LoggerFactory;
  *     headers), or over plain HTTP on this machine only ({@link #isLoopback(HttpServletRequest)}),
  *     also through a development proxy on this machine with {@value #LOCAL_PROXY} and a plain
  *     password. It grants {@link AdminPermission#OPERATE}. Not used when unset, or when the host set
- *     the {@link AdminAccess} attribute.</li>
+ *     the {@link AdminAccess} attribute. Password checks are limited by client and overall
+ *     ({@link LoginThrottle}): beyond the limits, the request is refused with 429 and
+ *     {@code Retry-After}, without checking its credentials.</li>
  * </ol>
  *
  * <p>For each request, in order:
@@ -81,7 +83,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Operations, rejected control parameters and failed logins are recorded by the logger
  * {@value #AUDIT_LOGGER}: method, path (no query or parameter), user and status code; the user name
- * of a failed login is not recorded.
+ * of a failed login is not recorded. Throttled logins are recorded once a minute at most.
  *
  * <p>The filter also holds the lifecycle of the capture of recent log events ({@link LoggingBackends}):
  * it starts when the filter is initialised and stops when it is destroyed.
@@ -125,6 +127,9 @@ public final class AdminFilter implements Filter {
 
   /** The message of a request without the credentials of the fallback login. */
   public static final String SIGN_IN = "Sign in to use Berlioz administration.";
+
+  /** The message of a request whose credentials of the fallback login were not checked (429). */
+  public static final String THROTTLED = "Too many sign-in attempts to Berlioz administration: try again later.";
 
   /** The message of an operation that does not come from a page of the same origin. */
   public static final String CROSS_SITE = "Berlioz administration operations are only accepted from its own pages.";
@@ -171,6 +176,9 @@ public final class AdminFilter implements Filter {
   private static final String ORIGIN_MISMATCH =
       "An operation of Berlioz administration was refused because its Origin is not the scheme, host and port "
       + "of the request: behind a proxy, see the proxies section of the access guide";
+
+  /** Too Many Requests (RFC 6585), not in the Servlet API. */
+  private static final int SC_TOO_MANY_REQUESTS = 429;
 
   /** The header with which browsers state where a request comes from. */
   private static final String SEC_FETCH_SITE = "Sec-Fetch-Site";
@@ -243,9 +251,17 @@ public final class AdminFilter implements Filter {
     if (fallback != null && !req.isSecure() && !local) {
       report(hasForwardingHeader(req) ? LOGIN_FORWARDED : LOGIN_PLAIN_HTTP);
     } else if (fallback != null) {
-      access = this.login.authenticate(req, fallback.username, fallback.password);
-      if (access != null) return access;
-      boolean failed = FallbackLogin.hasCredentials(req);
+      FallbackLogin.Outcome outcome = this.login.authenticate(req, fallback.username, fallback.password);
+      if (outcome.access != null) return outcome.access;
+      if (outcome.retryAfter > 0) {
+        if (this.login.reportThrottled() && AUDIT.isWarnEnabled()) {
+          AUDIT.warn("Login throttled: {} {} (further throttled logins are not recorded for a minute)", req.getMethod(), path(req));
+        }
+        res.setHeader("Retry-After", Integer.toString(outcome.retryAfter));
+        refuse(req, res, null, SC_TOO_MANY_REQUESTS, THROTTLED, false);
+        return null;
+      }
+      boolean failed = outcome.credentials;
       if (failed && AUDIT.isWarnEnabled()) AUDIT.warn("Login failed: {} {}", req.getMethod(), path(req));
       res.setHeader("WWW-Authenticate", "Basic realm=\"" + REALM + "\", charset=\"UTF-8\"");
       refuse(req, res, null, HttpServletResponse.SC_UNAUTHORIZED, SIGN_IN, operation && !failed);

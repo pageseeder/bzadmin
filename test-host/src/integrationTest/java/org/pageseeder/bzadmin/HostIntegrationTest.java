@@ -160,6 +160,58 @@ final class HostIntegrationTest {
   }
 
   /**
+   * The failed logins of a client are throttled: beyond the limit, the credentials are not checked,
+   * even the right ones, while other clients are not affected. Its own host, since the client
+   * stays throttled.
+   */
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  final class FallbackThrottle {
+
+    private @Nullable BerliozHost host;
+
+    @BeforeAll
+    void start() throws Exception {
+      this.host = BerliozHost.start(HostExample.FALLBACK);
+    }
+
+    @AfterAll
+    void stop() throws Exception {
+      if (this.host != null) this.host.close();
+    }
+
+    @Test
+    void throttlesFailedLogins() throws Exception {
+      // Directly, from this machine: every request has the same client address
+      BerliozHost local = this.host.direct().as(null);
+      String right = basic("operator", "fixture-secret-password-operator");
+      for (int i = 0; i < 10; i++) {
+        assertEquals(401, local.get("/bzadmin/config.src", "Authorization", basic("operator", "fixture-secret-wrong-" + i)).statusCode(), "attempt " + i);
+      }
+      for (String authorization : new String[]{basic("operator", "fixture-secret-wrong"), right}) {
+        HttpResponse<String> throttled = local.get("/bzadmin/config.src", "Authorization", authorization);
+        assertEquals(429, throttled.statusCode());
+        // At most the interval of the throttle, less the time of the failed logins
+        int retryAfter = Integer.parseInt(throttled.headers().firstValue("Retry-After").orElse("0"));
+        assertTrue(retryAfter >= 1 && retryAfter <= 6, "Retry-After: " + retryAfter);
+        assertTrue(throttled.headers().allValues("WWW-Authenticate").isEmpty());
+        assertEquals("Too many sign-in attempts to Berlioz administration: try again later.", throttled.body());
+      }
+      assertEquals(429, local.postRaw("/bzadmin/api/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Authorization: " + right));
+      // Without credentials, the login is still offered
+      assertEquals(401, local.get("/bzadmin/config.src").statusCode());
+      // Another client, through the proxy
+      assertEquals(200, this.host.as(null).get("/bzadmin/config.src", "Authorization", right).statusCode());
+      // Credentials already verified are not checked again
+      assertEquals(200, local.get("/bzadmin/config.src", "Authorization", right).statusCode());
+      String log = log();
+      assertTrue(log.contains("org.pageseeder.bzadmin.audit - Login throttled: GET /bzadmin/config.src"), log);
+      assertFalse(log.contains("Login throttled: POST"), "Once a minute");
+    }
+
+  }
+
+  /**
    * The password of the fallback login, changed in the configuration and reloaded: a plain password
    * (local development), or a value meant as a hash that is not a valid one.
    */
