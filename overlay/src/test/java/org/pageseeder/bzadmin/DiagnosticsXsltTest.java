@@ -298,10 +298,47 @@ final class DiagnosticsXsltTest {
     assertTrue(html.contains("<th>Heap</th><td>52.4 MB</td><td>268.4 MB</td><td>4.3 GB</td>"), html);
     assertTrue(html.contains("<th>Non-heap</th><td>61.9 MB</td><td>66.7 MB</td><td>Undefined</td>"), html);
     // The pools follow their area
-    assertTrue(html.indexOf("G1 Eden Space</td>") < html.indexOf("<th>Non-heap</th>"), html);
-    assertTrue(html.indexOf("Metaspace</td>") > html.indexOf("<th>Non-heap</th>"), html);
+    assertTrue(html.contains("<td>G1 Eden Space <button"), html);
+    assertTrue(html.indexOf("<td>G1 Eden Space") < html.indexOf("<th>Non-heap</th>"), html);
+    assertTrue(html.indexOf("<td>Metaspace") > html.indexOf("<th>Non-heap</th>"), html);
+    // Known pools explain their usage
+    assertTrue(html.contains("<td>G1 Eden Space <button type=\"button\" class=\"info-button link-button\" popovertarget=\"system-info-pool-eden\" aria-label=\"About G1 Eden Space\">"), html);
+    assertTrue(html.contains("<td>Metaspace <button type=\"button\" class=\"info-button link-button\" popovertarget=\"system-info-pool-metaspace\" aria-label=\"About Metaspace\">"), html);
+    assertTrue(html.contains("<p id=\"system-info-pool-eden\" class=\"info-popover\" popover=\"\">"), html);
+    assertTrue(html.contains("a full Eden is normal"), html);
     assertTrue(html.contains("<td>1,200 ms</td><td>G1 Eden Space, G1 Survivor Space</td>"), html);
     assertFalse(html.contains("id=\"cpu-live\""), html);
+  }
+
+  @Test
+  void explainsTheMemoryPoolsByName() throws Exception {
+    String[][] pools = {
+        {"Eden Space", "pool-eden"}, {"PS Eden Space", "pool-eden"}, {"Par Eden Space", "pool-eden"},
+        {"Survivor Space", "pool-survivor"}, {"PS Survivor Space", "pool-survivor"}, {"G1 Survivor Space", "pool-survivor"},
+        {"Tenured Gen", "pool-old"}, {"PS Old Gen", "pool-old"}, {"CMS Old Gen", "pool-old"}, {"G1 Old Gen", "pool-old"},
+        {"ZGC Young Generation", "pool-young"}, {"ZGC Old Generation", "pool-old"},
+        {"Shenandoah Young Gen", "pool-young"}, {"Shenandoah Old Gen", "pool-old"},
+        {"ZHeap", "pool-heap"}, {"Shenandoah", "pool-heap"}, {"Epsilon Heap", "pool-heap"},
+        {"Compressed Class Space", "pool-compressed-class-space"},
+        {"CodeHeap 'non-nmethods'", "pool-code-cache"}, {"CodeHeap 'profiled nmethods'", "pool-code-cache"},
+        {"CodeHeap 'non-profiled nmethods'", "pool-code-cache"}, {"CodeCache", "pool-code-cache"}
+    };
+    StringBuilder summary = new StringBuilder("<system-summary processors='1'>"
+        + "<runtime start='2026-10-23T01:02:03Z' uptime-ms='0'/>"
+        + "<memory-area type='heap' used='1' committed='2'/><memory-area type='non-heap' used='3' committed='4'/>");
+    for (String[] pool : pools) {
+      String type = pool[1].startsWith("pool-code") || pool[1].startsWith("pool-compressed") ? "non-heap" : "heap";
+      summary.append("<memory-pool name=\"").append(pool[0]).append("\" type='").append(type).append("' used='1' committed='1'/>");
+    }
+    summary.append("<memory-pool name='nursery-allocate' type='heap' used='1' committed='1'/>")
+        .append("<threads live='1' daemon='0' peak='1' started='1' new='0' runnable='1' blocked='0' waiting='0' timed-waiting='0' terminated='0' deadlocked='0'/>")
+        .append("</system-summary>");
+    String html = page("bzadmin-system", "system-summary", summary.toString(), "memory");
+    for (String[] pool : pools) {
+      assertTrue(html.contains("<td>" + pool[0] + " <button type=\"button\" class=\"info-button link-button\" popovertarget=\"system-info-" + pool[1] + "\""), pool[0] + "\n" + html);
+    }
+    // Other pools, such as those of OpenJ9, have no explanation
+    assertTrue(html.contains("<td>nursery-allocate</td>"), html);
   }
 
   @Test

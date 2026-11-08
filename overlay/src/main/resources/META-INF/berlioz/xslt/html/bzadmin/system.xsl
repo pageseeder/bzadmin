@@ -30,6 +30,14 @@
   <explanation name="non-heap">Memory for the JVM itself: loaded classes (Metaspace), compiled code (code cache) and other internals, used and committed. Usually no maximum, as for Metaspace by default: the Memory areas and pools table details each pool.</explanation>
   <explanation name="properties-redacted">The JVM system properties, of which <b>redacted</b>: values of properties whose names suggest a secret (such as <code>password</code>, <code>secret</code>, <code>token</code> or <code>apikey</code>), hidden by Berlioz. Other values can still reveal details of the environment, such as paths and versions.</explanation>
   <explanation name="encoding">The default encoding of the JVM (<code>file.encoding</code>), used to read and write text whenever the application does not name one, with the default time zone (<code>user.timezone</code>), used for dates and log timestamps. Both come from the host unless set on the command line: an encoding other than UTF-8 can garble non-ASCII text, so set <code>-Dfile.encoding=UTF-8</code>.</explanation>
+  <explanation name="pool-eden">Where new objects are allocated. Each young collection empties it, copying the objects still in use to a survivor space, so its usage swings between nearly empty and nearly full: a full Eden is normal, and simply triggers the next young collection. The collector may resize it as it goes. Frequent young collections mean the application allocates a lot.</explanation>
+  <explanation name="pool-survivor">Objects that survived a young collection, kept here for a few more collections before they move to the old generation. Small, and its usage changes with every young collection. When it is too small for the objects that survive, they move to the old generation early and fill it faster.</explanation>
+  <explanation name="pool-young">New objects, and those that survived only a few collections, for the generational ZGC and Shenandoah. Each young collection frees the objects no longer in use and moves those that survive long enough to the old generation, so its usage swings widely: high usage is normal, and simply triggers the next young collection. Frequent young collections mean the application allocates a lot.</explanation>
+  <explanation name="pool-old">Long-lived objects, moved from the young generation after surviving several collections, and large objects allocated directly here. Its usage grows between the collections of the old generation, so a high value alone is normal. It is a concern when it stays close to the maximum after the old generation is collected: the objects in use no longer fit, because the heap is too small or the application keeps objects it no longer needs, and an <code>OutOfMemoryError</code> follows.</explanation>
+  <explanation name="pool-heap">The whole heap, for a collector that does not divide it into generations, such as ZGC or Shenandoah. Its usage rises between collections and falls after each one; it is a concern when it stays close to the maximum after collections. With Epsilon, which never frees memory, it only grows until the heap is exhausted.</explanation>
+  <explanation name="pool-metaspace">The metadata of the loaded classes, in native memory outside the heap, including the Compressed Class Space. It grows as classes load, mostly at startup, and shrinks only when their class loader is collected. No maximum by default (<code>-XX:MaxMetaspaceSize</code>). Usage that keeps growing once the application has started, such as after each reload, points to a class loader leak, until an <code>OutOfMemoryError: Metaspace</code>.</explanation>
+  <explanation name="pool-compressed-class-space">The part of Metaspace that holds the class structures referred to by compressed pointers, also counted in Metaspace. Its maximum is reserved at startup (<code>-XX:CompressedClassSpaceSize</code>, 1 GB by default) and depends on the number of classes, not on their size: reaching it causes an <code>OutOfMemoryError: Compressed class space</code>.</explanation>
+  <explanation name="pool-code-cache">Native code compiled by the JIT compiler, in segments: <b>non-nmethods</b> (code of the JVM itself, such as the interpreter), <b>profiled nmethods</b> (code compiled with profiling, short-lived, replaced as it is optimized) and <b>non-profiled nmethods</b> (fully optimized code, long-lived). A single <b>CodeCache</b> when it is not segmented. It fills as code warms up, then levels off. When it is full, the JVM stops compiling and the application slows down, with the warning “CodeCache is full” in the log: raise <code>-XX:ReservedCodeCacheSize</code>.</explanation>
   <explanation name="disk-free">Free space of the volume that holds the application, as the JVM reports it for the application folder.</explanation>
 </xsl:variable>
 
@@ -368,7 +376,15 @@
         <xsl:variable name="type" select="@type"/>
         <xsl:for-each select="../memory-pool[@type = $type]">
           <tr class="memory-pool">
-            <td><xsl:value-of select="@name"/></td>
+            <xsl:variable name="explanation" select="f:memory-pool-explanation(@name)"/>
+            <td><xsl:value-of select="@name"/>
+              <xsl:if test="$explanation">
+                <xsl:call-template name="system-info">
+                  <xsl:with-param name="name" select="$explanation"/>
+                  <xsl:with-param name="label" select="string(@name)"/>
+                </xsl:call-template>
+              </xsl:if>
+            </td>
             <xsl:apply-templates select="." mode="system-usage"/>
             <td><xsl:value-of select="if (@peak-used) then f:to-size(@peak-used) else ''"/></td>
           </tr>
@@ -402,6 +418,26 @@
 </section>
 
 </xsl:template>
+
+<!--
+  The explanation of a memory pool from its name, which depends on the garbage collector: the
+  pools of the HotSpot collectors (Serial, Parallel, CMS, G1, ZGC and Shenandoah, generational or
+  not, Epsilon) and the non-heap pools, as Java 11 to 25 name them; none for other names.
+-->
+<xsl:function name="f:memory-pool-explanation" as="xs:string?">
+  <xsl:param name="name"/>
+  <xsl:variable name="n" select="string($name)"/>
+  <xsl:sequence select="
+      if ($n = ('Eden Space', 'PS Eden Space', 'Par Eden Space', 'G1 Eden Space')) then 'pool-eden'
+      else if ($n = ('Survivor Space', 'PS Survivor Space', 'Par Survivor Space', 'G1 Survivor Space')) then 'pool-survivor'
+      else if ($n = ('ZGC Young Generation', 'Shenandoah Young Gen')) then 'pool-young'
+      else if ($n = ('Tenured Gen', 'PS Old Gen', 'CMS Old Gen', 'G1 Old Gen', 'ZGC Old Generation', 'Shenandoah Old Gen')) then 'pool-old'
+      else if ($n = ('ZHeap', 'Shenandoah', 'Epsilon Heap')) then 'pool-heap'
+      else if ($n = 'Metaspace') then 'pool-metaspace'
+      else if ($n = 'Compressed Class Space') then 'pool-compressed-class-space'
+      else if ($n = 'CodeCache' or starts-with($n, 'CodeHeap ')) then 'pool-code-cache'
+      else ()"/>
+</xsl:function>
 
 <xsl:template match="memory-area|memory-pool" mode="system-usage">
   <td><xsl:value-of select="f:to-size(@used)"/></td>

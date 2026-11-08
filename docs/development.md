@@ -101,6 +101,10 @@ button and popover rather than a tooltip. Cache manager status icons use `role="
 and a status-specific accessible label, retaining the hover hint. Cache statistics explain
 eviction and expiration ratios with information-button popovers beside their labels.
 The Heap information popover explains Peak memory in the Memory areas and pools table;
+Rows of that table for known pools (Eden, Survivor, Old and young generations, the single heap of
+ZGC, Shenandoah or Epsilon, Metaspace, Compressed Class Space, code cache segments) have an information
+button explaining what their usage means; `f:memory-pool-explanation` in `system.xsl` matches the
+HotSpot pool names of Java 11 to 25, and other pools, such as OpenJ9's, have none.
 the Peak column heading does not rely on a tooltip. The Threads table information popover
 also defines Δ CPU, Δ Allocated and Blocked / waited instead of heading tooltips. Thread names
 and Origin component names have no tooltips or help cursor; full thread details remain
