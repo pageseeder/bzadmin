@@ -6,7 +6,9 @@ Version `0.14.0` is the first public release, at `org.pageseeder.berlioz:pso-bza
 
 ## Next: 0.14.x maintenance
 
-- Address [known limitations](docs/release/0.14.0.md#known-limitations) of 0.14.0 where they can be fixed within the overlay, The fallback login now limits password checks. The response to unauthenticated POSTs under container BASIC authentication comes from Berlioz's error handling; hosts can avoid it with an [error page for 401](docs/access.md#error-page-for-401) until Berlioz preserves the challenge.
+[0.14.1](docs/release/0.14.1.md) is in preparation, with the Redirects tab and fixes for some known limitations of 0.14.0.
+
+- Address the remaining [known limitations](docs/release/0.14.1.md#known-limitations) where they can be fixed within the overlay. The missing challenge for requests other than GET under container BASIC authentication comes from Berlioz's error handling; hosts can avoid it with an [error page for 401](docs/access.md#error-page-for-401) until Berlioz preserves the challenge.
 - Qualify Tomcat 9 and newer JDKs before advertising them as tested. Java 11 and Jetty 10 remain the reference environment.
 - Extend CI beyond the current qualification workflow: a JDK and container matrix, root and non-root context paths, with and without optional providers, browser smoke tests and build reproducibility.
 - Keep refining keyboard navigation, dialogs, errors, refresh behavior and accessibility based on feedback.
@@ -16,14 +18,6 @@ Fixes ship in new versions; see [security and support](SECURITY.md).
 ## Planned features
 
 These add services or change published artifacts, so each is specified in the [feature contracts](docs/design/README.md) before implementation.
-
-### Redirects and forwards
-
-Add a tab to the Config page for Berlioz's `RedirectFilter` (redirects) and `RelocationFilter` (forwards, called relocations in Berlioz). Implemented for 0.14.1, as specified in the [redirects contract](docs/design/redirects.md); this entry moves to the release notes when 0.14.1 is released.
-
-- **Status.** Show each filter's state from its container registration: not mapped, mapped without a `config` parameter, configuration file missing or invalid, or active. The filters only warn in the log and have no effect in the first failure cases, so this makes a silent misconfiguration visible.
-- **Rules.** Read the file named by the filter's `config` parameter and list its rules: from, to and, for redirects, whether they are permanent. Berlioz does not expose the rules it has loaded and loads them on first use, so the page says that it shows the file, which can differ from the loaded rules until the next reload.
-- **Safe reading.** The read is a side-effect-free `VIEW` operation, limited to files under `WEB-INF`, bounded in size and number of rules, and parsed without DTDs or external entities. Only the expected attributes are output, targets are shown as text rather than links, and query string values are redacted because a target can contain a token.
 
 ### Shared access module
 
