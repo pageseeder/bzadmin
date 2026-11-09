@@ -135,7 +135,8 @@ that Berlioz is not mapped to:
 Without it, the container sends its challenges to Berlioz's general error page, which renders the
 error for GET and HEAD only. A POST or other request without credentials then receives a 401 Berlioz
 error document without `WWW-Authenticate`, so a client that sends credentials only when challenged,
-such as a script or a browser that has not signed in yet, fails instead of asking for them. With the
+such as a script or a browser that has not signed in yet, fails instead of asking for them. On Tomcat, PUT and
+DELETE receive 405 and PATCH 501 instead of 401. With the
 error page, every method receives the challenge; other errors are still rendered by Berlioz. Responses
 of `AdminFilter`, including the fallback login's challenge, do not use error pages and are unaffected.
 Tested with `web-container-401.xml`.
@@ -221,7 +222,9 @@ users, use [container authentication](#b-container-authentication-and-roles), wh
   `ForwardedRequestCustomizer`, Tomcat's `RemoteIpValve`), so that `isSecure()`, the scheme and the host are the
   proxy's. Otherwise the fallback login is refused (also with a proxy on the same machine), `CONFIDENTIAL`
   redirects, and operations from browsers that do not send `Sec-Fetch-Site` fail the `Origin` check (403). Tested
-  with `X-Forwarded-Proto` and `X-Forwarded-Host`.
+  with `X-Forwarded-Proto` and `X-Forwarded-Host`. Tomcat's `RemoteIpValve` applies the `X-Forwarded-*` headers
+  only, not the standard `Forwarded` header, and removes `X-Forwarded-For` when every address in it is one of its
+  internal proxies.
 - **Context path.** Any context path works, also behind a proxy, as long as the proxy keeps the path (no prefix
   rewriting, which is untested).
 

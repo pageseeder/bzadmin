@@ -198,7 +198,7 @@ final class CacheAdminTest {
     // The same statuses from the handler
     assertProblem(host.get("/bzadmin/api/cache/info.xml?provider=ehcache2&manager=fixture&cache=psml"), 404, "unknown-cache");
     assertProblem(host.get("/bzadmin/api/cache/info.xml?provider=ehcache2&cache=PSML"), 400, "missing-parameter");
-    assertEquals(400, host.post("/bzadmin/api/cache/statistics.src", JCACHE).statusCode(), "enable is required");
+    assertEquals(Container.invalidParameter(), host.post("/bzadmin/api/cache/statistics.src", JCACHE).statusCode(), "enable is required");
     String html = host.get("/bzadmin/cache/info.html?provider=ehcache2&manager=fixture&cache=psml").body();
     assertTrue(html.contains("No such cache in this cache manager."), html);
   }

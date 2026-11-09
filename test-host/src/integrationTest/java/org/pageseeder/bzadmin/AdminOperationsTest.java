@@ -257,7 +257,7 @@ final class AdminOperationsTest {
 
   @Test
   void requiresALogIdOrName() throws Exception {
-    assertEquals(400, host.get("/bzadmin/logs/raw.src").statusCode());
+    assertEquals(Container.invalidParameter(), host.get("/bzadmin/logs/raw.src").statusCode());
   }
 
   @Test
@@ -266,7 +266,7 @@ final class AdminOperationsTest {
       HttpResponse<String> response = host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=WARN");
       assertEquals(200, response.statusCode(), response.body());
       assertEquals("WARN", xpath(parse(response.body()), "//recent-logs-threshold/@level"));
-      assertEquals(400, host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=BOGUS").statusCode());
+      assertEquals(Container.invalidParameter(), host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=BOGUS").statusCode());
     } finally {
       host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=INFO");
     }

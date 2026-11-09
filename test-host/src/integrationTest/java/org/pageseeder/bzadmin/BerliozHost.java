@@ -21,24 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.webapp.WebAppContext;
-
 import org.jspecify.annotations.Nullable;
 
 /**
  * Runs the packaged test host (the web application with the overlay JAR in {@code WEB-INF/lib})
- * in an embedded Jetty, so that services run actual Berlioz generators and stylesheets.
+ * in an embedded servlet container ({@link Container}: Jetty 10 by default), so that services run
+ * actual Berlioz generators and stylesheets.
  *
  * <p>The test host has its own web descriptor (one of those next to this class, {@code web.xml} by
  * default), whose {@code FixtureAuthentication} identifies the user named by the
@@ -58,9 +46,7 @@ final class BerliozHost implements AutoCloseable {
   /** The client addresses forwarded by the proxy so far. */
   private static final AtomicInteger CLIENTS = new AtomicInteger();
 
-  private final Server server;
-
-  private final WebAppContext webapp;
+  private final Container container;
 
   private final URI base;
 
@@ -81,10 +67,9 @@ final class BerliozHost implements AutoCloseable {
   /** Whether requests have the headers of the TLS-terminating proxy. */
   private final boolean proxied;
 
-  private BerliozHost(Server server, WebAppContext webapp, URI base, String contextPath, HttpClient client, @Nullable String user,
+  private BerliozHost(Container container, URI base, String contextPath, HttpClient client, @Nullable String user,
       HostExample example, @Nullable SSLContext tls, URI plainBase, boolean proxied) {
-    this.server = server;
-    this.webapp = webapp;
+    this.container = container;
     this.base = base;
     this.contextPath = contextPath;
     this.client = client;
@@ -193,57 +178,21 @@ final class BerliozHost implements AutoCloseable {
 
   private static BerliozHost start(String contextPath, String descriptor, HostExample example, Path war) throws Exception {
     if (!Files.isRegularFile(war)) throw new IllegalStateException("No packaged test host: " + war);
-    Server server = new Server();
-    HttpConfiguration http = new HttpConfiguration();
-    // A TLS-terminating proxy: the container applies the forwarded scheme and host
-    if (example.proxied()) http.addCustomizer(new ForwardedRequestCustomizer());
-    ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(http));
-    connector.setHost("127.0.0.1");
-    connector.setPort(0);
-    server.addConnector(connector);
-    ServerConnector secure = null;
-    if (example.tls()) {
-      SslContextFactory.Server ssl = new SslContextFactory.Server();
-      ssl.setKeyStorePath(keystore().toString());
-      ssl.setKeyStorePassword(KEYSTORE_PASSWORD);
-      HttpConfiguration https = new HttpConfiguration(http);
-      https.addCustomizer(new SecureRequestCustomizer());
-      secure = new ServerConnector(server, new SslConnectionFactory(ssl, "http/1.1"), new HttpConnectionFactory(https));
-      secure.setHost("127.0.0.1");
-      secure.setPort(0);
-      server.addConnector(secure);
-      // The users of the container realm (realm.properties next to this class)
-      server.addBean(new HashLoginService("Berlioz administration", BerliozHost.class.getResource("realm.properties").toExternalForm()));
-    }
-    WebAppContext webapp = new WebAppContext();
-    webapp.setContextPath(contextPath);
-    webapp.setWar(war.toString());
-    webapp.setDescriptor(BerliozHost.class.getResource(descriptor).toExternalForm());
     // Serves *.src without Berlioz control authorization (Berlioz 0.14.5 kickstart requires it)
-    if (!PREFIX_DESCRIPTOR.equals(descriptor)) {
-      webapp.addOverrideDescriptor(BerliozHost.class.getResource("web-override.xml").toExternalForm());
-    }
-    // Processes WEB-INF/jetty-env.xml, as Gretty does with `enableNaming`
-    webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration());
-    server.setHandler(webapp);
-    server.start();
-    if (webapp.getUnavailableException() != null) {
-      server.stop();
-      throw new IllegalStateException("Test host unavailable", webapp.getUnavailableException());
-    }
+    boolean sourceWithoutControl = !PREFIX_DESCRIPTOR.equals(descriptor);
+    Container container = Container.start(new Container.Settings(war, contextPath, BerliozHost.class.getResource(descriptor),
+        sourceWithoutControl, example.tls(), example.proxied(), example.tls() ? keystore() : null, KEYSTORE_PASSWORD));
     String path = contextPath.equals("/") ? "" : contextPath;
-    URI plain = URI.create("http://127.0.0.1:" + connector.getLocalPort() + path);
+    URI plain = URI.create("http://127.0.0.1:" + container.port() + path);
     HttpClient.Builder client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER);
     @Nullable SSLContext tls = null;
     URI base = plain;
-    if (secure != null) {
-      // The confidential port, where the container redirects plain HTTP requests
-      http.setSecurePort(secure.getLocalPort());
+    if (container.securePort() > 0) {
       tls = trust();
       client.sslContext(tls);
-      base = URI.create("https://127.0.0.1:" + secure.getLocalPort() + path);
+      base = URI.create("https://127.0.0.1:" + container.securePort() + path);
     }
-    return new BerliozHost(server, webapp, base, contextPath, client.build(), "operator", example, tls, plain, example.proxied());
+    return new BerliozHost(container, base, contextPath, client.build(), "operator", example, tls, plain, example.proxied());
   }
 
   private static final String KEYSTORE_PASSWORD = "fixture-secret-keystore";
@@ -277,7 +226,7 @@ final class BerliozHost implements AutoCloseable {
    * @return this host, for requests by that user.
    */
   BerliozHost as(@Nullable String user) {
-    return new BerliozHost(this.server, this.webapp, this.base, this.contextPath, this.client, user,
+    return new BerliozHost(this.container, this.base, this.contextPath, this.client, user,
         this.example, this.tls, this.plainBase, this.proxied);
   }
 
@@ -285,7 +234,7 @@ final class BerliozHost implements AutoCloseable {
    * @return this host, for requests over its plain HTTP connector.
    */
   BerliozHost plain() {
-    return new BerliozHost(this.server, this.webapp, this.plainBase, this.contextPath, this.client, this.user,
+    return new BerliozHost(this.container, this.plainBase, this.contextPath, this.client, this.user,
         this.example, null, this.plainBase, this.proxied);
   }
 
@@ -293,7 +242,7 @@ final class BerliozHost implements AutoCloseable {
    * @return this host, for requests that do not go through the TLS-terminating proxy.
    */
   BerliozHost direct() {
-    return new BerliozHost(this.server, this.webapp, this.base, this.contextPath, this.client, this.user,
+    return new BerliozHost(this.container, this.base, this.contextPath, this.client, this.user,
         this.example, this.tls, this.plainBase, false);
   }
 
@@ -347,7 +296,7 @@ final class BerliozHost implements AutoCloseable {
    * @return the WEB-INF folder of the deployed web application.
    */
   Path webInf() throws IOException {
-    return this.webapp.getWebInf().getFile().toPath();
+    return this.container.webInf();
   }
 
   /**
@@ -491,7 +440,7 @@ final class BerliozHost implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    this.server.stop();
+    this.container.close();
   }
 
 }

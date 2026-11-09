@@ -30,7 +30,8 @@ To fix in the next Berlioz release; each has a report draft.
 | Defect | Effect | Overlay workaround |
 | --- | --- | --- |
 | `RedirectFilter` or `RelocationFilter` without a `config` parameter | Every request through the filter fails with a `NullPointerException` (500), although it logs that it has no effect | The Redirects view reports it as `no-config` |
-| An error dispatch is matched by method | For a POST or other non-GET request, the error page loses its detail ("Only the following are allowed: GET,HEAD") and `res.reset()` removes the headers set before the error, including the `WWW-Authenticate` challenge of container BASIC authentication | A documented [error page for 401](../access.md#error-page-for-401) |
+| An error dispatch is matched by method | For a POST or other non-GET request, the error page loses its detail ("Only the following are allowed: GET,HEAD") and `res.reset()` removes the headers set before the error, including the `WWW-Authenticate` challenge of container BASIC authentication. On Tomcat, PUT and DELETE are answered 405 and PATCH 501 | A documented [error page for 401](../access.md#error-page-for-401) |
+| With `berlioz.errors.handle=false`, Berlioz sets `javax.servlet.error.exception` before `sendError` | Tomcat's `StandardHostValve` handles that attribute as an uncaught exception: with an error page for `java.lang.Exception`, as Kickstart declares, an `InvalidParameterException` (400) is answered 500. Berlioz could pass the exception in its own attribute, as it does for `ERROR_RENDERING_DEPTH` | None; documented as a known limitation on Tomcat |
 | `redirect-mapping-1.0.dtd` declares `permanent (true \| false)` | The schema that Berlioz validates against requires `yes` or `no`, so a file written to the DTD is invalid and the filter has no rules | The Redirects view reports it as `invalid` |
 
 ## Diagnostics of Berlioz's own state

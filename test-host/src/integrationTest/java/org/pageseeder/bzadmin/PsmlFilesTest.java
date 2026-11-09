@@ -211,7 +211,7 @@ final class PsmlFilesTest {
 
   @Test
   void requiresADocumentPath() throws Exception {
-    assertEquals(400, host.get("/bzadmin/files/document.src").statusCode());
+    assertEquals(Container.invalidParameter(), host.get("/bzadmin/files/document.src").statusCode());
   }
 
   /**

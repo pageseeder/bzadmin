@@ -49,7 +49,7 @@ final class PrefixHostTest {
   }
 
   @ParameterizedTest
-  @MethodSource("org.pageseeder.bzadmin.AdminRoutes#routes")
+  @MethodSource("org.pageseeder.bzadmin.AdminRoutes#routesWithoutKickstart")
   void servesAdminPages(String route, int status) throws Exception {
     HttpResponse<String> response = host.get("/html" + route);
     assertEquals(status, response.statusCode(), route + ": " + response.body());

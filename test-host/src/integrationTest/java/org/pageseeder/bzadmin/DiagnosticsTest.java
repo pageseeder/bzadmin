@@ -45,7 +45,7 @@ final class DiagnosticsTest {
     assertTrue(xpath(xml, "//component[@name='xslt']/@version").startsWith("HE 12."), "As Saxon identifies itself");
     assertEquals("Saxonica", xpath(xml, "//component[@name='xslt']/@vendor"));
     assertEquals("3.0", xpath(xml, "//component[@name='xslt']/@xslt-version"));
-    assertTrue(xpath(xml, "//component[@name='container']/@product").startsWith("jetty/10."));
+    assertTrue(xpath(xml, "//component[@name='container']/@product").startsWith(Container.product()));
     assertEquals("4.0", xpath(xml, "//component[@name='container']/@servlet-api"));
     assertEquals("test", xpath(xml, "/root/content[@name='summary']/application-summary/@mode"));
   }
@@ -119,8 +119,8 @@ final class DiagnosticsTest {
     assertTrue(listed > 0);
     assertEquals(String.valueOf(listed), xpath(xml, "count(//threads/thread/origin[@component != ''][@role][@basis][@loader])"));
     assertEquals("0", xpath(xml, "count(//stacktrace)"), "Bounded: no stack in the list");
-    // Jetty serves this request, for the application
-    assertEquals("Jetty", xpath(xml, "//thread[@current = 'true']/origin/@component"));
+    // The container serves this request, for the application
+    assertEquals(Container.requestThreadComponent(), xpath(xml, "//thread[@current = 'true']/origin/@component"));
     assertEquals("request", xpath(xml, "//thread[@current = 'true']/origin/@role"));
     assertEquals("application", xpath(xml, "//thread[@current = 'true']/origin/@loader"));
     assertEquals("org.pageseeder.bzadmin.system.ListThreads", xpath(xml, "//thread[@current = 'true']/activity/@class"));
@@ -137,7 +137,7 @@ final class DiagnosticsTest {
     assertTrue(Integer.parseInt(xpath(xml, "count(//thread/stacktrace/element)")) > 0);
     assertTrue(host.get("/bzadmin/system/thread.html?id=" + id).body().contains("<div id=\"thread-info\">"));
     assertEquals(404, host.get("/bzadmin/system/thread.xml?id=" + Long.MAX_VALUE).statusCode());
-    assertEquals(400, host.get("/bzadmin/system/thread.xml?id=x").statusCode());
+    assertEquals(Container.invalidParameter(), host.get("/bzadmin/system/thread.xml?id=x").statusCode());
   }
 
   @Test

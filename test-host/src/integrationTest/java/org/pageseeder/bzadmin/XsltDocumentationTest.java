@@ -90,8 +90,8 @@ final class XsltDocumentationTest {
   void rejectsPathsOutsideTheXsltFolder() throws Exception {
     for (String path : new String[]{"config/services.xml", "xslt/../config/config-local.xml", "xslt/html/none.xsl",
         "xslt/../services.xml", "xslt", "xslt/html"}) {
-      assertEquals(400, host.get("/bzadmin/xslt/doc.src?path=" + path).statusCode(), path);
-      assertEquals(400, host.get("/bzadmin/xslt/source.src?path=" + path).statusCode(), path);
+      assertEquals(Container.invalidParameter(), host.get("/bzadmin/xslt/doc.src?path=" + path).statusCode(), path);
+      assertEquals(Container.invalidParameter(), host.get("/bzadmin/xslt/source.src?path=" + path).statusCode(), path);
     }
   }
 

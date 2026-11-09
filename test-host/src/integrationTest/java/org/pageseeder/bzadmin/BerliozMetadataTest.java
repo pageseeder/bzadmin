@@ -96,7 +96,7 @@ final class BerliozMetadataTest {
     assertTrue(deployment.contains("<h2>Error handler</h2>") && deployment.contains("ErrorHandlerServlet"), "Error handler");
     assertFalse(deployment.contains("<h2>Berlioz options</h2>"), "Properties in their own tab");
     assertTrue(deployment.contains("<th scope=\"row\">XSLT processor</th><td>SAXON HE 12."), "Processor of Berlioz 0.14.5");
-    assertTrue(deployment.contains("<th scope=\"row\">Servlet container</th><td>jetty/10."), "Container of Berlioz 0.14.5");
+    assertTrue(deployment.contains("<th scope=\"row\">Servlet container</th><td>" + Container.product()), "Container of Berlioz 0.14.5");
   }
 
   // Services ------------------------------------------------------------------------------------

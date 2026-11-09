@@ -508,7 +508,15 @@ final class AccessPolicyTest {
         if (!response.body().isEmpty()) {
           // The static page (GET and POST; Jetty's default servlet writes no body for the others)
           assertEquals("Authentication required.", response.body().trim(), label);
-          assertTrue(response.headers().firstValue("Cache-Control").orElse("").contains("no-store"), label);
+          String cacheControl = response.headers().firstValue("Cache-Control").orElse("");
+          if (Container.tomcat()) {
+            // Tomcat's default servlet sends no Cache-Control (private for a protected resource): a 401
+            // without explicit freshness is not stored
+            assertFalse(cacheControl.contains("max-age") || cacheControl.contains("public"), label);
+            assertTrue(response.headers().firstValue("Expires").isEmpty(), label);
+          } else {
+            assertTrue(cacheControl.contains("no-store"), label);
+          }
         }
         assertNoAdminData(response.body(), label);
       }
@@ -608,7 +616,14 @@ final class AccessPolicyTest {
         for (String path : new String[]{"/bzadmin/config.src", "/bzadmin/api/cache/clear.src", "/bzadmin/api/config/reload.json"}) {
           String label = user + ": " + method + " " + path;
           HttpResponse<String> response = this.host.as(user).send(method, path, "", "X-Requested-With", "XMLHttpRequest");
-          assertEquals(this.example.deniedStatus(user), response.statusCode(), label);
+          int expected = this.example.deniedStatus(user);
+          // Tomcat dispatches the container's challenge to Berlioz's general error page with the method
+          // of the request, which Berlioz answers 405 (501 for PATCH), with WWW-Authenticate: hosts
+          // declare an error page for 401 (ContainerLoginWithErrorPage)
+          if (Container.tomcat() && expected == 401 && this.example == HostExample.CONTAINER && !method.equals("OPTIONS")) {
+            expected = method.equals("PATCH") ? 501 : 405;
+          }
+          assertEquals(expected, response.statusCode(), label);
           assertNoAdminData(response.body(), label);
         }
       }

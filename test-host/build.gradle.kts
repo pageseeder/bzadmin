@@ -156,6 +156,9 @@ dependencies {
   "integrationTestImplementation"(libs.junit.jupiter)
   "integrationTestImplementation"(libs.jetty.webapp)
   "integrationTestImplementation"(libs.jetty.plus)
+  // The other container of the packaged-host tests (-PtestContainer=tomcat9), with JSP as a Tomcat has it
+  "integrationTestImplementation"(libs.tomcat.embed.core)
+  "integrationTestRuntimeOnly"(libs.tomcat.embed.jasper)
   "integrationTestRuntimeOnly"(libs.jetty.slf4j.impl)
   "integrationTestRuntimeOnly"(libs.junit.platform.launcher)
 }
@@ -215,6 +218,10 @@ val testKeystore = tasks.register<Exec>("testKeystore") {
 val testJdk = providers.gradleProperty("testJdk").getOrElse("11").toInt()
 require(testJdk >= 11) { "testJdk must be 11 or later: $testJdk" }
 
+// The container of the packaged-host tests (`-PtestContainer=tomcat9`): Jetty 10 by default
+val testContainer = providers.gradleProperty("testContainer").getOrElse("jetty10")
+require(testContainer in listOf("jetty10", "tomcat9")) { "testContainer must be jetty10 or tomcat9: $testContainer" }
+
 fun Test.runOnHost(war: Provider<RegularFile>) {
   group = "verification"
   testClassesDirs = integrationTest.output.classesDirs
@@ -227,6 +234,7 @@ fun Test.runOnHost(war: Provider<RegularFile>) {
   systemProperty("bzadmin.version", version.toString())
   systemProperty("bzadmin.frontend.version", frontendVersion)
   systemProperty("bzadmin.java.expected", testJdk.toString())
+  systemProperty("bzadmin.container", testContainer)
   systemProperty("berlioz.mode", "test")
   // Disposable log directory (logback-test.xml in the fixtures), and a sensitive system property
   val logs = layout.buildDirectory.dir("test-logs/$name").get().asFile
@@ -239,7 +247,7 @@ fun Test.runOnHost(war: Provider<RegularFile>) {
 }
 
 val hostTest = tasks.register<Test>("hostTest") {
-  description = "Runs the packaged-host tests (Java 11, or -PtestJdk)"
+  description = "Runs the packaged-host tests (Java 11 and Jetty 10, or -PtestJdk and -PtestContainer)"
   runOnHost(warTestHost.flatMap { it.archiveFile })
   systemProperty("bzadmin.fixtures.output", layout.buildDirectory.dir("test-fixtures").get().asFile.path)
   val noLogback = warNoLogbackHost.flatMap { it.archiveFile }
@@ -282,7 +290,7 @@ val warStagedHost = tasks.register<War>("warStagedHost") {
 }
 
 tasks.register<Test>("hostTestStaged") {
-  description = "Runs the packaged-host tests against the staged overlay (Java 11, or -PtestJdk)"
+  description = "Runs the packaged-host tests against the staged overlay (Java 11 and Jetty 10, or -PtestJdk and -PtestContainer)"
   runOnHost(warStagedHost.flatMap { it.archiveFile })
   val staged = stagingRepo.get().dir("org/pageseeder/berlioz/pso-bzadmin/$version").asFile
   systemProperty("bzadmin.staged.jar", staged.resolve("pso-bzadmin-$version.jar").path)

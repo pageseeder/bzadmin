@@ -70,11 +70,13 @@ ESLint uses flat config (`frontend/eslint.config.js`, ESLint 10); the files to l
 ./gradlew :overlay:test   # overlay tests: XSLT on captured generator XML, XSLT documentation, from the packaged JARs (without logback or cache library; runs logbackTest and cacheTest first)
 ./gradlew :overlay:logbackTest   # the logback adapter, with logback (src/logbackTest)
 ./gradlew :overlay:cacheTest   # the cache adapters, once per cache library set (src/cacheTest; runs cacheTestEhcache26/210/211, cacheTestJCacheEhcache3, cacheTestJCacheCaffeine, cacheTestCaffeine (native, without the JCache API), cacheTestAllProviders, cacheTestNoCache)
-./gradlew :test-host:hostTest   # packaged-host tests: embedded Jetty runs the WAR with the JAR overlay and test fixtures
+./gradlew :test-host:hostTest   # packaged-host tests: embedded Jetty 10 (or Tomcat 9) runs the WAR with the JAR overlay and test fixtures
 ./gradlew :test-host:hostTestStaged   # release qualification: the same tests on a host resolved from the staged artifacts
 ```
 
 Tests run on Java 11 by default. To run them on a newer JDK, which Gradle must be able to find as a toolchain, pass `-PtestJdk`, for example `./gradlew -PtestJdk=21 :overlay:test :test-host:hostTest`. The code is still compiled for Java 11, and the tests check that they run on the requested version. CI runs these tests on Java 17, 21 and 25 (the `newer-jdk` job).
+
+The packaged-host tests run on an embedded Jetty 10 by default. To run them on an embedded Tomcat 9 instead, pass `-PtestContainer=tomcat9`, for example `./gradlew -PtestContainer=tomcat9 :test-host:hostTest`. The container is selected in `Container`; the few expectations that differ on Tomcat are in its static methods or marked `Container.tomcat()` in the tests, with the reason. CI runs them on Tomcat 9 (the `tomcat` job).
 
 `hostTestStaged` publishes to `build/staging-repo`, then a separate consumer build (`overlay/src/fixtures/consumer`, no `mavenLocal()`) resolves the overlay from there with the providers a host declares (Saxon 12 without a strict constraint), and the test host is assembled from those libraries.
 
