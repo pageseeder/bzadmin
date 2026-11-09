@@ -211,18 +211,22 @@ val testKeystore = tasks.register<Exec>("testKeystore") {
   }
 }
 
+// The JDK the packaged-host tests run on (`-PtestJdk=21`): Java 11 by default, newer ones to qualify them
+val testJdk = providers.gradleProperty("testJdk").getOrElse("11").toInt()
+require(testJdk >= 11) { "testJdk must be 11 or later: $testJdk" }
+
 fun Test.runOnHost(war: Provider<RegularFile>) {
   group = "verification"
   testClassesDirs = integrationTest.output.classesDirs
   classpath = integrationTest.runtimeClasspath
   useJUnitPlatform()
-  javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(11)) })
+  javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(testJdk)) })
   // An input, so that the tests run again when the web application changes
   inputs.file(war)
   systemProperty("bzadmin.war", war.get().asFile.path)
   systemProperty("bzadmin.version", version.toString())
   systemProperty("bzadmin.frontend.version", frontendVersion)
-  systemProperty("bzadmin.java.expected", "11")
+  systemProperty("bzadmin.java.expected", testJdk.toString())
   systemProperty("berlioz.mode", "test")
   // Disposable log directory (logback-test.xml in the fixtures), and a sensitive system property
   val logs = layout.buildDirectory.dir("test-logs/$name").get().asFile
@@ -234,7 +238,7 @@ fun Test.runOnHost(war: Provider<RegularFile>) {
 }
 
 val hostTest = tasks.register<Test>("hostTest") {
-  description = "Runs the packaged-host tests on Java 11"
+  description = "Runs the packaged-host tests (Java 11, or -PtestJdk)"
   runOnHost(warTestHost.flatMap { it.archiveFile })
   systemProperty("bzadmin.fixtures.output", layout.buildDirectory.dir("test-fixtures").get().asFile.path)
   val noLogback = warNoLogbackHost.flatMap { it.archiveFile }
@@ -277,7 +281,7 @@ val warStagedHost = tasks.register<War>("warStagedHost") {
 }
 
 tasks.register<Test>("hostTestStaged") {
-  description = "Runs the packaged-host tests on Java 11 against the staged overlay"
+  description = "Runs the packaged-host tests against the staged overlay (Java 11, or -PtestJdk)"
   runOnHost(warStagedHost.flatMap { it.archiveFile })
   val staged = stagingRepo.get().dir("org/pageseeder/berlioz/pso-bzadmin/$version").asFile
   systemProperty("bzadmin.staged.jar", staged.resolve("pso-bzadmin-$version.jar").path)

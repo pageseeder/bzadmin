@@ -35,6 +35,14 @@ java {
   withJavadocJar()
 }
 
+// The JDK the tests run on (`-PtestJdk=21`): Java 11 by default, newer ones to qualify them; the code is still compiled for 11
+val testJdk = providers.gradleProperty("testJdk").getOrElse("11").toInt()
+require(testJdk >= 11) { "testJdk must be 11 or later: $testJdk" }
+tasks.withType<Test>().configureEach {
+  javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(testJdk)) })
+  systemProperty("bzadmin.java.expected", testJdk.toString())
+}
+
 dependencies {
   // Generators referenced by class name in the services configuration
   implementation(libs.berlioz)
@@ -188,7 +196,6 @@ tasks.test {
   classpath = files(tasks.jar, fixtureJar) + classpath - sourceSets.main.get().output
   systemProperty("bzadmin.fixtures.webapp", file("src/fixtures/webapp").path)
   systemProperty("bzadmin.sources", file("src/main/resources").path)
-  systemProperty("bzadmin.java.expected", "11")
 }
 
 // The bundles referenced by bzadmin.xsl come from the frontend build (`npm ci && npm run build` in frontend/)
