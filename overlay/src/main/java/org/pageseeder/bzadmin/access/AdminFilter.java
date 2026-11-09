@@ -221,7 +221,7 @@ public final class AdminFilter implements Filter {
     boolean operation = !("GET".equals(req.getMethod()) || "HEAD".equals(req.getMethod()));
     AdminAccess access = authenticate(req, res, operation);
     if (access == null || !isAccepted(req, res, access, operation)) return;
-    req.setAttribute(AdminVerdict.ATTRIBUTE, new AdminVerdict(access));
+    req.setAttribute(AdminVerdict.ATTRIBUTE, new AdminVerdict(access, req.getServletContext()));
     if (!operation) {
       chain.doFilter(req, res);
       return;

@@ -19,7 +19,7 @@ These add services or change published artifacts, so each is specified in the [f
 
 ### Redirects and forwards
 
-Add a tab to the Config page for Berlioz's `RedirectFilter` (redirects) and `RelocationFilter` (forwards, called relocations in Berlioz).
+Add a tab to the Config page for Berlioz's `RedirectFilter` (redirects) and `RelocationFilter` (forwards, called relocations in Berlioz). Planned for 0.14.1 and proposed in the [redirects contract](docs/design/redirects.md).
 
 - **Status.** Show each filter's state from its container registration: not mapped, mapped without a `config` parameter, configuration file missing or invalid, or active. The filters only warn in the log and have no effect in the first failure cases, so this makes a silent misconfiguration visible.
 - **Rules.** Read the file named by the filter's `config` parameter and list its rules: from, to and, for redirects, whether they are permanent. Berlioz does not expose the rules it has loaded and loads them on first use, so the page says that it shows the file, which can differ from the loaded rules until the next reload.

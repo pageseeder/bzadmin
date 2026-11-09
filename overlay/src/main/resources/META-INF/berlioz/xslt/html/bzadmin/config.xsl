@@ -8,6 +8,7 @@
   - 'berlioz-config'        GetBerliozConfig: Berlioz servlets, the XSLT processor and the servlet container
   - 'error-handler-config'  GetErrorHandlerConfig: Berlioz error handler servlets
   - 'berlioz-control'       GetBerliozControl: whether the "Reload everything" button (berlioz-reload) works
+  - 'redirect-filters'      GetRedirectFilters: Berlioz's redirect filters and the rules of their files (docs/design/redirects.md)
 -->
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                               xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -67,12 +68,17 @@
   <xsl:call-template name="bzadmin-secondary-link">
     <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=')"/>
     <xsl:with-param name="label"  select="'Global properties'"/>
-    <xsl:with-param name="active" select="$view != 'deployment'"/>
+    <xsl:with-param name="active" select="not($view = ('deployment', 'redirects'))"/>
   </xsl:call-template>
   <xsl:call-template name="bzadmin-secondary-link">
     <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=deployment')"/>
     <xsl:with-param name="label"  select="'Deployment'"/>
     <xsl:with-param name="active" select="$view = 'deployment'"/>
+  </xsl:call-template>
+  <xsl:call-template name="bzadmin-secondary-link">
+    <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=redirects')"/>
+    <xsl:with-param name="label"  select="'Redirects'"/>
+    <xsl:with-param name="active" select="$view = 'redirects'"/>
   </xsl:call-template>
 </xsl:template>
 
@@ -100,6 +106,9 @@
       <xsl:when test="$view = 'deployment'">
         <xsl:apply-templates select="//content[@name='berlioz-config']" mode="bzadmin-config"/>
         <xsl:apply-templates select="//content[@name='error-handler-config']" mode="bzadmin-config"/>
+      </xsl:when>
+      <xsl:when test="$view = 'redirects'">
+        <xsl:apply-templates select="//content[@name='redirect-filters']" mode="bzadmin-config"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:apply-templates select="." mode="bzadmin-config"/>
@@ -251,7 +260,7 @@
 </xsl:template>
 
 <!-- Displayed by the global properties and the deployment tabs -->
-<xsl:template match="content[@name=('berlioz-options', 'berlioz-config', 'error-handler-config')]" mode="bzadmin-content"/>
+<xsl:template match="content[@name=('berlioz-options', 'berlioz-config', 'error-handler-config', 'redirect-filters')]" mode="bzadmin-content"/>
 
 <!--
   Display the Berlioz servlets
@@ -426,6 +435,140 @@
       </xsl:choose>
     </p>
   </xsl:if>
+</xsl:template>
+
+<!--
+  Display Berlioz's redirect filters (RedirectFilter, RelocationFilter): a panel per registration
+  with its status, warnings and the rules of its file, as text, never links (docs/design/redirects.md).
+-->
+<xsl:template match="content[@name='redirect-filters']" mode="bzadmin-config">
+  <xsl:variable name="filters" select="redirect-filters"/>
+  <p>The rules shown are read from each filter's file, which can differ from the rules Berlioz has loaded: it loads them on first use and when reloaded. Patterns match the request path, including the context path. Query parameter values in targets are redacted.</p>
+  <xsl:if test="$filters/@schema = 'unavailable'">
+    <div class="callout warning" role="note"><p>The schemas of this Berlioz version could not be loaded, so the files are only checked for well-formedness, not validated.</p></div>
+  </xsl:if>
+  <xsl:choose>
+    <xsl:when test="$filters/@context = 'unavailable'">
+      <p><i>The filters of the application are not available for this request.</i></p>
+    </xsl:when>
+    <xsl:when test="not($filters/filter[@status != 'not-mapped'])">
+      <div class="panel">
+        <h2>No redirect filter</h2>
+        <p>The application maps neither Berlioz filter. <code>RedirectFilter</code> redirects URLs (301 or 302) and <code>RelocationFilter</code> forwards them internally, each with the rules of the file named by its <code>config</code> parameter, relative to <code>WEB-INF</code>.</p>
+      </div>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:apply-templates select="$filters/filter" mode="bzadmin-config"/>
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- The label of a filter type -->
+<xsl:function name="f:redirect-type" as="xs:string">
+  <xsl:param name="type" as="xs:string"/>
+  <xsl:sequence select="if ($type = 'relocation') then 'Forwards (RelocationFilter)' else 'Redirects (RedirectFilter)'"/>
+</xsl:function>
+
+<!-- A type of filter that the application does not map -->
+<xsl:template match="filter[@status = 'not-mapped']" mode="bzadmin-config">
+  <div class="panel">
+    <h2><xsl:value-of select="f:redirect-type(@type)"/></h2>
+    <p class="muted">Not mapped.</p>
+  </div>
+</xsl:template>
+
+<!-- A registration of a filter -->
+<xsl:template match="filter" mode="bzadmin-config">
+  <xsl:variable name="label" select="concat(f:redirect-type(@type), ': ', @name)"/>
+  <div class="panel">
+    <h2><xsl:value-of select="$label"/></h2>
+    <div class="table-scroll" tabindex="0" role="group" aria-label="{$label}"><table class="summary-table" aria-label="{$label}">
+      <tbody>
+        <tr>
+          <th scope="row">Status</th>
+          <td>
+            <span class="{if (@status = 'active') then 'tag' else 'tag warning'}"><xsl:value-of select="@status"/></span>
+            <xsl:text> </xsl:text>
+            <xsl:apply-templates select="." mode="redirect-status"/>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Configuration</th>
+          <td><xsl:choose><xsl:when test="@config"><code><xsl:value-of select="@config"/></code> in <code>WEB-INF</code></xsl:when><xsl:otherwise><span class="muted">No <code>config</code> parameter</span></xsl:otherwise></xsl:choose></td>
+        </tr>
+        <tr>
+          <th scope="row">Mapped to</th>
+          <td><xsl:value-of select="string-join((mapping/@url-pattern, mapping/@servlet-name/concat('servlet ', .)), ', ')"/></td>
+        </tr>
+        <xsl:if test="@rules">
+          <tr>
+            <th scope="row">Rules</th>
+            <td><xsl:value-of select="@rules"/><xsl:if test="number(@listed) lt number(@rules)"> (the first <xsl:value-of select="@listed"/> listed)</xsl:if></td>
+          </tr>
+        </xsl:if>
+      </tbody>
+    </table></div>
+    <xsl:if test="warning[@code = 'reload-not-covered']">
+      <div class="callout warning" role="note"><p>The mapping of this filter does not include the reload operation, so <b>Reload everything</b> does not reload its rules.</p></div>
+    </xsl:if>
+    <xsl:if test="rule">
+      <div class="table-scroll" tabindex="0" role="group" aria-label="Rules: {@name}"><table class="basic-table redirect-rules" aria-label="Rules: {@name}">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">From</th>
+            <th scope="col">To</th>
+            <th scope="col">Effect</th>
+          </tr>
+        </thead>
+        <tbody>
+          <xsl:for-each select="rule">
+            <tr>
+              <td><xsl:value-of select="@position"/></td>
+              <td><code><xsl:value-of select="@from"/></code></td>
+              <td><code><xsl:value-of select="@to"/></code></td>
+              <td>
+                <xsl:value-of select="if (@effect = 'forward') then 'Forward' else concat(@effect, if (@effect = '301') then ' permanent' else ' temporary')"/>
+                <xsl:apply-templates select="warning" mode="redirect-warning"/>
+              </td>
+            </tr>
+          </xsl:for-each>
+        </tbody>
+      </table></div>
+    </xsl:if>
+  </div>
+</xsl:template>
+
+<!-- What a status means for the filter -->
+<xsl:template match="filter" mode="redirect-status">
+  <xsl:choose>
+    <xsl:when test="@status = 'active'">Berlioz loads these rules.</xsl:when>
+    <xsl:when test="@status = 'no-config'">Without a <code>config</code> parameter, Berlioz fails every request through this filter (500).</xsl:when>
+    <xsl:when test="@status = 'missing'">The file does not exist: the filter has no effect.</xsl:when>
+    <xsl:when test="@status = 'invalid'">Berlioz loads no rule from this file: the filter has no effect.<xsl:if test="@message"><br/><small><xsl:value-of select="@message"/></small></xsl:if></xsl:when>
+    <xsl:when test="@status = 'unreadable'">
+      <xsl:choose>
+        <xsl:when test="@reason = 'outside-web-inf'">The file is outside <code>WEB-INF</code>, so it is not shown.</xsl:when>
+        <xsl:when test="@reason = 'too-large'">The file is larger than 1,000,000 bytes: Berlioz loads no rule from it either.</xsl:when>
+        <xsl:when test="@reason = 'not-file'">The path is not a file: the filter has no effect.</xsl:when>
+        <xsl:when test="@reason = 'no-real-path'">The application is not deployed as a directory, so the file cannot be read.</xsl:when>
+        <xsl:otherwise>The file could not be read<xsl:if test="@message"> (<xsl:value-of select="@message"/>)</xsl:if>.</xsl:otherwise>
+      </xsl:choose>
+    </xsl:when>
+  </xsl:choose>
+</xsl:template>
+
+<!-- A warning of a rule -->
+<xsl:template match="warning" mode="redirect-warning">
+  <br/>
+  <span class="tag warning">
+    <xsl:choose>
+      <xsl:when test="@code = 'ignored-rule'"><xsl:attribute name="title">A pattern does not parse: Berlioz ignores this rule</xsl:attribute>ignored</xsl:when>
+      <xsl:when test="@code = 'duplicate-from'"><xsl:attribute name="title">Rule <xsl:value-of select="@position"/> has the same pattern and applies first</xsl:attribute>same as #<xsl:value-of select="@position"/></xsl:when>
+      <xsl:when test="@code = 'forwards-to-admin'"><xsl:attribute name="title">Container security constraints do not apply to forwards, and AdminFilter checks them only when mapped with FORWARD: the admin page is denied</xsl:attribute>forwards to admin</xsl:when>
+      <xsl:otherwise><xsl:value-of select="@code"/></xsl:otherwise>
+    </xsl:choose>
+  </span>
 </xsl:template>
 
 </xsl:stylesheet>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Redirects of the dev host (RedirectFilter, config 'config/redirects.xml'), shown on the Redirects
+  tab of the Config page. They include the cases the tab reports: a pattern mapped twice, a pattern
+  that Berlioz ignores, and a target whose query values are redacted.
+
+  Berlioz loads these rules on the first request, and again on "Reload everything". Its redirects
+  are sent with 'Cache-Control: max-age=86400': a browser keeps following a changed rule's old target
+  for a day, so test changes with a private window or curl.
+-->
+<redirect-mapping>
+
+  <!-- Permanent (301): only 'yes' is permanent; 'true' would make the whole file invalid -->
+  <redirect from="/index.html" to="/home.html" permanent="yes"/>
+
+  <!-- Temporary (302), with a variable -->
+  <redirect from="/docs/{+path}" to="/home.html"/>
+
+  <!-- To the admin pages -->
+  <redirect from="/admin" to="/bzadmin/config.html?view=redirects"/>
+
+  <!-- The query values of a target are redacted on the tab, unless only a variable -->
+  <redirect from="/share/{id}" to="/home.html?ref=newsletter&amp;token=dev-not-a-secret&amp;id={id}"/>
+
+  <!-- Mapped twice: never applies, since the first rule for /index.html matches first -->
+  <redirect from="/index.html" to="/bzadmin/config.html"/>
+
+  <!-- Not a valid pattern ('!' is not a variable name): Berlioz ignores this rule -->
+  <redirect from="/legacy/{!page}" to="/home.html"/>
+
+</redirect-mapping>

@@ -15,6 +15,24 @@
     <filter-class>org.pageseeder.bzadmin.SecurityHeadersFilter</filter-class>
   </filter>
 
+  <!-- Berlioz redirects and forwards, shown on the Redirects tab of the Config page -->
+  <filter>
+    <filter-name>RedirectFilter</filter-name>
+    <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
+    <init-param>
+      <param-name>config</param-name>
+      <param-value>config/redirects.xml</param-value>
+    </init-param>
+  </filter>
+  <filter>
+    <filter-name>RelocationFilter</filter-name>
+    <filter-class>org.pageseeder.berlioz.servlet.RelocationFilter</filter-class>
+    <init-param>
+      <param-name>config</param-name>
+      <param-value>config/relocations.xml</param-value>
+    </init-param>
+  </filter>
+
   <!-- The host's authentication: local development grants admin access to this machine only -->
   <filter>
     <filter-name>LocalAdminAccessFilter</filter-name>
@@ -48,6 +66,16 @@
   <!-- Applies to Berlioz Admin -->
   <filter-mapping>
     <filter-name>SecurityHeadersFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <!-- Redirects, then forwards, for every request: they also see the reload of the Config page -->
+  <filter-mapping>
+    <filter-name>RedirectFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>RelocationFilter</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 

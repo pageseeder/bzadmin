@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Forwards of the dev host (RelocationFilter, config 'config/relocations.xml'), shown on the Redirects
+  tab of the Config page. The browser keeps the original URL; the server serves the target.
+-->
+<relocation-mapping>
+
+  <!-- A page under another URL -->
+  <relocation from="/about" to="/home.html"/>
+
+  <!-- With a variable: /pages/home serves /home.html -->
+  <relocation from="/pages/{+path}" to="/{+path}.html"/>
+
+  <!--
+    Into the admin pages: the tab warns "forwards to admin". The admin filters of this host are
+    mapped to direct requests only, so the forward is denied (403), as in a host with container
+    authentication, whose security constraints do not apply to forwards.
+  -->
+  <relocation from="/status" to="/bzadmin/system.html"/>
+
+</relocation-mapping>

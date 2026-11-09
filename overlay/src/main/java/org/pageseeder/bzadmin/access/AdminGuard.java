@@ -1,5 +1,8 @@
 package org.pageseeder.bzadmin.access;
 
+import javax.servlet.ServletContext;
+
+import org.jspecify.annotations.Nullable;
 import org.pageseeder.berlioz.content.ContentStatus;
 import org.pageseeder.berlioz.content.Request;
 import org.pageseeder.berlioz.content.Response;
@@ -33,6 +36,18 @@ public final class AdminGuard {
   public static boolean allows(Request req, AdminPermission permission) {
     Object verdict = req.getAttribute(AdminVerdict.ATTRIBUTE);
     return verdict instanceof AdminVerdict && ((AdminVerdict) verdict).allows(permission);
+  }
+
+  /**
+   * The servlet context of a request that the filter allowed, for the generators that report the
+   * deployment, such as the filters registered by the host. Check {@link #allows} first.
+   *
+   * @param req The request.
+   * @return the servlet context, or {@code null} without a verdict of the filter.
+   */
+  public static @Nullable ServletContext context(Request req) {
+    Object verdict = req.getAttribute(AdminVerdict.ATTRIBUTE);
+    return verdict instanceof AdminVerdict ? ((AdminVerdict) verdict).context() : null;
   }
 
   /**

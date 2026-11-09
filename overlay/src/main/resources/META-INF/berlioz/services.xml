@@ -18,6 +18,8 @@
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListBerliozOptions"    name="berlioz-options"      target="main"/>
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetBerliozConfig"       name="berlioz-config"       target="main"/>
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetErrorHandlerConfig"  name="error-handler-config" target="main"/>
+    <!-- The Redirects view: Berlioz's redirect filters and the rules of their files (not cacheable) -->
+    <generator class="org.pageseeder.bzadmin.redirect.GetRedirectFilters"     name="redirect-filters"     target="main"/>
     <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"        name="berlioz-control"      target="main"/>
   </service>
 
