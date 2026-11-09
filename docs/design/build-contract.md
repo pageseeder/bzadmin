@@ -6,7 +6,7 @@ This contract defines runtime requirements, provider ownership, distribution and
 
 | Area | Contract | Tested | Evidence |
 | --- | --- | --- | --- |
-| Java | 11 or later. The overlay's bytecode is Java 11 (toolchain 11); so is Berlioz 0.14.5 (`org.gradle.jvm.version` 11). | Java 11 only (Temurin 11.0.32.1). Newer JDKs require release qualification. | Tests assert the runtime version (`bzadmin.java.expected`). |
+| Java | 11 or later. The overlay's bytecode is Java 11 (toolchain 11); so is Berlioz 0.14.5 (`org.gradle.jvm.version` 11). | Java 11 (Temurin 11.0.32.1), the reference, for all tests and release qualification. Java 17, 21 and 25 for the overlay and packaged-host tests. | Tests assert the runtime version (`bzadmin.java.expected`); `-PtestJdk` selects it (CI `newer-jdk` job). |
 | Berlioz | 0.14.5 or later in the 0.14 line (classpath services, JAR overlay stylesheets, group stylesheet fallback since 0.14.4; scoped `berlioz-reload`, load diagnostics and the generators and helpers of 0.14.5). | 0.14.5 | Host tests. |
 | Servlet | `javax.servlet`, Servlet 4 API. Berlioz 0.14.5 is compiled against `javax.servlet` and declares no servlet dependency (container-provided). Jakarta containers (Tomcat 10+, Jetty 11+ without an EE 8 environment) are not supported. | Jetty 10 (Gretty 3.1.9 and embedded Jetty 10.0.26). Tomcat 9 is expected to work, untested. | Host tests. |
 | XSLT processor | Host-provided; XSLT 2.0. Exactly one Saxon on the classpath. Saxon 12 is the reference (Saxon 13 requires Java 17). | Saxon-HE 12.10 | `StagedArtifactTest` (one Saxon, 12.x). |
