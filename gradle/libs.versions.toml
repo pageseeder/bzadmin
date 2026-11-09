@@ -1,6 +1,6 @@
 [versions]
 berlioz = "0.14.5"
-logback = "1.5.37"
+logback = "1.5.38"
 slf4j = "2.0.20"
 xmlwriter = "1.1.1"
 glassfish-json = "1.1.4"
@@ -14,7 +14,7 @@ ehcache-later = "2.10.9.2"
 jcache = "1.1.1"
 ehcache3 = "3.10.9"
 caffeine = "3.1.8"   # 3.2 is the latest for Java 11 too; 3.1.8 is the last 3.1
-versions-plugin = "0.66.0"
+versions-plugin = "0.67.0"
 gretty = "3.1.9"
 cyclonedx = "3.5.1"
 jspecify = "1.0.1"
