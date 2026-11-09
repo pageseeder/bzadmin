@@ -76,7 +76,7 @@ ESLint uses flat config (`frontend/eslint.config.js`, ESLint 10); the files to l
 
 Tests run on Java 11 by default. To run them on a newer JDK, which Gradle must be able to find as a toolchain, pass `-PtestJdk`, for example `./gradlew -PtestJdk=21 :overlay:test :test-host:hostTest`. The code is still compiled for Java 11, and the tests check that they run on the requested version. CI runs these tests on Java 17, 21 and 25 (the `newer-jdk` job).
 
-The packaged-host tests run on an embedded Jetty 10 by default. To run them on an embedded Tomcat 9 instead, pass `-PtestContainer=tomcat9`, for example `./gradlew -PtestContainer=tomcat9 :test-host:hostTest`. The container is selected in `Container`; the few expectations that differ on Tomcat are in its static methods or marked `Container.tomcat()` in the tests, with the reason. CI runs them on Tomcat 9 (the `tomcat` job).
+The packaged-host tests run on an embedded Jetty 10 by default. To run them on an embedded Tomcat 9 instead, pass `-PtestContainer=tomcat9`, for example `./gradlew -PtestContainer=tomcat9 :test-host:hostTest`. The container is selected in `Container`; the few expectations that differ on Tomcat are in its static methods or marked `Container.tomcat()` in the tests, with the reason. CI runs them on Tomcat 9 with Java 11 and 25 (the `tomcat` job).
 
 `hostTestStaged` publishes to `build/staging-repo`, then a separate consumer build (`overlay/src/fixtures/consumer`, no `mavenLocal()`) resolves the overlay from there with the providers a host declares (Saxon 12 without a strict constraint), and the test host is assembled from those libraries.
 
