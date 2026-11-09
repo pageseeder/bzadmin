@@ -37,7 +37,8 @@ import org.jspecify.annotations.Nullable;
  *     with {@code fixture-key}), at most 1000 entries, statistics recorded.</li>
  * </ul>
  *
- * <p>Closed and unregistered when the web application stops.
+ * <p>Closed, unregistered and shut down when the web application stops, including the default
+ * EHCache 2 manager: its threads would otherwise outlive the web application (Tomcat reports them).
  */
 public final class FixtureCacheManagers implements ServletContextListener {
 
@@ -53,13 +54,17 @@ public final class FixtureCacheManagers implements ServletContextListener {
 
   private static final String CAFFEINE = "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider";
 
+  /** The default EHCache 2 manager, from {@code ehcache.xml}. */
+  private @Nullable CacheManager defaultEhcache;
+
   private @Nullable CacheManager ehcache;
 
   private javax.cache.@Nullable CacheManager jcache;
 
   @Override
   public void contextInitialized(ServletContextEvent event) {
-    CacheManager.create().getEhcache("PSML").put(new Element(FIXTURE_KEY, "default"));
+    this.defaultEhcache = CacheManager.create();
+    this.defaultEhcache.getEhcache("PSML").put(new Element(FIXTURE_KEY, "default"));
 
     Configuration config = new Configuration().name("fixture");
     config.setUpdateCheck(false);
@@ -100,6 +105,7 @@ public final class FixtureCacheManagers implements ServletContextListener {
     JCacheManagers.unregister(JCACHE_ID);
     if (this.jcache != null) this.jcache.close();
     if (this.ehcache != null) this.ehcache.shutdown();
+    if (this.defaultEhcache != null) this.defaultEhcache.shutdown();
   }
 
 }
