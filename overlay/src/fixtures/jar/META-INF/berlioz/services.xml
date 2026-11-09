@@ -58,7 +58,7 @@
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetGlobalConfig" name="global-config" target="main"/>
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.ListBerliozOptions" name="berlioz-options" target="main"/>
     <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl" name="berlioz-control" target="main"/>
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetSystemProperties" name="sysproperties" target="main"/>
+    <generator class="org.pageseeder.bzadmin.system.GetSystemProperties" name="sysproperties" target="main"/>
     <generator class="org.pageseeder.bzadmin.cache.ListCaches" name="cache-overview" target="main"/>
     <generator class="org.pageseeder.bzadmin.cache.GetCacheInfo" name="cache-info" target="main">
       <parameter name="provider" value="ehcache2"/>

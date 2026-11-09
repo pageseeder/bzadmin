@@ -101,8 +101,8 @@
     <generator class="org.pageseeder.bzadmin.system.GetSystemSummary"                name="system-summary" target="main"/>
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetRuntimeInfo"    name="runtime"     target="main"/>
     <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetFileSystemInfo" name="filesystem"  target="main"/>
-    <!-- Values of sensitive names redacted -->
-    <generator class="org.pageseeder.bzadmin.guard.berlioz.system.GetSystemProperties" name="sysproperties" target="main"/>
+    <!-- Sensitive values redacted, by name and by value (SystemProperties) -->
+    <generator class="org.pageseeder.bzadmin.system.GetSystemProperties" name="sysproperties" target="main"/>
   </service>
 
   <service id="bzadmin-system-files" method="get">

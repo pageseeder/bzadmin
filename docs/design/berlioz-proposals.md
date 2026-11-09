@@ -105,12 +105,13 @@ services, and only for POST.
 `Redaction` redacts by name (password, secret, key, token…). Values that hold credentials whatever
 their name are shown: a URL with user information (`https://user:password@host/`) in a system property
 or a global property, or a token in a query string. The Redirects view now redacts targets itself
-(`Targets.redact`). Berlioz could add value-based redaction, such as `Redaction.redactUrl`, used for
-properties and redirect targets alike, as proposed by the
-[system information exposure review](../../ROADMAP.md#system-information-exposure-review).
+(`Targets.redact`), and the System page system properties (`SystemProperties.redact`: URL user
+information, parameters with sensitive names, the program arguments of `sun.java.command`). Berlioz could add value-based redaction, such as `Redaction.redactUrl`, used for
+properties and redirect targets alike, with the rules of the overlay's
+[system properties](metadata-contract.md#system-properties).
 
 - **Secure:** one policy in every generator that writes these values, for every output format.
-- **Removes:** the overlay's own redaction of targets.
+- **Removes:** the overlay's own redaction of targets and its `GetSystemProperties`.
 
 ## Public helpers
 

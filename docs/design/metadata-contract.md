@@ -10,6 +10,7 @@ Berlioz 0.14.5 is the reference framework version. Each field below comes from a
 | Generator parameter values in services | None by contract | Shown as declared . Parameters are static service configuration and must not hold secrets: static secrets belong in the global configuration, and dynamic values are URI references, not values. Name-based redaction would also hide ordinary parameters (`sort-key`, `author`…) that the page exists to diagnose. |
 | Servlet and error handler configuration | Paths, init parameters | Berlioz snapshots are allowlists; stylesheet paths are only reported when safe (relative or classpath, no traversal). Used as is. |
 | Option defaults | None (code constants) | `ListBerliozOptions` writes defaults only, never values. |
+| JVM system properties (System page) | Secrets that hosts set on the command line, often without choosing the property name: program arguments in `sun.java.command`, credentials in URLs | The overlay's `GetSystemProperties` redacts by name and by value (see [system properties](#system-properties)), for every output format. Paths and user names stay visible to `VIEW`. |
 
 `GetServices` (disk copy of `services.xml` files) is no longer used: it only shows filesystem files.
 
@@ -137,14 +138,29 @@ The thread list is no longer part of the page: it loads on demand ("Show threads
 | `@system-load` | `CpuLoad`, `SystemCpuLoad` before Java 14 (not cumulative) | absent |
 | `@load-average` | `OperatingSystemMXBean.getSystemLoadAverage()` | absent (Windows) |
 
+### System properties
+
+Content `sysproperties` from the overlay's `GetSystemProperties`, with the same output as Berlioz's (which it replaced): `system/property/@name`, `@value`, sorted by name, string entries only. `SystemProperties.redact` applies to each value, in this order:
+
+| Rule | Example value | Output |
+| --- | --- | --- |
+| Sensitive name (Berlioz `Redaction.isSensitiveName`: password, secret, key, token, auth…) | `db.password=s3cret` | `[REDACTED]` |
+| `sun.java.command`: the main class, or the JAR path when the value has `.jar` followed by a space or the end, without the program arguments | `com.example.Main --password s3cret` | `com.example.Main [REDACTED]` |
+| User information of a URL anywhere in the value (after `://`, up to the last `@` before `/`, `?`, `#` or a space): the password, or the whole user information without `:` | `jdbc:postgresql://app:s3cret@db/app` | `jdbc:postgresql://app:[REDACTED]@db/app` |
+| The value of a parameter with a sensitive name, after `?`, `&`, `;` or at the start of the value | `jdbc:mysql://db/app?user=app&password=s3cret` | `…?user=app&password=[REDACTED]` |
+
+A value with `[REDACTED]` in it is tagged "redacted" on the page, and counted in the key metric. Paths (`java.class.path`, `user.dir`, `java.io.tmpdir`…) and user names (`user.name`, `user.home`) are not redacted: `VIEW` is an administrator's permission, and they are what classpath and installation problems are diagnosed with. Other pages show paths on the same basis (log directories, cache disk stores). The global configuration (Config page) is redacted by name only, as configuration files must not hold secrets.
+
+Limits: a secret in a value that matches none of these rules is shown (the guidance is the same as for logs: do not pass secrets as system property values without a sensitive name). JVM options are not exposed, only the properties they set.
+
 ## Supported framework version
 
 Berlioz 0.14.5 is the reference and minimum version. Recheck these contracts before claiming compatibility with Berlioz 1.0.
 
-- **APIs of 0.14.5 in use:** `ReloadScope` and `ControlParameter` (`AdminFilter`: scoped `berlioz-reload`, deprecated aliases rejected), `ReloadScope.HEADER` (the frontend reports the scopes applied), `StylesheetLocation.select`, `countClasspathCopies` and `resolveApplicationClassLoader`, `XsltResolvers.locate`, `XsltProcessorInfo.current()`, `Environment.getServerInfo()` and `getServletApiVersion()`; the generators `ListBerliozOptions`, `GetCpuSample`, and `GetSystemProperties` and `GetGeneratorStatistics` as `Generator`s. `ControlNetwork.matches` is not used: the plain-HTTP fallback login needs a direct loopback request (`AdminFilter.isLoopback`), not the configured control network.
+- **APIs of 0.14.5 in use:** `ReloadScope` and `ControlParameter` (`AdminFilter`: scoped `berlioz-reload`, deprecated aliases rejected), `ReloadScope.HEADER` (the frontend reports the scopes applied), `StylesheetLocation.select`, `countClasspathCopies` and `resolveApplicationClassLoader`, `XsltResolvers.locate`, `XsltProcessorInfo.current()`, `Environment.getServerInfo()` and `getServletApiVersion()`; the generators `ListBerliozOptions`, `GetCpuSample`, and `GetGeneratorStatistics` as a `Generator`; `Redaction.isSensitiveName`. `ControlNetwork.matches` is not used: the plain-HTTP fallback login needs a direct loopback request (`AdminFilter.isLoopback`), not the configured control network.
 - **Captured output:** the metadata fixtures `fixtures/config.xml`, `services.xml` and `services-reload-failed.xml` are copied from the 0.14.5 captures of `:test-host:hostTest` (`test-host/build/test-fixtures/root/`, written by `BerliozHost`: `bzadmin_config.xml`, `bzadmin_services.xml`, `bzadmin_services_view_reload-failed.xml`). `services-lookup.xml` (0.14.4) and `config-global-only.xml` are older: the host tests capture no successful lookup of `/bzadmin/config`, and `GetGlobalConfig` output is unchanged.
 - **Deprecated generators:** none used. `GetLiveServices` (alias of `ListRuntimeServices`) and `GetCPUTime` (replaced by `GetCpuSample`) are deprecated for removal in 1.0, as are the control parameters `reload-services`, `clear-xsl-cache` and `reset-etags`, which `AdminFilter` rejects.
-- **`@Beta` generators in use:** `ListRuntimeServices`, `GetMatchingService`, `GetRuntimeInfo`, `GetFileSystemInfo`, `ListLibraries`, `GetCpuSample`, `GetSystemProperties`; their schemas may change before 1.0.
+- **`@Beta` generators in use:** `ListRuntimeServices`, `GetMatchingService`, `GetRuntimeInfo`, `GetFileSystemInfo`, `ListLibraries`, `GetCpuSample`; their schemas may change before 1.0.
 - **Berlioz internals relied on, not APIs:** the Redirects view repeats `ConfigLoader`'s handling of
   mapping files (removal of a DOCTYPE containing `-//Berlioz` or `//Weborganic`, the 1,000,000-byte
   limit) and validates with the schemas of the Berlioz JAR (`schema/redirect-mapping-1.0.xsd`,

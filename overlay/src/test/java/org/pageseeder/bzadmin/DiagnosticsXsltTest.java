@@ -397,12 +397,13 @@ final class DiagnosticsXsltTest {
         + "<property name='file.encoding' value='UTF-8'/><property name='java.vendor' value='Eclipse Adoptium'/>"
         + "<property name='java.version' value='11.0.31'/><property name='java.vm.name' value='OpenJDK 64-Bit Server VM'/>"
         + "<property name='os.arch' value='amd64'/><property name='os.name' value='Linux'/><property name='os.version' value='5.15.0'/>"
+        + "<property name='sun.java.command' value='com.example.Main [REDACTED]'/>"
         + "<property name='user.timezone' value='Australia/Sydney'/><property name='zeta.password' value='[REDACTED]'/>"
         + "</system></content>"
         + "</root>";
     String html = OverlayXslt.transform(new StreamSource(new StringReader(xml)));
     assertTrue(html.contains("class=\"choice active\" aria-current=\"page\">Properties</a>"), html);
-    assertEquals("<div class=\"key-metric\"><dt>Properties</dt><dd class=\"key-metric-value\">9</dd><dd class=\"key-metric-detail\">1 redacted</dd></div>"
+    assertEquals("<div class=\"key-metric\"><dt>Properties</dt><dd class=\"key-metric-value\">10</dd><dd class=\"key-metric-detail\">2 redacted</dd></div>"
         + "<div class=\"key-metric\"><dt>OS</dt><dd class=\"key-metric-value\">Linux</dd><dd class=\"key-metric-detail\">5.15.0 · amd64</dd></div>"
         + "<div class=\"key-metric\"><dt>Java</dt><dd class=\"key-metric-value\">11.0.31</dd><dd class=\"key-metric-detail\">OpenJDK 64-Bit Server VM · Eclipse Adoptium</dd></div>"
         + "<div class=\"key-metric\"><dt>Encoding</dt><dd class=\"key-metric-value\">UTF-8</dd><dd class=\"key-metric-detail\">Australia/Sydney</dd></div>", metrics(html));
@@ -410,7 +411,9 @@ final class DiagnosticsXsltTest {
     // In Berlioz's order (sorted by name), the redacted value as a tag
     assertTrue(html.contains("<tr><th scope=\"row\">user.timezone</th><td>Australia/Sydney</td></tr>"
         + "<tr><th scope=\"row\">zeta.password</th><td><span class=\"tag\""), html);
-    assertFalse(html.contains("[REDACTED]"), html);
+    // A value redacted in part, as is with a tag
+    assertTrue(html.contains("<tr><th scope=\"row\">sun.java.command</th><td>com.example.Main [REDACTED] <span class=\"tag\" title=\"Partly hidden: it may hold a secret\">redacted</span></td></tr>"), html);
+    assertFalse(html.contains("<td>[REDACTED]"), html);
 
     // An encoding other than UTF-8 calls for attention; missing properties are unavailable
     String legacy = metrics(OverlayXslt.transform(new StreamSource(new StringReader(xml

@@ -308,12 +308,22 @@ final class AdminOperationsTest {
       assertEquals(200, response.statusCode(), format);
       assertFalse(response.body().contains("fixture-secret"), format);
       assertTrue(response.body().contains("fixture.database.password"), format);
+      assertTrue(response.body().contains("fixture.database.url"), format);
     }
     assertJson(host.get("/bzadmin/system.json?view=properties").body(),
         "\"name\":\"fixture.database.password\",\"value\":\"[REDACTED]\"");
     Document xml = parse(host.get("/bzadmin/system.src?view=properties").body());
     assertEquals("[REDACTED]", xpath(xml, "//property[@name='fixture.database.password']/@value"));
     assertEquals(System.getProperty("java.version"), xpath(xml, "//property[@name='java.version']/@value"));
+    // By value: the password of the URL and of its parameter
+    assertEquals("jdbc:postgresql://fixture:[REDACTED]@db/app?user=fixture&password=[REDACTED]",
+        xpath(xml, "//property[@name='fixture.database.url']/@value"));
+    // The program arguments of the test JVM, not its main class; paths are kept
+    String command = System.getProperty("sun.java.command", "");
+    String main = command.strip().split("\\s+", 2)[0];
+    String expected = command.strip().equals(main) ? main : main + " [REDACTED]";
+    assertEquals(expected, xpath(xml, "//property[@name='sun.java.command']/@value"));
+    assertEquals(System.getProperty("java.io.tmpdir"), xpath(xml, "//property[@name='java.io.tmpdir']/@value"));
   }
 
   /**

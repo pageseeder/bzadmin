@@ -233,6 +233,7 @@ fun Test.runOnHost(war: Provider<RegularFile>) {
   doFirst { delete(logs) }
   systemProperty("bzadmin.test.logs", logs.path)
   systemProperty("fixture.database.password", "fixture-secret-system-property")
+  systemProperty("fixture.database.url", "jdbc:postgresql://fixture:fixture-secret-url@db/app?user=fixture&password=fixture-secret-query")
   dependsOn(testKeystore)
   systemProperty("bzadmin.test.keystore", testKeystore.get().outputs.files.singleFile.path)
 }

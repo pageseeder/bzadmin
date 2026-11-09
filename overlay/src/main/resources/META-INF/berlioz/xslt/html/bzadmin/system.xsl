@@ -28,7 +28,7 @@
   <explanation name="heap">Memory for Java objects, managed by the garbage collector. <b>Used</b>: occupied by objects, including those not collected yet. <b>Committed</b>: allocated to the JVM by the operating system, at least the used memory. <b>Max</b>: the limit (<code>-Xmx</code>). <b>Peak</b>: highest used memory since the JVM started, shown in the Memory areas and pools table. High usage alone is normal, since the collector frees memory only when it needs to; it is a concern when usage stays close to the maximum after collections.</explanation>
   <explanation name="heap-committed">Heap memory the operating system has allocated to the JVM, used or not, against the maximum (<code>-Xmx</code>). The JVM grows it up to the maximum as it needs, and may give some back after collections.</explanation>
   <explanation name="non-heap">Memory for the JVM itself: loaded classes (Metaspace), compiled code (code cache) and other internals, used and committed. Usually no maximum, as for Metaspace by default: the Memory areas and pools table details each pool.</explanation>
-  <explanation name="properties-redacted">The JVM system properties, of which <b>redacted</b>: values of properties whose names suggest a secret (such as <code>password</code>, <code>secret</code>, <code>token</code> or <code>apikey</code>), hidden by Berlioz. Other values can still reveal details of the environment, such as paths and versions.</explanation>
+  <explanation name="properties-redacted">The JVM system properties, of which <b>redacted</b>: values hidden in whole or in part because they may hold a secret. Hidden in whole when the name suggests a secret (such as <code>password</code>, <code>secret</code>, <code>token</code> or <code>apikey</code>); in part for the program arguments of <code>sun.java.command</code>, the password of a URL, and the value of a parameter whose name suggests a secret. Other values can still reveal details of the environment, such as paths, user names and versions.</explanation>
   <explanation name="encoding">The default encoding of the JVM (<code>file.encoding</code>), used to read and write text whenever the application does not name one, with the default time zone (<code>user.timezone</code>), used for dates and log timestamps. Both come from the host unless set on the command line: an encoding other than UTF-8 can garble non-ASCII text, so set <code>-Dfile.encoding=UTF-8</code>.</explanation>
   <explanation name="pool-eden">Where new objects are allocated. Each young collection empties it, copying the objects still in use to a survivor space, so its usage swings between nearly empty and nearly full: a full Eden is normal, and simply triggers the next young collection. The collector may resize it as it goes. Frequent young collections mean the application allocates a lot.</explanation>
   <explanation name="pool-survivor">Objects that survived a young collection, kept here for a few more collections before they move to the old generation. Small, and its usage changes with every young collection. When it is too small for the objects that survive, they move to the old generation early and fill it faster.</explanation>
@@ -287,7 +287,7 @@
   as unavailable.
 -->
 <xsl:template match="system" mode="system-key-metrics">
-  <xsl:variable name="redacted" select="count(property[@value = $system-redacted])"/>
+  <xsl:variable name="redacted" select="count(property[contains(@value, $system-redacted)])"/>
   <xsl:variable name="encoding" select="f:system-property(., 'file.encoding')"/>
   <xsl:call-template name="bzadmin-key-metric">
     <xsl:with-param name="label" select="'Properties'"/>
@@ -874,12 +874,13 @@
                         else concat(format-number($ms div 1000, '#,##0.0'), ' s')"/>
 </xsl:function>
 
-<!-- The value that Berlioz writes instead of a sensitive value (Redaction.REDACTED) -->
+<!-- What replaces a sensitive value or part of a value (Redaction.REDACTED) -->
 <xsl:variable name="system-redacted" select="'[REDACTED]'"/>
 
 <!--
-  The JVM system properties, sorted by name by Berlioz (GetSystemProperties), with the values of
-  sensitive names redacted.
+  The JVM system properties, sorted by name (GetSystemProperties), with sensitive values or parts of
+  values redacted: a value redacted in whole is shown as a tag, one redacted in part as is, followed by
+  a tag.
 -->
 <xsl:template match="content[@name='sysproperties']" mode="bzadmin-system">
   <section>
@@ -894,7 +895,8 @@
           <th scope="row"><xsl:value-of select="@name"/></th>
           <td>
             <xsl:choose>
-              <xsl:when test="@value = $system-redacted"><span class="tag" title="Hidden by Berlioz: the name suggests a secret">redacted</span></xsl:when>
+              <xsl:when test="@value = $system-redacted"><span class="tag" title="Hidden: the name suggests a secret">redacted</span></xsl:when>
+              <xsl:when test="contains(@value, $system-redacted)"><xsl:value-of select="@value"/><xsl:text> </xsl:text><span class="tag" title="Partly hidden: it may hold a secret">redacted</span></xsl:when>
               <xsl:otherwise><xsl:value-of select="@value"/></xsl:otherwise>
             </xsl:choose>
           </td>

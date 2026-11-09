@@ -6,7 +6,7 @@ Version `0.14.0` is the first public release, at `org.pageseeder.berlioz:pso-bza
 
 ## Next: 0.14.x maintenance
 
-[0.14.1](docs/release/0.14.1.md) is in preparation, with the Redirects tab and fixes for some known limitations of 0.14.0.
+[0.14.1](docs/release/0.14.1.md) is in preparation, with the Redirects tab, redaction of system property values and fixes for some known limitations of 0.14.0.
 
 - Address the remaining [known limitations](docs/release/0.14.1.md#known-limitations) where they can be fixed within the overlay. The missing challenge for requests other than GET under container BASIC authentication comes from Berlioz's error handling; hosts can avoid it with an [error page for 401](docs/access.md#error-page-for-401) until Berlioz preserves the challenge.
 - Qualify Tomcat 9 and newer JDKs before advertising them as tested. Java 11 and Jetty 10 remain the reference environment.
@@ -24,12 +24,6 @@ These add services or change published artifacts, so each is specified in the [f
 Add a module to this project for the admin access and security code, published as its own artifact, so that other overlays can share it rather than maintain their own copies and security fixes are made once. It would provide the permissions, access, verdict, guards, fallback login and a filter that overlays can configure with their own routes, messages and audit logger.
 
 Keep the class names that hosts already use in `web.xml` and in their access code, or provide a migration path. Overlays deployed in the same host share one copy of the module, so its compatibility rules must be defined. The module becomes the one published runtime dependency other than Berlioz, which requires updating the [build contract](docs/design/build-contract.md) and the dependency boundary check.
-
-### System information exposure review
-
-Review what the System page discloses to `VIEW` users. Berlioz redacts system properties by name only, so values are shown for properties such as `java.class.path`, `user.home` and `sun.java.command`, whose value includes any program arguments, and for any property holding a URL with embedded credentials.
-
-Decide what should be hidden, shortened or limited to `OPERATE`, weighing diagnostic value against what paths and user names reveal. Apply the same policy to every output format, and to the other pages that show paths, and propose changes that belong in Berlioz's `Redaction` upstream.
 
 ## Framework integration
 

@@ -4,7 +4,7 @@ Configuration and Services use the current Berlioz generators through guarded de
 
 `GetApplicationSummary` reports the host application, runtime/provider identity and servlet container (the filter supplies servlet context information). It avoids guessing configuration provenance or service origins that Berlioz does not expose.
 
-`GetSystemSummary` reads JVM management counters for memory, pools, collectors, CPU and thread counts without an eager thread stack table. Unsupported metrics are absent, not invented zero values. `OptionalMetrics` accesses optional MBean attributes without linkage to vendor-specific management classes. `GetSystemProperties` sorts/redacts sensitive data across output formats.
+`GetSystemSummary` reads JVM management counters for memory, pools, collectors, CPU and thread counts without an eager thread stack table. Unsupported metrics are absent, not invented zero values. `OptionalMetrics` accesses optional MBean attributes without linkage to vendor-specific management classes. The overlay's `GetSystemProperties` (it replaced Berlioz's) sorts the properties and redacts sensitive values by name and by value, the same in every output format; paths and user names stay visible (see the [system properties](metadata-contract.md#system-properties) rules).
 
 Threads load on demand through `ListThreads`; `GetThreadInfo` loads a selected thread's stack and lock information. Listings emit at most 2000 threads; single-thread stacks stop at 256 frames. Origin classification is heuristic and reports its basis. Listing currently gathers all live stacks before limiting output, so the output bound is not a bound on JVM stack-capture cost. Virtual threads are not listed.
 
