@@ -5,7 +5,7 @@
 - [Getting started](getting-started.md): requirements, installation and first access.
 - [Access integration](access.md): host authentication, container roles, fallback login, proxies and audit.
 - [Cache integration](guides/caches.md): register host caches and manage their lifecycle.
-- [Logs and stylesheet customization](guides/configuration.md).
+- [Logs, redirects and stylesheet customization](guides/configuration.md).
 - [Upgrading and rollback](guides/upgrading.md).
 - [Troubleshooting](guides/troubleshooting.md).
 - [Configuration reference](reference/configuration.md).

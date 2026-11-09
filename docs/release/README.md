@@ -4,8 +4,8 @@ Version `0.14.0` is the first public release. Earlier versions were internal or 
 
 ## 0.14.1 (unreleased)
 
-See the [draft release notes](0.14.1.md). Maintenance release requiring Berlioz 0.14.5: fallback login
-throttling, admin operations under the internal API `/bzadmin/api/`, operations with Berlioz mapped by
+See the [draft release notes](0.14.1.md). Release requiring Berlioz 0.14.5: a Redirects tab for
+Berlioz's redirect and relocation filters, fallback login throttling, admin operations under the internal API `/bzadmin/api/`, operations with Berlioz mapped by
 prefix, support for development proxies, and interface refinements. Hosts or proxies that name admin
 operation URLs must update them.
 

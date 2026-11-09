@@ -1,7 +1,6 @@
 # Redirects and forwards
 
-Status: proposed for 0.14.1, not implemented. This contract is agreed before implementation; see
-[open questions](#open-questions).
+Implemented in 0.14.1. User documentation: [redirects and forwards](../guides/configuration.md#redirects-and-forwards).
 
 A Redirects view on the Config page (`/bzadmin/config?view=redirects`) shows the state of Berlioz's
 `RedirectFilter` (redirects) and `RelocationFilter` (forwards, called relocations in Berlioz) and lists
@@ -193,9 +192,18 @@ policy: `VIEW` required, no data without the verdict, `no-store`.
   no validation, without failing, if a Berlioz update removes or changes it.
 - `forwards-to-admin` ships in 0.14.1; the `admin-url` warning is deferred (see [non-goals](#non-goals)).
 
-## Open questions
+## Implementation
 
-1. **Upstream.** Propose to Berlioz: a way to inspect the loaded rules and their load status,
-   correcting the DTD for `permanent`, and a filter without `config` that has no effect instead of
-   failing every request. Track them with the other upstream items in the
-   [metadata contract](metadata-contract.md).
+Java: `overlay/src/main/java/org/pageseeder/bzadmin/redirect/` (`GetRedirectFilters`, with
+`FilterRegistrations`, `MappingFile`, `MappingParser` and `Targets`); the servlet context reaches the
+generator through the verdict of `AdminFilter` (`AdminGuard.context`). Presentation: the Redirects view
+of `overlay/src/main/resources/META-INF/berlioz/xslt/html/bzadmin/config.xsl`. Tests: `RedirectsTest`
+on the test host `web-redirects.xml`, with fixtures written at test time; `MappingParserTest` and
+`TargetsTest` for the schema being unavailable, entities, bounds, redaction and URL patterns. The dev
+host maps both filters with example rules (`test-host/src/main/webapp/WEB-INF/config/redirects.xml`,
+`relocations.xml`).
+
+## Upstream
+
+What Berlioz could expose so that the view shows the loaded rules without reading the files, and the
+defects found while building it, are in the [proposals for Berlioz](berlioz-proposals.md).

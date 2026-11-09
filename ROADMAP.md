@@ -19,7 +19,7 @@ These add services or change published artifacts, so each is specified in the [f
 
 ### Redirects and forwards
 
-Add a tab to the Config page for Berlioz's `RedirectFilter` (redirects) and `RelocationFilter` (forwards, called relocations in Berlioz). Planned for 0.14.1 and proposed in the [redirects contract](docs/design/redirects.md).
+Add a tab to the Config page for Berlioz's `RedirectFilter` (redirects) and `RelocationFilter` (forwards, called relocations in Berlioz). Implemented for 0.14.1, as specified in the [redirects contract](docs/design/redirects.md); this entry moves to the release notes when 0.14.1 is released.
 
 - **Status.** Show each filter's state from its container registration: not mapped, mapped without a `config` parameter, configuration file missing or invalid, or active. The filters only warn in the log and have no effect in the first failure cases, so this makes a silent misconfiguration visible.
 - **Rules.** Read the file named by the filter's `config` parameter and list its rules: from, to and, for redirects, whether they are permanent. Berlioz does not expose the rules it has loaded and loads them on first use, so the page says that it shows the file, which can differ from the loaded rules until the next reload.
@@ -39,7 +39,7 @@ Decide what should be hidden, shortened or limited to `OPERATE`, weighing diagno
 
 ## Framework integration
 
-Adopt released Berlioz APIs where they can replace overlay-specific diagnostics, stylesheet resolution and control handling. A future framework authorization hook could simplify generator guards. Keep existing protections until replacements are released, adopted and tested.
+Adopt released Berlioz APIs where they can replace overlay-specific diagnostics, stylesheet resolution and control handling. A future framework authorization hook could simplify generator guards. Keep existing protections until replacements are released, adopted and tested. The [proposals for Berlioz](docs/design/berlioz-proposals.md) list the defects found and what Berlioz could expose: the rules its redirect filters loaded, reloads that reach every component, an authorization hook for services, control parameters on declared services only, and value-based redaction.
 
 The [shared access module](#shared-access-module) could move into Berlioz if Berlioz provides more specific direction for security.
 
