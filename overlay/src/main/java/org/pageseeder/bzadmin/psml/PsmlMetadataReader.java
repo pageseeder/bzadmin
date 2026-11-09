@@ -95,7 +95,26 @@ final class PsmlMetadataReader {
     factory.setXMLResolver((publicId, systemId, base, namespace) -> {
       throw new XMLStreamException("External resources are not loaded");
     });
+    allowDepth(factory, PsmlDocument.MAX_XML_DEPTH + 1);
     return factory;
+  }
+
+  /**
+   * Sets the JDK's element depth limit just above ours, so that a deep document is reported as
+   * {@link PsmlDocument.Status#TOO_DEEP} rather than {@link PsmlDocument.Status#MALFORMED}, whatever
+   * the JDK's default (none in Java 21, 100 in Java 25's {@code jaxp.properties}, as ours) or the
+   * host's {@code jdk.xml.maxElementDepth}. Reading still stops at {@link PsmlDocument#MAX_XML_DEPTH}.
+   */
+  private static void allowDepth(XMLInputFactory factory, int depth) {
+    // The property name since Java 17, then the one Java 11 accepts
+    for (String name : new String[]{"jdk.xml.maxElementDepth", "http://www.oracle.com/xml/jaxp/properties/maxElementDepth"}) {
+      try {
+        factory.setProperty(name, Integer.toString(depth));
+        return;
+      } catch (IllegalArgumentException ex) {
+        // Not supported under this name
+      }
+    }
   }
 
   private static void close(XMLStreamReader reader) {

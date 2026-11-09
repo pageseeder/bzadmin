@@ -6,7 +6,7 @@ The Files page uses an overlay-owned, read-only NIO repository, independent of B
 
 ## Bounds and failure behavior
 
-A path has at most 1024 characters and 32 names. A directory scan stops at 10,000 entries and a page contains at most 1000 entries, with truncation reported. Metadata parsing is limited to 4 MiB, XML depth 128, 100,000 elements and 8192 characters per value. Source reads stop at 1 MiB. These bounds apply before or during reads/parsing; the page displays incomplete results explicitly.
+A path has at most 1024 characters and 32 names. A directory scan stops at 10,000 entries and a page contains at most 1000 entries, with truncation reported. Metadata parsing is limited to 4 MiB, XML depth 100 (the default limit of Java 25), 100,000 elements and 8192 characters per value. Source reads stop at 1 MiB. These bounds apply before or during reads/parsing; the page displays incomplete results explicitly.
 
 The XML reader disables external entities/DTDs. Expected missing, invalid or unreadable resources use the repository's defined problems and generator responses rather than arbitrary file access. The folder and document views share a context path above a folder-tree panel and a selected-context panel. The side-by-side panels share a height and a 28rem minimum to reduce layout shifts between selections. On narrow screens the panels stack with natural heights. Document source occupies a separate full-width panel below, displayed through the shared XML source component. The tree opens to the selected folder, or the parent folder of a document.
 

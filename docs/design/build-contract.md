@@ -133,7 +133,7 @@ Reference budgets. Rows marked in force describe the implementation; the general
 | Recent log events | 256 events held; 8192 characters of message and throwable per event, 8 throwables of 16 stack trace elements, 256 characters per logger or thread name | In force |
 | Lists of data items (log files, folder entries, cache names) | 1000 per response | In force for log files (: 10 000 entries read, the 1000 most recent files listed per directory; the others can be read by name) and folder entries; cache names |
 | Trees (PSML folders) | No tree per response: one folder level per request (the tree loads folders on demand) | In force |
-| PSML repository (`org.pageseeder.bzadmin.psml`) | One folder level per listing: 10 000 entries read, 1000 returned; paths of depth 32; metadata parse 4 MB, XML depth 128, 100 000 elements; source 1 MB | In force; used by the `files` routes |
+| PSML repository (`org.pageseeder.bzadmin.psml`) | One folder level per listing: 10 000 entries read, 1000 returned; paths of depth 32; metadata parse 4 MB, XML depth 100, 100 000 elements; source 1 MB | In force; used by the `files` routes |
 | Single values shown in full | 8192 characters, then truncated | Proposed |
 | Concurrent expensive reads (raw logs, PSML) | Raw logs: 4 at the same time, a fifth waits up to 2 s, then 503 `<no-log reason="busy">`; PSML: not limited | In force; PSML: each request is bounded by the repository budgets |
 

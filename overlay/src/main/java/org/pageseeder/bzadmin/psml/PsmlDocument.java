@@ -22,7 +22,7 @@ public final class PsmlDocument {
   public static final long MAX_BYTES = 4L * 1024 * 1024;
 
   /** Maximum XML element nesting depth accepted by the metadata parser. */
-  public static final int MAX_XML_DEPTH = 128;
+  public static final int MAX_XML_DEPTH = 100;
 
   /** Maximum number of XML elements read while parsing metadata. */
   public static final int MAX_ELEMENTS = 100_000;
