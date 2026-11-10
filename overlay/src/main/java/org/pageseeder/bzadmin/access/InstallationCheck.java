@@ -1,18 +1,23 @@
 package org.pageseeder.bzadmin.access;
 
+import static org.pageseeder.bzadmin.berlioz.BerliozMappings.HTML_EXTENSION;
+import static org.pageseeder.bzadmin.berlioz.BerliozMappings.HTML_PREFIX;
+import static org.pageseeder.bzadmin.berlioz.BerliozMappings.XML_EXTENSION;
+import static org.pageseeder.bzadmin.berlioz.BerliozMappings.XML_PREFIX;
+
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration;
 
 import org.jspecify.annotations.Nullable;
+import org.pageseeder.bzadmin.berlioz.BerliozMappings;
 
 /**
  * Warns on the console at startup when Berlioz Admin is installed but cannot run.
@@ -25,6 +30,9 @@ import org.jspecify.annotations.Nullable;
  * filter checks them when it starts ({@link #check(FilterConfig)}). Logging is not configured at
  * these stages and the host may have no logging backend, so warnings go to the console, as Berlioz
  * reports its own start. A check never prevents the application from starting.
+ *
+ * @author Christophe Lauret
+ * @version 0.14.1
  */
 public final class InstallationCheck implements ServletContainerInitializer {
 
@@ -61,7 +69,7 @@ public final class InstallationCheck implements ServletContainerInitializer {
       FilterRegistration filter = context.getFilterRegistration(config.getFilterName());
       // A filter mapped to servlets by name covers what they serve
       if (filter == null || !filter.getServletNameMappings().isEmpty()) return;
-      filterProblems(servletMappings(context), filter.getUrlPatternMappings()).forEach(InstallationCheck::warn);
+      filterProblems(BerliozMappings.of(context), filter.getUrlPatternMappings()).forEach(InstallationCheck::warn);
     } catch (RuntimeException ex) {
       warn("Unable to check the mappings of AdminFilter: " + ex);
     }
@@ -72,12 +80,12 @@ public final class InstallationCheck implements ServletContainerInitializer {
    * @return the problems preventing the admin pages or their operations from running.
    */
   static List<String> servletProblems(Set<String> mappings) {
-    boolean extension = mappings.contains("*.html");
-    boolean prefix = mappings.contains("/html/*");
+    boolean extension = mappings.contains(HTML_EXTENSION);
+    boolean prefix = mappings.contains(HTML_PREFIX);
     List<String> problems = new ArrayList<>();
     if (!extension && !prefix) problems.add(NOT_MAPPED);
-    if (extension && !mappings.contains("*.xml")) problems.add(missingXml("*.html", "*.xml"));
-    if (prefix && !mappings.contains("/xml/*")) problems.add(missingXml("/html/*", "/xml/*"));
+    if (extension && !mappings.contains(XML_EXTENSION)) problems.add(missingXml(HTML_EXTENSION, XML_EXTENSION));
+    if (prefix && !mappings.contains(XML_PREFIX)) problems.add(missingXml(HTML_PREFIX, XML_PREFIX));
     return problems;
   }
 
@@ -88,16 +96,13 @@ public final class InstallationCheck implements ServletContainerInitializer {
    */
   static List<String> filterProblems(Set<String> mappings, Collection<String> patterns) {
     List<String> paths = new ArrayList<>();
-    if (mappings.contains("*.html") || mappings.contains("*.xml")) paths.add("/bzadmin/");
-    if (mappings.contains("/html/*")) paths.add("/html/bzadmin/");
-    if (mappings.contains("/xml/*")) paths.add("/xml/bzadmin/");
-    List<String> problems = new ArrayList<>();
-    for (String path : paths) {
-      if (patterns.stream().noneMatch(pattern -> covers(pattern, path))) {
-        problems.add("AdminFilter is not mapped to " + path + "*, so these admin services are denied." + SEE_ACCESS);
-      }
-    }
-    return problems;
+    if (mappings.contains(HTML_EXTENSION) || mappings.contains(XML_EXTENSION)) paths.add("/bzadmin/");
+    if (mappings.contains(HTML_PREFIX)) paths.add("/html/bzadmin/");
+    if (mappings.contains(XML_PREFIX)) paths.add("/xml/bzadmin/");
+    return paths.stream()
+        .filter(path -> patterns.stream().noneMatch(pattern -> covers(pattern, path)))
+        .map(path -> "AdminFilter is not mapped to " + path + "*, so these admin services are denied." + SEE_ACCESS)
+        .collect(Collectors.toList());
   }
 
   private static String missingXml(String html, String xml) {
@@ -111,15 +116,7 @@ public final class InstallationCheck implements ServletContainerInitializer {
   private static void checkServlets(ServletContext context) {
     if (context.getAttribute(CHECKED) != null) return;
     context.setAttribute(CHECKED, Boolean.TRUE);
-    servletProblems(servletMappings(context)).forEach(InstallationCheck::warn);
-  }
-
-  private static Set<String> servletMappings(ServletContext context) {
-    Set<String> mappings = new HashSet<>();
-    for (ServletRegistration servlet : context.getServletRegistrations().values()) {
-      mappings.addAll(servlet.getMappings());
-    }
-    return mappings;
+    servletProblems(BerliozMappings.of(context)).forEach(InstallationCheck::warn);
   }
 
   private static boolean isFilterDeclared(ServletContext context) {
@@ -127,6 +124,7 @@ public final class InstallationCheck implements ServletContainerInitializer {
         .anyMatch(filter -> AdminFilter.class.getName().equals(filter.getClassName()));
   }
 
+  @SuppressWarnings("java:S106") // Logging is not configured yet and the host may have no backend
   private static void warn(String problem) {
     System.err.println("[BERLIOZ_INIT] WARNING Berlioz Admin: " + problem);
   }

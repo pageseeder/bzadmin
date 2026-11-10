@@ -1,9 +1,12 @@
 package org.pageseeder.bzadmin.redirect;
 
+import static org.pageseeder.bzadmin.berlioz.BerliozMappings.HTML_PREFIX;
+import static org.pageseeder.bzadmin.berlioz.BerliozMappings.XML_EXTENSION;
+import static org.pageseeder.bzadmin.berlioz.BerliozMappings.XML_PREFIX;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +16,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration;
 
 import org.jspecify.annotations.Nullable;
+import org.pageseeder.bzadmin.berlioz.BerliozMappings;
 
 /**
  * The registrations of the Berlioz redirect filters in a servlet context, and whether they cover the
@@ -82,10 +86,10 @@ final class FilterRegistrations {
    *   there is none, since the operation then cannot run.
    */
   static List<String> reloadPaths(ServletContext context) {
-    Set<String> mappings = servletMappings(context);
+    Set<String> mappings = BerliozMappings.of(context);
     List<String> paths = new ArrayList<>();
-    if (mappings.contains("*.xml")) paths.add(RELOAD + ".xml");
-    if (mappings.contains("/xml/*")) paths.add("/xml" + RELOAD);
+    if (mappings.contains(XML_EXTENSION)) paths.add(RELOAD + ".xml");
+    if (mappings.contains(XML_PREFIX)) paths.add("/xml" + RELOAD);
     return paths;
   }
 
@@ -108,7 +112,7 @@ final class FilterRegistrations {
       ServletRegistration servlet = context.getServletRegistration(name);
       if (servlet == null) continue;
       Collection<String> mappings = nonNull(servlet.getMappings());
-      if (mappings.contains("*.xml") || mappings.contains("/xml/*")) return true;
+      if (mappings.contains(XML_EXTENSION) || mappings.contains(XML_PREFIX)) return true;
     }
     return false;
   }
@@ -134,14 +138,6 @@ final class FilterRegistrations {
     return pattern.equals(path);
   }
 
-  private static Set<String> servletMappings(ServletContext context) {
-    Set<String> mappings = new HashSet<>();
-    for (ServletRegistration servlet : context.getServletRegistrations().values()) {
-      mappings.addAll(nonNull(servlet.getMappings()));
-    }
-    return mappings;
-  }
-
   private static Collection<String> nonNull(@Nullable Collection<String> values) {
     return values != null ? values : List.of();
   }
@@ -152,11 +148,11 @@ final class FilterRegistrations {
    *   {@code /html/bzadmin} or {@code /xml/bzadmin} when Berlioz is mapped by prefix.
    */
   static List<String> adminPaths(ServletContext context) {
-    Set<String> mappings = servletMappings(context);
+    Set<String> mappings = BerliozMappings.of(context);
     List<String> paths = new ArrayList<>();
     paths.add("/bzadmin");
-    if (mappings.contains("/html/*")) paths.add("/html/bzadmin");
-    if (mappings.contains("/xml/*")) paths.add("/xml/bzadmin");
+    if (mappings.contains(HTML_PREFIX)) paths.add("/html/bzadmin");
+    if (mappings.contains(XML_PREFIX)) paths.add("/xml/bzadmin");
     return paths;
   }
 
