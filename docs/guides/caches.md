@@ -42,3 +42,7 @@ page shows none for their caches.
 
 EHCache 2 statistics cannot be reset: 2.7 and later collect them from the creation of the cache, and 2.6's
 `clearStatistics()` is deprecated. The recent rates on the cache information page show the current activity.
+
+The page shows the limits of EHCache 2 caches in bytes, not the bytes they use: for a cache limited by a number
+of entries, EHCache 2 would measure every entry to compute them, which would slow down the page and the
+cache.
