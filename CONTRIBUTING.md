@@ -69,7 +69,7 @@ ESLint uses flat config (`frontend/eslint.config.js`, ESLint 10); the files to l
 ```bash
 ./gradlew :overlay:test   # overlay tests: XSLT on captured generator XML, XSLT documentation, from the packaged JARs (without logback or cache library; runs logbackTest and cacheTest first)
 ./gradlew :overlay:logbackTest   # the logback adapter, with logback (src/logbackTest)
-./gradlew :overlay:cacheTest   # the cache adapters, once per cache library set (src/cacheTest; runs cacheTestEhcache26/210/211, cacheTestJCacheEhcache3, cacheTestJCacheCaffeine, cacheTestCaffeine (native, without the JCache API), cacheTestAllProviders, cacheTestNoCache)
+./gradlew :overlay:cacheTest   # the cache adapters, once per cache library set (src/cacheTest; runs cacheTestEhcache26/210/211, cacheTestJCacheEhcache3, cacheTestJCacheEhcache312 (with `-PtestJdk=17` or later: EHCache 3.11+ requires Java 17), cacheTestJCacheCaffeine, cacheTestCaffeine (native, without the JCache API), cacheTestAllProviders, cacheTestNoCache)
 ./gradlew :test-host:hostTest   # packaged-host tests: embedded Jetty 10 (or Tomcat 9) runs the WAR with the JAR overlay and test fixtures
 ./gradlew :test-host:hostTestStaged   # release qualification: the same tests on a host resolved from the staged artifacts
 ```

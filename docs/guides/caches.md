@@ -38,7 +38,12 @@ as an access, which would change the statistics and the expiry of the cache.
 
 Give each registered JCache manager its own URI. JCache names the statistics of a cache after the URI of its
 manager and the name of the cache, so the statistics of managers that share a URI cannot be told apart, and the
-page shows none for their caches.
+page shows none for their caches. EHCache 3 is the exception: the page reads the statistics that each manager
+keeps, so they only lack the average times.
+
+With EHCache 3, statistics are always on: EHCache counts for every cache, and enabling JCache statistics only
+registers their MBean, which adds the average times. The page also shows the entries of each tier and the bytes
+they occupy (on the heap only when it is limited in bytes), and can reset the statistics at any time.
 
 EHCache 2 statistics cannot be reset: 2.7 and later collect them from the creation of the cache, and 2.6's
 `clearStatistics()` is deprecated. The recent rates on the cache information page show the current activity.

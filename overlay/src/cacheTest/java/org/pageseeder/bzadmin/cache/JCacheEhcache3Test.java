@@ -2,18 +2,28 @@ package org.pageseeder.bzadmin.cache;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
+import javax.cache.configuration.MutableConfiguration;
 
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
@@ -26,7 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The JCache adapter with EHCache 3.
+ * The JCache adapter with EHCache 3: statistics from the statistics service of the manager.
  */
 final class JCacheEhcache3Test extends JCacheContract {
 
@@ -39,7 +49,12 @@ final class JCacheEhcache3Test extends JCacheContract {
 
   @Override
   boolean countsEntries() {
-    return false;
+    return true;
+  }
+
+  @Override
+  boolean collectsStatistics() {
+    return true;
   }
 
   @Override
@@ -86,6 +101,25 @@ final class JCacheEhcache3Test extends JCacheContract {
       assertEquals("none", config.get("expiryPolicy"));
 
       assertEquals(10L, registry.cache(JCacheProvider.ID, "ehcache3-pools", "heap").get().entryLimit());
+
+      // Entries and sizes per tier: puts go to the lowest tier, which holds every entry
+      Cache<String, String> entries = manager.getCache("tiered", String.class, String.class);
+      for (int i = 0; i < 5; i++) entries.put("k" + i, "value " + i);
+      CacheStatistics statistics = tiered.statistics();
+      assertEquals(5L, statistics.get(CacheMetric.ENTRIES));
+      assertEquals(5L, statistics.get(CacheMetric.DISK_ENTRIES));
+      assertNotNull(statistics.get(CacheMetric.HEAP_ENTRIES));
+      assertNotNull(statistics.get(CacheMetric.OFF_HEAP_ENTRIES));
+      assertTrue(statistics.get(CacheMetric.DISK_BYTES) > 0, statistics.metrics().toString());
+      assertNotNull(statistics.get(CacheMetric.OFF_HEAP_BYTES));
+      assertNull(statistics.get(CacheMetric.HEAP_BYTES), "The heap is limited in entries: its bytes are not tracked");
+
+      manager.createCache("heap-bytes", Eh107Configuration.fromEhcacheCacheConfiguration(CacheConfigurationBuilder.newCacheConfigurationBuilder(
+          String.class, String.class, ResourcePoolsBuilder.newResourcePoolsBuilder().heap(1, MemoryUnit.MB))));
+      manager.getCache("heap-bytes", String.class, String.class).put("k", "value");
+      CacheStatistics heap = registry.cache(JCacheProvider.ID, "ehcache3-pools", "heap-bytes").get().statistics();
+      assertEquals(1L, heap.get(CacheMetric.ENTRIES));
+      assertTrue(heap.get(CacheMetric.HEAP_BYTES) > 0, "Tracked on a heap limited in bytes");
     } finally {
       JCacheManagers.unregister("ehcache3-pools");
       manager.close();
@@ -93,22 +127,123 @@ final class JCacheEhcache3Test extends JCacheContract {
   }
 
   /**
-   * A cache made from the configuration of EHCache 3 has no complete JCache configuration: whether
-   * statistics are enabled comes from the statistics MBean, registered exactly while they are.
+   * The statistics service of the manager: always on, with the entries, without reading an entry;
+   * the statistics MBean only adds the average times, while it is registered.
    */
   @Test
-  void tellsWhetherStatisticsAreEnabledWithoutCompleteConfiguration() {
-    CacheManager manager = manager("native");
-    manager.createCache("native", Eh107Configuration.fromEhcacheCacheConfiguration(
-        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, byte[].class, ResourcePoolsBuilder.heap(10))));
-    CacheAdminCache admin = registry().cache(JCacheProvider.ID, "native", "native").get();
-    assertEquals(Boolean.TRUE, admin.statistics().enabled(), "EHCache 3 enables them for such a cache");
-    manager.enableStatistics("native", false);
-    assertEquals(Boolean.FALSE, admin.statistics().enabled());
-    assertFalse(admin.capabilities().contains(CacheCapability.STATISTICS_RESET));
-    admin.setStatisticsEnabled(true);
-    assertEquals(Boolean.TRUE, admin.statistics().enabled());
+  void readsTheStatisticsService() {
+    CacheManager manager = manager("service", "PSML");
+    Cache<String, String> cache = manager.getCache("PSML", String.class, String.class);
+    cache.put("a", "1");
+    cache.put("b", "2");
+    cache.get("a");
+    cache.get("missing");
+    cache.remove("b");
+    CacheAdminCache admin = registry().cache(JCacheProvider.ID, "service", "PSML").get();
     assertTrue(admin.capabilities().contains(CacheCapability.STATISTICS_RESET));
+    assertFalse(admin.capabilities().contains(CacheCapability.STATISTICS_TOGGLE), "Always collected");
+    CacheStatistics statistics = admin.statistics();
+    assertNull(statistics.enabled(), "Always on");
+    assertEquals(1L, statistics.get(CacheMetric.HITS));
+    assertEquals(1L, statistics.get(CacheMetric.MISSES));
+    assertEquals(2L, statistics.get(CacheMetric.PUTS));
+    assertEquals(1L, statistics.get(CacheMetric.REMOVALS));
+    assertEquals(0L, statistics.get(CacheMetric.EVICTIONS));
+    assertEquals(0L, statistics.get(CacheMetric.EXPIRATIONS));
+    assertEquals(1L, statistics.get(CacheMetric.ENTRIES));
+    assertEquals(1L, statistics.get(CacheMetric.HEAP_ENTRIES));
+    assertEquals(Set.of(CacheTiming.values()), statistics.timings().keySet(), "From the MBean");
+    assertEquals(statistics.metrics(), admin.statistics().metrics(), "Reading changes nothing");
+
+    manager.enableStatistics("PSML", false);
+    CacheStatistics unregistered = admin.statistics();
+    assertNull(unregistered.enabled());
+    assertEquals(1L, unregistered.get(CacheMetric.HITS), "Still collected");
+    assertTrue(unregistered.timings().isEmpty(), "No MBean");
+    assertThrows(UnsupportedOperationException.class, () -> admin.setStatisticsEnabled(true));
+  }
+
+  /**
+   * EHCache 3 counts even for a cache made without JCache statistics.
+   */
+  @Test
+  void countsWithoutJCacheStatistics() {
+    CacheManager manager = manager("not-enabled");
+    manager.createCache("off", new MutableConfiguration<String, String>().setTypes(String.class, String.class));
+    manager.getCache("off", String.class, String.class).get("missing");
+    CacheStatistics statistics = registry().cache(JCacheProvider.ID, "not-enabled", "off").get().statistics();
+    assertNull(statistics.enabled());
+    assertEquals(1L, statistics.get(CacheMetric.MISSES));
+    assertEquals(0L, statistics.get(CacheMetric.ENTRIES));
+  }
+
+  /**
+   * The reset of the statistics service, without the MBean: the counters, including the evictions
+   * of the lowest tier, start again from zero; the entries are kept.
+   */
+  @Test
+  void resetsTheStatisticsWithoutTheMBean() {
+    CacheManager manager = manager("reset-service");
+    manager.createCache("small", Eh107Configuration.fromEhcacheCacheConfiguration(
+        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, String.class, ResourcePoolsBuilder.heap(2))));
+    manager.enableStatistics("small", false);
+    Cache<String, String> cache = manager.getCache("small", String.class, String.class);
+    for (int i = 0; i < 10; i++) cache.put("k" + i, "v");
+    CacheAdminCache admin = registry().cache(JCacheProvider.ID, "reset-service", "small").get();
+    CacheStatistics before = admin.statistics();
+    assertEquals(10L, before.get(CacheMetric.PUTS));
+    assertTrue(before.get(CacheMetric.EVICTIONS) > 0, before.metrics().toString());
+    admin.resetStatistics();
+    CacheStatistics after = admin.statistics();
+    assertEquals(0L, after.get(CacheMetric.PUTS));
+    assertEquals(0L, after.get(CacheMetric.EVICTIONS));
+    assertEquals(before.get(CacheMetric.ENTRIES), after.get(CacheMetric.ENTRIES), "The entries are kept");
+  }
+
+  /**
+   * A manager whose statistics service cannot be read (here, a host's wrapper of the manager):
+   * the statistics MBean, as for other implementations.
+   */
+  @Test
+  void readsTheMBeanWithoutTheStatisticsService() {
+    CacheManager manager = manager("direct", "PSML");
+    JCacheManagers.unregister("direct");
+    CacheManager wrapper = (CacheManager) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {CacheManager.class},
+        (proxy, method, args) -> {
+          try {
+            return method.invoke(manager, args);
+          } catch (InvocationTargetException ex) {
+            throw ex.getCause();
+          }
+        });
+    JCacheManagers.register("wrapper", wrapper);
+    try {
+      manager.getCache("PSML", String.class, String.class).get("missing");
+      CacheAdminCache admin = registry().cache(JCacheProvider.ID, "wrapper", "PSML").get();
+      assertTrue(admin.capabilities().contains(CacheCapability.STATISTICS_TOGGLE));
+      CacheStatistics statistics = admin.statistics();
+      assertEquals(Boolean.TRUE, statistics.enabled());
+      assertEquals(1L, statistics.get(CacheMetric.MISSES));
+      assertNull(statistics.get(CacheMetric.ENTRIES), "No constant-time size without the service");
+      manager.enableStatistics("PSML", false);
+      assertEquals(Boolean.FALSE, admin.statistics().enabled());
+      assertFalse(admin.capabilities().contains(CacheCapability.STATISTICS_RESET));
+    } finally {
+      JCacheManagers.unregister("wrapper");
+    }
+  }
+
+  /**
+   * The adapter reads the statistics service of the manager, and never creates one.
+   */
+  @Test
+  void neverCreatesAStatisticsService() throws IOException {
+    try (InputStream in = Ehcache3Native.class.getResourceAsStream("Ehcache3Native.class")) {
+      String constants = new String(in.readAllBytes(), StandardCharsets.ISO_8859_1);
+      assertTrue(constants.contains("org/ehcache/core/spi/service/StatisticsService"));
+      assertFalse(constants.contains("DefaultStatisticsService"));
+      assertFalse(constants.contains("registerDerivedStatistic"));
+    }
   }
 
 }

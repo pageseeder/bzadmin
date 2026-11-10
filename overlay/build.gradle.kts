@@ -52,7 +52,7 @@ dependencies {
   // The optional JCache adapter: the host provides the API and an implementation; what EHCache 3
   // and Caffeine tell beyond JSR-107 is read through unwrap, only when present
   compileOnly(libs.jcache.api)
-  compileOnly(libs.ehcache3)
+  compileOnly(libs.ehcache3.asProvider())
   compileOnly(libs.caffeine)
   // Provided by the servlet container (GetBerliozControl checks Berlioz control authorisation)
   compileOnly(libs.servlet.api)
@@ -85,7 +85,7 @@ dependencies {
   "cacheTestSourcesCompileOnly"(libs.ehcache.baseline)
   "cacheTestSourcesCompileOnly"(libs.jcache.api)
   // EHCache 3 makes its JCache managers from a programmatic configuration in the tests
-  "cacheTestSourcesCompileOnly"(libs.ehcache3)
+  "cacheTestSourcesCompileOnly"(libs.ehcache3.asProvider())
   // Caffeine's own JCache configuration, for a maximum size
   "cacheTestSourcesCompileOnly"(libs.caffeine.jcache)
   "cacheTestSourcesImplementation"(platform(libs.junit.bom))
@@ -94,23 +94,26 @@ dependencies {
 }
 
 // The cache libraries of each run (representative EHCache 2 versions, and none), and its tests:
-// a test class that uses a library cannot be loaded without it
-class CacheRun(val libraries: List<Any>, val tests: String)
+// a test class that uses a library cannot be loaded without it; a run whose libraries need a newer
+// JDK than the tests run on (`testJdk`) is left out
+class CacheRun(val libraries: List<Any>, val tests: String, val minimumJdk: Int = 11)
 
 val cacheRuns = mapOf(
   "Ehcache26" to CacheRun(listOf(libs.ehcache.baseline), "**/Ehcache2*Test.class"),
   "Ehcache210" to CacheRun(listOf(libs.ehcache.later), "**/Ehcache2*Test.class"),
   "Ehcache211" to CacheRun(listOf(libs.ehcache.asProvider()), "**/Ehcache2*Test.class"),
-  "JCacheEhcache3" to CacheRun(listOf(libs.jcache.api, libs.ehcache3), "**/JCacheEhcache3Test.class"),
+  "JCacheEhcache3" to CacheRun(listOf(libs.jcache.api, libs.ehcache3.asProvider()), "**/JCacheEhcache3Test.class"),
+  // EHCache 3.11 and later require Java 17
+  "JCacheEhcache312" to CacheRun(listOf(libs.jcache.api, libs.ehcache3.later), "**/JCacheEhcache3Test.class", 17),
   "JCacheCaffeine" to CacheRun(listOf(libs.jcache.api, libs.caffeine.jcache), "**/JCacheCaffeineTest.class"),
   // Native Caffeine, without the JCache API
   "Caffeine" to CacheRun(listOf(libs.caffeine), "**/CaffeineProviderTest.class"),
   // Several providers at once: EHCache 2, and JCache with two implementations
-  "AllProviders" to CacheRun(listOf(libs.ehcache.later, libs.jcache.api, libs.ehcache3, libs.caffeine.jcache), "**/*Test.class"),
+  "AllProviders" to CacheRun(listOf(libs.ehcache.later, libs.jcache.api, libs.ehcache3.asProvider(), libs.caffeine.jcache), "**/*Test.class"),
   "NoCache" to CacheRun(emptyList(), "**/NoCacheLibraryTest.class"),
 )
 
-val cacheTests = cacheRuns.map { (name, run) ->
+val cacheTests = cacheRuns.filterValues { testJdk >= it.minimumJdk }.map { (name, run) ->
   val libraries = run.libraries
   val libs = configurations.create("cacheTest${name}Libraries")
   libraries.forEach { dependencies.add(libs.name, it) }

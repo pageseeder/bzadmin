@@ -42,7 +42,7 @@ Calls per library (an adapter uses only the left column on reads):
 | EHCache 2 | `ALL_CACHE_MANAGERS`, `getCacheNames()`, `getEhcache(name)`, configuration getters, `getSize()`, tier sizes, statistics getters, `isKeyInCache(key)`, `getQuiet(key)`, `getKeys()` (entries view only) | `CacheManager.create()`/`getInstance()`/constructors, `addCache`, `get(key)`, `calculateInMemorySize()`, `setStatisticsEnabled` |
 | JCache | registered managers, `getCacheNames()`, `getCache(name)`, `getConfiguration(…)`, the statistics MBean (attributes, `isRegistered`), `containsKey(key)`, `unwrap(…)` | `Caching.getCachingProvider()`, `getCacheManager()`, `createCache`, `get(key)`, `iterator()` (each entry read as a get), `enableStatistics`, the MBean's `clear` |
 | Caffeine (through `Cache.unwrap`, `CaffeineNative`) | `estimatedSize()`, `policy().eviction()` getters (`getMaximum`, `isWeighted`, `weightedSize`) | `getIfPresent`, `asMap()` reads or views, `cleanUp()`, `setMaximum` |
-| EHCache 3 (through `Cache.unwrap` and `CacheManager.unwrap`, `Ehcache3Native`) | `getRuntimeConfiguration()` resource pools and expiry policy; manager persistence root | creating a `StatisticsService`, `get(key)`, iteration, `updateResourcePools` |
+| EHCache 3 (through `Cache.unwrap` and `CacheManager.unwrap`, `Ehcache3Native`) | `getRuntimeConfiguration()` resource pools and expiry policy; manager persistence root; the manager's existing `StatisticsService` (EHCache 3 statistics below): `getCacheStatistics(name)`, its counters, `getTierStatistics()` and their `getMappings()`, `getOccupiedByteSize()` | creating a `StatisticsService`, `registerDerivedStatistic`, `get(key)`, iteration (each entry counted as a hit), `updateResourcePools` |
 | Caffeine native (`CaffeineProvider`) | registered caches, `estimatedSize()`, `stats()`, `policy()` getters (`eviction()` as above, `isRecordingStats()`, `expireAfterWrite()`, `expireAfterAccess()`, `expireVariably()`, `refreshAfterWrite()`), `asMap().keySet().iterator()` (entries view only) | `get`, `getIfPresent`, `getAll`, `asMap()` reads (`get`, `getOrDefault`…) and the other views (`values()`, `entrySet()`), `cleanUp()`, `setMaximum`, `setExpiresAfter` |
 
 A library call not in the table is checked against these rules (and added to the table) before an adapter uses
@@ -107,8 +107,8 @@ Listing managers and cache names is always possible. Per cache (`CacheAdminCache
 | `configuration` | yes | Safe configuration as name/value text (provider names, display only) |
 | `statistics` | yes | Available statistics; each metric may still be unavailable |
 | `clear` | yes | Remove every entry (semantics below) |
-| `statistics-toggle` | no | Enable/disable the collection of statistics (EHCache 2.6 and earlier, JCache) |
-| `statistics-reset` | no | Reset the statistics: the counts start again from zero, the entries are kept (JCache while statistics are enabled and the MBean identifies the cache; native Caffeine while statistics are recorded) |
+| `statistics-toggle` | no | Enable/disable the collection of statistics (EHCache 2.6 and earlier, JCache except EHCache 3) |
+| `statistics-reset` | no | Reset the statistics: the counts start again from zero, the entries are kept (EHCache 3; other JCache implementations while statistics are enabled and the MBean identifies the cache; native Caffeine while statistics are recorded) |
 | `entries` | no | List keys of supported types, bounded |
 | `remove-entry` | no | Remove one entry by a key of a supported type |
 
@@ -146,8 +146,11 @@ the overlay supports them. An operation without the capability is 501 (`unsuppor
   `setStatisticsEnabled`; JCache: `CacheManager.enableStatistics`.
 - **Statistics reset**: an operation, never a side effect of a read; the entries are not changed. EHCache 2: never
   (deprecated: no code for 2.6's `clearStatistics()`, and 2.7+ cannot reset its counters, always collected from
-  the creation of the cache). JCache: the `clear` operation of the statistics MBean (EHCache 3, Caffeine), only while
-  it is registered (statistics enabled) and identifies the cache (unique manager URI); otherwise `unsupported`.
+  the creation of the cache). EHCache 3: `clear()` of its cache statistics and of each of its tier statistics (the
+  evictions and expirations of the cache are those of its lowest tier, which the first does not reset), and the
+  `clear` of the MBean while it is registered and identifies the cache, for the average times. Other JCache
+  implementations: the `clear` operation of the statistics MBean (Caffeine), only while it is registered (statistics
+  enabled) and identifies the cache (unique manager URI); otherwise `unsupported`.
   Native Caffeine: its counters cannot be reset, so the reset keeps a snapshot of `stats()` with the registration,
   and the statistics are those since (`CacheStats.minus`); Caffeine's own counters are unchanged, and registering
   the cache again starts from its creation.
@@ -199,9 +202,9 @@ match them with the library's documentation and the host's configuration files.
 
 - **Whether statistics are collected** (`enabled`): `true` or `false` when the provider tells, absent when it
   cannot. EHCache 2.6: the live statistics; EHCache 2.7+: absent (always collected, and no `statistics-toggle`).
-  JCache: the complete configuration, or, when the implementation gives none (EHCache 3 for a cache made from
-  its own configuration, which enables statistics by default), whether the statistics MBean is registered: JSR-107
-  registers it exactly while statistics are enabled. Native Caffeine: whether the cache was built with
+  EHCache 3: absent (always collected, and no `statistics-toggle`; see below). Other JCache implementations: the
+  complete configuration, or, when the implementation gives none, whether the statistics MBean is registered:
+  JSR-107 registers it exactly while statistics are enabled. Native Caffeine: whether the cache was built with
   `recordStats()` (`policy().isRecordingStats()`), set when it is built, so no `statistics-toggle`. The page shows
   absent as "Always on" for a cache without `statistics-toggle`, "Unknown" otherwise, and then offers both enable
   and disable.
@@ -209,11 +212,23 @@ match them with the library's documentation and the host's configuration files.
   `disk-entries`, `heap-bytes`, `off-heap-bytes`, `disk-bytes`, `hits`, `misses`, `puts`, `removals`, `evictions`,
   `expirations`) and `enabled` (absent when unknown). JCache `entries`: only from the implementation, counted in
   constant time and whether statistics are collected or not (Caffeine's `estimatedSize()`, which may count expired
-  entries not yet removed; none for EHCache 3). Native Caffeine: `entries` from `estimatedSize()`, and with
+  entries not yet removed; EHCache 3 below). Native Caffeine: `entries` from `estimatedSize()`, and with
   `recordStats()` `hits`, `misses` and `evictions` from `stats()` (Caffeine's evictions include the entries that
   expired or were collected; it counts no puts or removals). **A metric that is not supplied is absent, never zero**;
   negative values (the "not available" of providers) are dropped. `hit-ratio` is derived from hits and misses when
   both are available and their sum is not zero.
+- **EHCache 3 statistics**: EHCache 3 creates a `StatisticsService` for every manager made through JCache, which
+  counts for every cache from its creation, whether JCache statistics are enabled or not: they only register the
+  statistics MBean, which reads the same counters. The service is not public: the adapter reads it from the private
+  field `statisticsService` of `org.ehcache.jsr107.Eh107CacheManager` (3.10 to 3.12, tested), and never creates
+  one. Everything it reads is kept by EHCache as it goes, in constant time: `hits`, `misses`, `puts`, `removals`,
+  `evictions`, `expirations`; per tier (`OnHeap`, `OffHeap`, `Disk`) `heap-entries`, `off-heap-entries`,
+  `disk-entries` (mappings) and the bytes they occupy (`heap-bytes` only for a heap limited in bytes); `entries`,
+  those of the lowest tier, which holds them all (none for a clustered cache). The statistics belong to the manager,
+  not to an MBean name, so managers that share a URI still have theirs; the average times come from the MBean
+  while it is registered and identifies the cache. When the field cannot be read (another version, a wrapper of
+  the manager, another class loader), EHCache 3 is read through the MBean as the other implementations, without
+  `entries`.
 - **Average times** (`CacheTiming`): `average-get-time`, `average-put-time`, `average-remove-time`, metrics with
   `unit="ms"` and a decimal value (the only metrics that are not counts), over the same period as the counters.
   Absent unless the operation was counted at least once (get: hits plus misses; put: puts; remove: removals),

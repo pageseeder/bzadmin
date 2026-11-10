@@ -37,6 +37,11 @@ import org.jspecify.annotations.Nullable;
  *     and line feeds replaced by "."). Two registered managers with the same URI would share these
  *     names: their statistics are unavailable. JCache has no constant-time size: the entry count
  *     only comes from the implementation ({@link JCacheNative}: Caffeine's estimated size).</li>
+ *   <li>An implementation that collects statistics whatever the setting of JCache
+ *     ({@link JCacheNative#collectsStatistics()}: EHCache 3) gives the counters, entries and sizes
+ *     itself, from its manager rather than an MBean name, so a shared URI does not matter; they are
+ *     always on (no toggle), and the statistics MBean, while registered and identified, only adds the
+ *     average times. They can always be reset.</li>
  *   <li>Tiers and their limits, which JSR-107 does not expose, come from the implementation through
  *     {@link Cache#unwrap} ({@link JCacheNative}: EHCache 3 resource pools, Caffeine maximum).</li>
  *   <li>Statistics can be enabled and disabled ({@link CacheManager#enableStatistics}). Whether
@@ -73,6 +78,9 @@ final class JCacheProvider implements CacheAdminProvider {
 
   /** The attributes read in one call: the counters, then the average times. */
   private static final String[] STATISTICS = attributes();
+
+  /** The average times only. */
+  private static final String[] TIMING_ATTRIBUTES = TIMINGS.keySet().toArray(new String[0]);
 
   private static String[] attributes() {
     List<String> names = new ArrayList<>(ATTRIBUTES.keySet());
@@ -197,8 +205,12 @@ final class JCacheProvider implements CacheAdminProvider {
 
     @Override
     public Set<CacheCapability> capabilities() {
-      Set<CacheCapability> capabilities = EnumSet.of(CacheCapability.CONFIGURATION, CacheCapability.STATISTICS, CacheCapability.CLEAR, CacheCapability.STATISTICS_TOGGLE);
-      if (Boolean.TRUE.equals(isStatisticsMBeanRegistered())) capabilities.add(CacheCapability.STATISTICS_RESET);
+      Set<CacheCapability> capabilities = EnumSet.of(CacheCapability.CONFIGURATION, CacheCapability.STATISTICS, CacheCapability.CLEAR);
+      if (this.implementation.collectsStatistics()) capabilities.add(CacheCapability.STATISTICS_RESET);
+      else {
+        capabilities.add(CacheCapability.STATISTICS_TOGGLE);
+        if (Boolean.TRUE.equals(isStatisticsMBeanRegistered())) capabilities.add(CacheCapability.STATISTICS_RESET);
+      }
       if (removableKeyType() != null) capabilities.add(CacheCapability.REMOVE_ENTRY);
       return capabilities;
     }
@@ -237,18 +249,33 @@ final class JCacheProvider implements CacheAdminProvider {
 
     @Override
     public CacheStatistics statistics() {
-      CompleteConfiguration<?, ?> complete = complete();
-      Boolean enabled = complete != null ? complete.isStatisticsEnabled() : isStatisticsMBeanRegistered();
       Map<CacheMetric, Long> metrics = new EnumMap<>(CacheMetric.class);
       Map<CacheTiming, Double> timings = new EnumMap<>(CacheTiming.class);
+      if (this.implementation.collectsStatistics()) {
+        // Always on: the MBean, when registered, only adds the average times
+        metrics.putAll(this.implementation.statistics());
+        readStatisticsMBean(TIMING_ATTRIBUTES, metrics, timings);
+        return CacheStatistics.of(null, metrics, timings);
+      }
+      CompleteConfiguration<?, ?> complete = complete();
+      Boolean enabled = complete != null ? complete.isStatisticsEnabled() : isStatisticsMBeanRegistered();
       // Counted by the implementation, whether statistics are collected or not
       Long entries = this.implementation.entries();
       if (entries != null) metrics.put(CacheMetric.ENTRIES, entries);
-      if (Boolean.FALSE.equals(enabled) || !this.uniqueUri) return CacheStatistics.of(enabled, metrics);
+      if (Boolean.FALSE.equals(enabled)) return CacheStatistics.of(enabled, metrics);
+      readStatisticsMBean(STATISTICS, metrics, timings);
+      return CacheStatistics.of(enabled, metrics, timings);
+    }
+
+    /**
+     * Reads attributes of the statistics MBean in one call, when it is registered and identifies
+     * the cache; otherwise nothing.
+     */
+    private void readStatisticsMBean(String[] attributes, Map<CacheMetric, Long> metrics, Map<CacheTiming, Double> timings) {
+      ObjectName name = statisticsName();
+      if (name == null) return;
       try {
-        ObjectName name = statisticsName();
-        if (name == null) return CacheStatistics.of(enabled, metrics);
-        AttributeList values = ManagementFactory.getPlatformMBeanServer().getAttributes(name, STATISTICS);
+        AttributeList values = ManagementFactory.getPlatformMBeanServer().getAttributes(name, attributes);
         for (Attribute value : values.asList()) {
           if (!(value.getValue() instanceof Number)) continue;
           Number number = (Number) value.getValue();
@@ -258,11 +285,9 @@ final class JCacheProvider implements CacheAdminProvider {
         }
       } catch (InstanceNotFoundException ex) {
         // Not registered (statistics disabled)
-        return CacheStatistics.of(enabled, metrics);
       } catch (JMException ex) {
         throw new IllegalStateException(ex);
       }
-      return CacheStatistics.of(enabled, metrics, timings);
     }
 
     @Override
@@ -272,24 +297,29 @@ final class JCacheProvider implements CacheAdminProvider {
 
     @Override
     public void setStatisticsEnabled(boolean enabled) {
+      if (this.implementation.collectsStatistics()) throw new UnsupportedOperationException(CacheCapability.STATISTICS_TOGGLE.toString());
       this.cache.getCacheManager().enableStatistics(this.cache.getName(), enabled);
     }
 
     /**
-     * The {@code clear} operation of the statistics MBean: the counts start again from zero.
+     * The counts start again from zero: the implementation's own reset when it collects statistics
+     * (and the {@code clear} of the MBean for the average times, while it is registered); otherwise
+     * the {@code clear} operation of the statistics MBean.
      */
     @Override
     public void resetStatistics() {
+      boolean collected = this.implementation.collectsStatistics();
       ObjectName name = statisticsName();
-      if (name == null) throw new UnsupportedOperationException(CacheCapability.STATISTICS_RESET.toString());
+      if (name == null && !collected) throw new UnsupportedOperationException(CacheCapability.STATISTICS_RESET.toString());
       try {
-        ManagementFactory.getPlatformMBeanServer().invoke(name, "clear", new Object[0], new String[0]);
+        if (name != null) ManagementFactory.getPlatformMBeanServer().invoke(name, "clear", new Object[0], new String[0]);
       } catch (InstanceNotFoundException ex) {
         // Disabled since the capabilities were read
-        throw new UnsupportedOperationException(CacheCapability.STATISTICS_RESET.toString(), ex);
+        if (!collected) throw new UnsupportedOperationException(CacheCapability.STATISTICS_RESET.toString(), ex);
       } catch (JMException ex) {
         throw new IllegalStateException(ex);
       }
+      if (collected) this.implementation.resetStatistics();
     }
 
     /**

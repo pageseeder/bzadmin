@@ -46,7 +46,7 @@ dependencies {
   // The cache managers of DevCacheManagers: EHCache 2, and JCache with EHCache 3 and Caffeine
   implementation(libs.ehcache)
   implementation(libs.jcache.api)
-  implementation(libs.ehcache3)
+  implementation(libs.ehcache3.asProvider())
   implementation(libs.caffeine.jcache)
 }
 

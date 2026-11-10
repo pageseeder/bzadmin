@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.cache.Caching;
 import javax.cache.configuration.MutableConfiguration;
@@ -71,19 +72,27 @@ final class MultipleProvidersTest {
   }
 
   /**
-   * Two managers with the same URI (different class loaders): the statistics MBeans cannot tell
-   * them apart, so their statistics are unavailable rather than another cache's.
+   * Two managers with the same URI: the statistics MBeans cannot tell them apart, so the statistics
+   * read from them are unavailable rather than another cache's; EHCache 3 gives its own, from the
+   * statistics service of its manager, without the average times of the MBean.
    */
   @Test
-  void hasNoStatisticsForManagersWithTheSameUri() {
+  void readsOnlyOwnStatisticsForManagersWithTheSameUri() {
     javax.cache.CacheManager first = jcache(EHCACHE3, "urn:x-bzadmin:same");
     javax.cache.CacheManager second = jcache(CAFFEINE, "urn:x-bzadmin:same");
     JCacheManagers.register("same-uri-1", first);
     JCacheManagers.register("same-uri-2", second);
     first.getCache("PSML", String.class, String.class).get("missing");
-    CacheStatistics statistics = CacheRegistry.global().cache("jcache", "same-uri-1", "PSML").get().statistics();
-    assertEquals(Boolean.TRUE, statistics.enabled());
-    assertTrue(statistics.metrics().isEmpty());
+    second.getCache("PSML", String.class, String.class).put("k", "v");
+
+    CacheStatistics ehcache3 = CacheRegistry.global().cache("jcache", "same-uri-1", "PSML").get().statistics();
+    assertEquals(1L, ehcache3.get(CacheMetric.MISSES));
+    assertEquals(0L, ehcache3.get(CacheMetric.PUTS), "Not the puts of the other manager");
+    assertTrue(ehcache3.timings().isEmpty());
+
+    CacheStatistics caffeine = CacheRegistry.global().cache("jcache", "same-uri-2", "PSML").get().statistics();
+    assertEquals(Boolean.TRUE, caffeine.enabled());
+    assertEquals(Set.of(CacheMetric.ENTRIES), caffeine.metrics().keySet(), "Only Caffeine's own size");
   }
 
   private javax.cache.CacheManager jcache(String provider, String uri) {

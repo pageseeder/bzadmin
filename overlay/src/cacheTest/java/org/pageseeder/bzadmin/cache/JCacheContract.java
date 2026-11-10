@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.IOException;
 import java.net.URI;
@@ -57,6 +58,14 @@ abstract class JCacheContract extends ProviderContract<CacheManager> {
    * @return whether the implementation counts the entries in constant time.
    */
   abstract boolean countsEntries();
+
+  /**
+   * @return whether the implementation collects statistics whatever the setting of JCache, and
+   *   gives them itself (tested by the implementation's test instead of the MBean tests below).
+   */
+  boolean collectsStatistics() {
+    return false;
+  }
 
   /**
    * Creates a cache manager as the host would.
@@ -141,6 +150,7 @@ abstract class JCacheContract extends ProviderContract<CacheManager> {
 
   @Test
   void readsTheStatisticsMBean() {
+    assumeFalse(collectsStatistics(), "Statistics from the implementation");
     CacheManager manager = manager("statistics", "PSML");
     Cache<String, String> cache = manager.getCache("PSML", String.class, String.class);
     cache.put("a", "1");
@@ -171,6 +181,7 @@ abstract class JCacheContract extends ProviderContract<CacheManager> {
 
   @Test
   void resetsTheStatistics() {
+    assumeFalse(collectsStatistics(), "Statistics from the implementation");
     CacheManager manager = manager("reset", "PSML");
     Cache<String, String> cache = manager.getCache("PSML", String.class, String.class);
     cache.put("a", "1");

@@ -1,6 +1,7 @@
 package org.pageseeder.bzadmin.cache;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.cache.Cache;
 import javax.cache.CacheManager;
@@ -9,10 +10,11 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What a JCache implementation tells about a cache beyond JSR-107, through {@link Cache#unwrap}:
- * its tiers and their limits, configuration properties, and a constant-time entry count. Only the
- * implementations whose library is present are tried (EHCache 3, Caffeine), each in its own class
- * so that an absent library is never linked; an incompatible version is ignored. Read only: the
- * unwrapped cache is never changed.
+ * its tiers and their limits, configuration properties, a constant-time entry count, and the
+ * statistics it collects whatever the setting of JCache. Only the implementations whose library is
+ * present are tried (EHCache 3, Caffeine), each in its own class so that an absent library is never
+ * linked; an incompatible version is ignored. The unwrapped cache is never changed; only
+ * {@link #resetStatistics()}, an operation, changes its statistics.
  */
 abstract class JCacheNative {
 
@@ -59,6 +61,32 @@ abstract class JCacheNative {
    */
   @Nullable Long entries() {
     return null;
+  }
+
+  /**
+   * @return whether the implementation collects statistics whatever the statistics setting of
+   *   JCache, which then only registers the statistics MBean: {@link #statistics()} and
+   *   {@link #resetStatistics()} are supported.
+   */
+  boolean collectsStatistics() {
+    return false;
+  }
+
+  /**
+   * @return the counters and sizes that the implementation collects, read without changing them;
+   *   empty unless it {@link #collectsStatistics()}.
+   */
+  Map<CacheMetric, Long> statistics() {
+    return Map.of();
+  }
+
+  /**
+   * Resets the counters of {@link #statistics()}: they start again from zero, the entries are kept.
+   *
+   * @throws UnsupportedOperationException unless the implementation {@link #collectsStatistics()}.
+   */
+  void resetStatistics() {
+    throw new UnsupportedOperationException(CacheCapability.STATISTICS_RESET.toString());
   }
 
 }

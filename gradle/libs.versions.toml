@@ -14,6 +14,7 @@ ehcache-baseline = "2.6.11"   # compile baseline of the EHCache 2 adapter (ehcac
 ehcache-later = "2.10.9.2"
 jcache = "1.1.1"
 ehcache3 = "3.10.9"
+ehcache3-later = "3.12.0"   # latest EHCache 3: statistics service read from the same private field
 caffeine = "3.1.8"   # 3.2 is the latest for Java 11 too; 3.1.8 is the last 3.1
 versions-plugin = "0.67.0"
 gretty = "3.1.9"
@@ -43,6 +44,7 @@ ehcache-baseline       = { module = "net.sf.ehcache:ehcache-core",              
 ehcache-later          = { module = "net.sf.ehcache:ehcache",                              version.ref = "ehcache-later" }
 jcache-api             = { module = "javax.cache:cache-api",                                version.ref = "jcache" }
 ehcache3               = { module = "org.ehcache:ehcache",                                  version.ref = "ehcache3" }
+ehcache3-later         = { module = "org.ehcache:ehcache",                                  version.ref = "ehcache3-later" }
 jspecify               = { module = "org.jspecify:jspecify",                                version.ref = "jspecify" }
 caffeine               = { module = "com.github.ben-manes.caffeine:caffeine",               version.ref = "caffeine" }
 caffeine-jcache        = { module = "com.github.ben-manes.caffeine:jcache",                 version.ref = "caffeine" }
