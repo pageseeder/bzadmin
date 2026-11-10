@@ -8,6 +8,8 @@ The Logs page has two sources: bounded file reads and optional live event captur
 
 Directory discovery scans at most 10,000 entries per directory and lists up to 1000 recent regular `.log` files. Hidden files and directory-entry symlinks are excluded; the configured source itself may be a link. Reads recheck file identity and confinement rather than trusting client input.
 
+The Files view selects a file with a form (`#switch-logs`) that works without script. Its options are grouped by the date in the file names, newest first, from `f:log-date` and `f:log-period` in `logs.xsl`; the listing's XML and JSON are not grouped. Undated files come first, under "Current", so the live log is selected by default; then daily files (`yyyy-mm-dd`) by month and monthly files (`yyyy-mm`) by year. A date has `-` or `_` between its parts, a year of 19xx or 20xx, a month of 01-12, and no adjoining digits. The name is used rather than the time last modified, which changes when files are copied or restored. Options are not grouped when no file is dated, and are prefixed with their directory when the files come from more than one place. The table of files is sorted by time last modified; it is replaced when a file is shown, so the form is then the only way to switch files.
+
 `GetLogEntries`, `LogTail` and `LogCursor` implement initial tails, updates since a cursor and earlier lines before a cursor. Each read is limited to 4 MiB, defaults to 1000 lines, allows at most 5000 lines, and caps each line at 8192 characters. File identity/position in the cursor handles rotation and truncation; work never advances beyond the file size captured when opened. `LogReads` bounds concurrent reads. The UI reports truncation and supports loading earlier lines.
 
 ## Recent events

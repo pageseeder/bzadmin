@@ -1,5 +1,6 @@
 package org.pageseeder.bzadmin;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,6 +33,44 @@ final class LogsXsltTest {
     assertTrue(html.contains("<td title=\"/var/log\">logs</td>"), html);
     assertTrue(html.contains("<td data-sort=\"2048\">2 KB</td>"), html);
     assertTrue(html.contains("The directories of the file appenders of the logging framework."), html);
+  }
+
+  @Test
+  void groupsTheLogFilesByTheDateInTheirNames() throws Exception {
+    String html = page("bzadmin-logs", "files", "logs-files", "ok",
+        "<log-files origin='detected'><log-directory name='logs' path='/var/log' total='8' truncated='false'>"
+        + file("a1", "app-2026-10-31.log") + file("a2", "error.log") + file("a3", "app.2026-11-05.log")
+        + file("a4", "app_2026_11_06.0.log") + file("a5", "app.log") + file("a6", "build-202611.log")
+        + file("a7", "audit-2025-03.log") + file("a8", "audit-2025-12.log")
+        + "</log-directory></log-files>");
+    String select = html.substring(html.indexOf("<select id=\"switch-logs-file\""), html.indexOf("</select>"));
+    assertEquals("<optgroup label=\"Current\">"
+        + option("a5", "app.log") + option("a6", "build-202611.log") + option("a2", "error.log") + "</optgroup>"
+        + "<optgroup label=\"2026-11\">" + option("a4", "app_2026_11_06.0.log") + option("a3", "app.2026-11-05.log") + "</optgroup>"
+        + "<optgroup label=\"2026-10\">" + option("a1", "app-2026-10-31.log") + "</optgroup>"
+        + "<optgroup label=\"2025\">" + option("a8", "audit-2025-12.log") + option("a7", "audit-2025-03.log") + "</optgroup>",
+        select.substring(select.indexOf('>') + 1).replaceAll(">\\s+<", "><"), "Undated first, then newest to oldest");
+  }
+
+  @Test
+  void namesTheDirectoryOfLogFilesFromSeveralPlaces() throws Exception {
+    String html = page("bzadmin-logs", "files", "logs-files", "ok",
+        "<log-files origin='configured'>"
+        + "<log-directory name='app' path='/var/log/app' total='1' truncated='false'>" + file("b1", "app.log") + "</log-directory>"
+        + "<log-directory name='web' path='/var/log/web' total='1' truncated='false'>" + file("b2", "app.log") + "</log-directory>"
+        + file("b3", "server.out") + "</log-files>");
+    assertTrue(html.contains(option("b1", "app/app.log")), html);
+    assertTrue(html.contains(option("b2", "web/app.log")), html);
+    assertTrue(html.contains(option("b3", "server.out")), "A registered file has no directory: " + html);
+    assertFalse(html.contains("<optgroup"), "Not grouped without dated files: " + html);
+  }
+
+  private static String file(String id, String name) {
+    return "<log-file id='" + id + "' name='" + name + "' size='2048' datetime='2026-10-23T01:02:03Z'/>";
+  }
+
+  private static String option(String id, String label) {
+    return "<option value=\"" + id + "\">" + label + " (2 KB)</option>";
   }
 
   @Test

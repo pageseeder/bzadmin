@@ -4,6 +4,8 @@
 
 Set the global property `berlioz.admin.logs` to comma-separated files or directories relative to the application's data folder. When it is absent, logback file appenders supply the locations if logback is available. Only allowed files are listed; reads are bounded and do not follow escaping symbolic links. See [logs design](../design/logs.md).
 
+In the Files view, the selector lists files without a date in their name first, such as the live `app.log`, then dated files by month (`app-2026-11-06.log`) or by year (`app-2026-11.log`), newest first. A date has `-` or `_` between its parts; names such as `app-20261106.log` are listed with the undated files.
+
 Recent events require logback. File reading works without a logging backend when locations are configured explicitly. Changing the recent-event capture threshold does not change application logger levels.
 
 By default, the Recent view holds the last 256 events. To hold more or fewer, set `berlioz.admin.logs.recent-capacity` to a number from 1 to 4096; a value out of range is brought within it, and one that is not a number is ignored, with a warning in the log. The capture starts before Berlioz loads its configuration, so the number applies once the configuration is loaded, and again whenever it is reloaded; the most recent events that fit are kept. Each event holds at most about 8,000 characters of message and stack trace, so 4096 events take at most around 80 MB, and usually a few megabytes.

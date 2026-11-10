@@ -52,10 +52,7 @@
     <label for="switch-logs-file">Select a log file to view:</label>
     <div class="input-group">
       <select id="switch-logs-file" class="input-group-field" name="id">
-        <xsl:for-each select="descendant::log-file">
-          <xsl:sort select="@name"/>
-          <option value="{@id}"><xsl:value-of select="@name"/> (<xsl:value-of select="f:to-size(@size)"/>)</option>
-        </xsl:for-each>
+        <xsl:apply-templates select="log-files" mode="bzadmin-logs-options"/>
       </select>
       <div class="input-group-button">
         <input type="submit" class="button" value="show"/>
@@ -104,6 +101,63 @@
 </xsl:if>
 </xsl:if>
 </xsl:template>
+
+<!--
+  The options to select a log file, grouped by the period of the date in their names (see f:log-period):
+  undated files first under 'Current', so that the live log is selected by default, then the periods
+  and the files in them from newest to oldest. Without dated files, the options are not grouped.
+-->
+<xsl:template match="log-files" mode="bzadmin-logs-options">
+  <xsl:variable name="files" select="descendant::log-file"/>
+  <!-- The directory is shown when the files come from more than one place -->
+  <xsl:variable name="prefixed" select="count(log-directory) + (if (log-file) then 1 else 0) gt 1"/>
+  <xsl:variable name="grouped" select="some $name in $files/@name satisfies f:log-period($name) != ''"/>
+  <xsl:for-each-group select="$files" group-by="f:log-period(@name)">
+    <xsl:sort select="if (current-grouping-key() = '') then 1 else 0" data-type="number" order="descending"/>
+    <xsl:sort select="current-grouping-key()" order="descending"/>
+    <xsl:variable name="options" as="element(option)*">
+      <xsl:for-each select="current-group()">
+        <xsl:sort select="f:log-date(@name)" order="descending"/>
+        <xsl:sort select="@name"/>
+        <xsl:sort select="string(parent::log-directory/@name)"/>
+        <option value="{@id}"><xsl:value-of select="if ($prefixed and parent::log-directory) then concat(parent::log-directory/@name, '/', @name) else @name"/> (<xsl:value-of select="f:to-size(@size)"/>)</option>
+      </xsl:for-each>
+    </xsl:variable>
+    <xsl:choose>
+      <xsl:when test="$grouped"><optgroup label="{if (current-grouping-key() = '') then 'Current' else current-grouping-key()}"><xsl:sequence select="$options"/></optgroup></xsl:when>
+      <xsl:otherwise><xsl:sequence select="$options"/></xsl:otherwise>
+    </xsl:choose>
+  </xsl:for-each-group>
+</xsl:template>
+
+<!--
+  The date in the name of a log file: 'yyyy-mm-dd' for a daily file, 'yyyy-mm' for a monthly file, or
+  '' when undated. The parts are separated by '-' or '_', the year is 19xx or 20xx, the month 01-12 and
+  the day 01-31, with no digit adjoining the date, so that 'build-202611.log' is not dated. The name is
+  used rather than the time last modified, which changes when files are copied or restored.
+-->
+<xsl:function name="f:log-date" as="xs:string">
+  <xsl:param name="name" as="xs:string"/>
+  <xsl:variable name="dates" as="xs:string*">
+    <xsl:analyze-string select="$name" regex="(^|[^0-9])((19|20)[0-9]{{2}})[-_](0[1-9]|1[0-2])([-_](0[1-9]|[12][0-9]|3[01]))?([^0-9]|$)">
+      <xsl:matching-substring>
+        <xsl:sequence select="string-join((regex-group(2), regex-group(4), regex-group(6)[. != '']), '-')"/>
+      </xsl:matching-substring>
+    </xsl:analyze-string>
+  </xsl:variable>
+  <xsl:sequence select="string($dates[1])"/>
+</xsl:function>
+
+<!--
+  The period that groups a log file in the selector: the month of a daily file ('yyyy-mm'), the year of
+  a monthly file ('yyyy'), otherwise every group would hold one file, or '' when undated.
+-->
+<xsl:function name="f:log-period" as="xs:string">
+  <xsl:param name="name" as="xs:string"/>
+  <xsl:variable name="date" select="f:log-date($name)"/>
+  <xsl:sequence select="if (string-length($date) = 10) then substring($date, 1, 7)
+                        else if (string-length($date) = 7) then substring($date, 1, 4) else ''"/>
+</xsl:function>
 
 <!--
   The log files listed, their total size, the largest and the last modified

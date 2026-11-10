@@ -41,7 +41,7 @@ Qualify a Berlioz 1.0 candidate when available before claiming compatibility.
 - PSML broken-link auditing.
 - Logging configuration diagnostics, to reveal an application whose logging configuration did not load correctly: the file in use, its load status and the effective levels. Temporary debug levels and reloading the configuration need further discussion.
 - Additional logging integrations, including Log4j2 recent events.
-- Easier selection among many log files: group the file selector by the date in the file names, with current logs first, or add a filter to the list of files.
+- A filter for the list of log files, if grouping the selector by date, from 0.14.1, is not enough for directories with many files.
 - Support exports and deeper XSLT package analysis.
 
 ## Scope boundaries
