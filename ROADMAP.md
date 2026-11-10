@@ -10,7 +10,6 @@ Version `0.14.0` is the first public release, at `org.pageseeder.berlioz:pso-bza
 
 - Address the remaining [known limitations](docs/release/0.14.1.md#known-limitations) where they can be fixed within the overlay. The missing challenge for requests other than GET under container BASIC authentication comes from Berlioz's error handling; hosts can avoid it with an [error page for 401](docs/access.md#error-page-for-401) until Berlioz preserves the challenge.
 - Java 11 and Jetty 10 remain the reference environment; from 0.14.1, the overlay and packaged-host tests also run on Java 17, 21 and 25, and the packaged-host tests on Tomcat 9.
-- Extend CI beyond the current qualification workflow: staged-artifact tests on newer JDKs and Tomcat, root and non-root context paths, with and without optional providers, browser smoke tests and build reproducibility.
 - Keep refining keyboard navigation, dialogs, errors, refresh behavior and accessibility based on feedback.
 
 Fixes ship in new versions; see [security and support](SECURITY.md).

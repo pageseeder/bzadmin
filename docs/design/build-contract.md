@@ -78,13 +78,14 @@ Releases are distributed on Maven Central under Apache License 2.0, starting wit
   consumer and the `cacheTestEhcache211` run; the overlay compiles against `ehcache-core` 2.6.11 from Maven Central). No `mavenLocal()`: removed from
   `settings.gradle.kts`, and the consumer fixture never had it, so neither a local build nor a CI job can
   pick up stale local artifacts. `publishToMavenLocal` remains for trying the overlay in other applications.
-- **Reproducible JAR:** no file timestamps, stable order. The same commit and JDK give the same bytes.
+- **Reproducible JAR:** no file timestamps, stable order. The same commit and JDK give the same bytes for the
+  main and sources JARs; CI checks it by comparing two builds.
 - **Frontend:** Node 22.15 or later (`engines` in `frontend/package.json`: the most demanding tool is
   webpack-dev-server; the production build alone needs Node 20.9). The bundles are committed in
   `overlay/src/main/resources/META-INF/resources`, so the Gradle build does not need Node. Gradle checks that
   they have the names of `version.txt`, without any `-SNAPSHOT` suffix (`checkFrontendBundles`); a release checks that a clean frontend build
   reproduces them (below).
-- **CI:** GitHub Actions checks the frontend, backend and staged host. Release preparation is manual and uses a protected environment. See [release procedure](../releasing.md).
+- **CI:** GitHub Actions checks the frontend, backend, staged host and reproducible JARs. Release preparation is manual and uses a protected environment. See [release procedure](../releasing.md).
 
 ### Release sequence
 

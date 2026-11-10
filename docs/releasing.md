@@ -5,9 +5,9 @@ Do not enable the release environment until Maven namespace ownership is verifie
 repository URL is configured, private vulnerability reporting works and SECURITY.md names that channel.
 Keep branch protections and required reviewers on the `release` GitHub environment. CI needs read access only.
 
-The regular workflow qualifies frontend reproduction, Java tests, staged Gradle consumption and a clean
-Maven dependency consumer. Qualification still requires review of provenance, dedicated secret scanning
-of the source and extracted distribution archives, browser smoke, and reproducibility checks.
+The regular workflow qualifies frontend reproduction, Java tests, staged Gradle consumption, a clean
+Maven dependency consumer and reproducible JARs. Qualification still requires review of provenance, dedicated
+secret scanning of the source and extracted distribution archives, and manual browser tests.
 Record current results and checksums outside this checkout. Historical results do not qualify a new artifact.
 
 The project uses the same JReleaser 1.26.0 Central deployment convention as Berlioz: Gradle

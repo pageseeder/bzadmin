@@ -25,7 +25,14 @@ jobs:
       - run: npm ci && npm run build && npm run lint && npm run format:check && npm test
         working-directory: frontend
       - run: git diff --exit-code -- overlay/src/main/resources/META-INF/resources
+      # Reproducible JARs (build contract): the clean build below must give the same bytes
+      - name: Record JAR checksums
+        run: |
+          ./gradlew --no-daemon :overlay:jar :overlay:sourcesJar
+          (cd overlay/build/libs && sha256sum *.jar) > "$RUNNER_TEMP/jars.sha256"
       - run: ./gradlew --no-daemon clean :overlay:test :test-host:hostTest :test-host:hostTestStaged check :overlay:checkDependencyBoundary
+      - name: Check JARs are reproducible
+        run: cd overlay/build/libs && sha256sum -c "$RUNNER_TEMP/jars.sha256"
       - name: Clean Maven consumer
         run: python3 scripts/maven-consumer.py
       - uses: actions/upload-artifact@v4
