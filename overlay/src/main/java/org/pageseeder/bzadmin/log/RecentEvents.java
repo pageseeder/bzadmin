@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
@@ -34,7 +35,7 @@ final class RecentEvents {
   static final EventLevel DEFAULT_THRESHOLD = EventLevel.INFO;
 
   /** The slots; replaced on resize. */
-  private volatile Ring ring;
+  private final AtomicReference<Ring> ring;
 
   /** The sequence number of the next event: the number of events captured so far. */
   private final AtomicLong next = new AtomicLong();
@@ -46,7 +47,7 @@ final class RecentEvents {
    * @param threshold The capture threshold.
    */
   RecentEvents(int capacity, EventLevel threshold) {
-    this.ring = new Ring(checkCapacity(capacity));
+    this.ring = new AtomicReference<>(new Ring(checkCapacity(capacity)));
     this.threshold = threshold;
   }
 
@@ -61,7 +62,7 @@ final class RecentEvents {
 
   /** @return the number of events held. */
   int capacity() {
-    return this.ring.length();
+    return this.ring.get().length();
   }
 
   /**
@@ -74,12 +75,12 @@ final class RecentEvents {
    */
   synchronized void resize(int capacity) {
     checkCapacity(capacity);
-    Ring previous = this.ring;
+    Ring previous = this.ring.get();
     if (previous.length() == capacity) return;
     Ring resized = new Ring(capacity);
     // Published before the copy: an event added to the previous ring after its slot was copied is
     // set again in this one by its thread (see add)
-    this.ring = resized;
+    this.ring.set(resized);
     long end = this.next.get();
     for (long sequence = Math.max(0, end - capacity); sequence < end; sequence++) {
       @Nullable Slot slot = previous.get(sequence);
@@ -116,12 +117,12 @@ final class RecentEvents {
    */
   void add(RecentEvent event) {
     Slot slot = new Slot(this.next.getAndIncrement(), event);
-    Ring ring = this.ring;
-    ring.put(slot);
+    Ring target = this.ring.get();
+    target.put(slot);
     // When resized meanwhile, the copy may have missed it
-    for (Ring current = this.ring; current != ring; current = this.ring) {
-      ring = current;
-      ring.put(slot);
+    for (Ring current = this.ring.get(); current != target; current = this.ring.get()) {
+      target = current;
+      target.put(slot);
     }
   }
 
@@ -129,12 +130,12 @@ final class RecentEvents {
    * @return the events held, oldest first, and the number captured so far.
    */
   Snapshot snapshot() {
-    Ring ring = this.ring;
+    Ring current = this.ring.get();
     long end = this.next.get();
-    int capacity = ring.length();
+    int capacity = current.length();
     List<RecentEvent> events = new ArrayList<>(capacity);
     for (long sequence = Math.max(0, end - capacity); sequence < end; sequence++) {
-      @Nullable Slot slot = ring.get(sequence);
+      @Nullable Slot slot = current.get(sequence);
       if (slot != null) events.add(slot.event);
     }
     return new Snapshot(events, end);
