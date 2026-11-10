@@ -89,7 +89,7 @@ import org.slf4j.LoggerFactory;
  * it starts when the filter is initialised and stops when it is destroyed.
  *
  * @author Christophe Lauret
- * @version 0.14.0
+ * @version 0.14.1
  */
 public final class AdminFilter implements Filter {
 
@@ -247,27 +247,37 @@ public final class AdminFilter implements Filter {
     if (access != null) return access;
     // Not when the host set the access attribute, even without permission
     Credentials fallback = req.getAttribute(AdminAccess.ATTRIBUTE) instanceof AdminAccess ? null : fallbackLogin();
-    boolean local = fallback != null && (isLoopback(req) || (fallback.localProxy && isLoopbackConnection(req)));
-    if (fallback != null && !req.isSecure() && !local) {
+    if (fallback != null) {
+      boolean local = isLoopback(req) || (fallback.localProxy && isLoopbackConnection(req));
+      if (req.isSecure() || local) return signIn(req, res, fallback, operation);
       report(hasForwardingHeader(req) ? LOGIN_FORWARDED : LOGIN_PLAIN_HTTP);
-    } else if (fallback != null) {
-      FallbackLogin.Outcome outcome = this.login.authenticate(req, fallback.username, fallback.password);
-      if (outcome.access != null) return outcome.access;
-      if (outcome.retryAfter > 0) {
-        if (this.login.reportThrottled() && AUDIT.isWarnEnabled()) {
-          AUDIT.warn("Login throttled: {} {} (further throttled logins are not recorded for a minute)", req.getMethod(), path(req));
-        }
-        res.setHeader("Retry-After", Integer.toString(outcome.retryAfter));
-        refuse(req, res, null, SC_TOO_MANY_REQUESTS, THROTTLED, false);
-        return null;
-      }
-      boolean failed = outcome.credentials;
-      if (failed && AUDIT.isWarnEnabled()) AUDIT.warn("Login failed: {} {}", req.getMethod(), path(req));
-      res.setHeader("WWW-Authenticate", "Basic realm=\"" + REALM + "\", charset=\"UTF-8\"");
-      refuse(req, res, null, HttpServletResponse.SC_UNAUTHORIZED, SIGN_IN, operation && !failed);
-      return null;
     }
     refuse(req, res, null, HttpServletResponse.SC_FORBIDDEN, DENIED, operation);
+    return null;
+  }
+
+  /**
+   * Checks the request against the fallback login, and asks for credentials or denies the request
+   * when they are not accepted.
+   *
+   * @return the access of the fallback login, or {@code null} when the request was denied.
+   */
+  private @Nullable AdminAccess signIn(HttpServletRequest req, HttpServletResponse res, Credentials fallback,
+      boolean operation) throws IOException {
+    FallbackLogin.Outcome outcome = this.login.authenticate(req, fallback.username, fallback.password);
+    if (outcome.access != null) return outcome.access;
+    if (outcome.retryAfter > 0) {
+      if (this.login.reportThrottled() && AUDIT.isWarnEnabled()) {
+        AUDIT.warn("Login throttled: {} {} (further throttled logins are not recorded for a minute)", req.getMethod(), path(req));
+      }
+      res.setHeader("Retry-After", Integer.toString(outcome.retryAfter));
+      refuse(req, res, null, SC_TOO_MANY_REQUESTS, THROTTLED, false);
+      return null;
+    }
+    boolean failed = outcome.credentials;
+    if (failed && AUDIT.isWarnEnabled()) AUDIT.warn("Login failed: {} {}", req.getMethod(), path(req));
+    res.setHeader("WWW-Authenticate", "Basic realm=\"" + REALM + "\", charset=\"UTF-8\"");
+    refuse(req, res, null, HttpServletResponse.SC_UNAUTHORIZED, SIGN_IN, operation && !failed);
     return null;
   }
 
@@ -315,25 +325,41 @@ public final class AdminFilter implements Filter {
       // Berlioz is not set up: no login is configured
       return null;
     }
-    boolean hasUsername = username != null && !username.isEmpty();
-    boolean hasPassword = password != null && !password.isEmpty();
-    if (!hasUsername && !hasPassword) return null;
-    if (!hasUsername || username.indexOf(':') >= 0) {
-      report("The fallback login of Berlioz administration needs a user name without ':' (" + USERNAME + ")");
-    } else if (!hasPassword) {
-      report("The fallback login of Berlioz administration needs a password (" + PASSWORD + ")");
-    } else if (AdminPassword.isHash(password) && !AdminPassword.isValid(password)) {
+    if (isEmpty(username) && isEmpty(password)) return null;
+    String problem = checkFallbackLogin(username, password);
+    if (problem != null) {
+      report(problem);
+      return null;
+    }
+    boolean hashed = AdminPassword.isHash(password);
+    if (!hashed) {
       report("The password of the fallback login of Berlioz administration (" + PASSWORD
-          + ") is not a valid PBKDF2 hash, see " + AdminPassword.class.getName());
-    } else {
-      if (!AdminPassword.isHash(password)) {
-        report("The password of the fallback login of Berlioz administration (" + PASSWORD
-            + ") is not hashed: use a hash outside local development, see " + AdminPassword.class.getName());
-      }
-      if (localProxy) report(AdminPassword.isHash(password) ? LOCAL_PROXY_IGNORED : LOCAL_PROXY_ENABLED);
-      return new Credentials(username, password, localProxy && !AdminPassword.isHash(password));
+          + ") is not hashed: use a hash outside local development, see " + AdminPassword.class.getName());
+    }
+    if (localProxy) report(hashed ? LOCAL_PROXY_IGNORED : LOCAL_PROXY_ENABLED);
+    return new Credentials(username, password, localProxy && !hashed);
+  }
+
+  /**
+   * @return the problem with the user name and password of the fallback login, or {@code null} when
+   *   they are valid.
+   */
+  private static @Nullable String checkFallbackLogin(@Nullable String username, @Nullable String password) {
+    if (isEmpty(username) || username.indexOf(':') >= 0) {
+      return "The fallback login of Berlioz administration needs a user name without ':' (" + USERNAME + ")";
+    }
+    if (isEmpty(password)) {
+      return "The fallback login of Berlioz administration needs a password (" + PASSWORD + ")";
+    }
+    if (AdminPassword.isHash(password) && !AdminPassword.isValid(password)) {
+      return "The password of the fallback login of Berlioz administration (" + PASSWORD
+          + ") is not a valid PBKDF2 hash, see " + AdminPassword.class.getName();
     }
     return null;
+  }
+
+  private static boolean isEmpty(@Nullable String value) {
+    return value == null || value.isEmpty();
   }
 
   private void report(String problem) {
