@@ -53,6 +53,93 @@ final class RecentEventsTest {
   }
 
   @Test
+  void keepsTheMostRecentEventsWhenResized() {
+    RecentEvents events = new RecentEvents(4, EventLevel.INFO);
+    for (int i = 0; i < 10; i++) events.add(event(EventLevel.INFO, "event " + i));
+    events.resize(8);
+    assertEquals(8, events.capacity());
+    assertEquals(List.of("event 6", "event 7", "event 8", "event 9"), messages(events.snapshot()), "Only those held");
+    for (int i = 10; i < 16; i++) events.add(event(EventLevel.INFO, "event " + i));
+    assertEquals(List.of("event 8", "event 9", "event 10", "event 11", "event 12", "event 13", "event 14", "event 15"), messages(events.snapshot()));
+    events.resize(3);
+    assertEquals(List.of("event 13", "event 14", "event 15"), messages(events.snapshot()));
+    events.add(event(EventLevel.INFO, "event 16"));
+    assertEquals(List.of("event 14", "event 15", "event 16"), messages(events.snapshot()));
+    assertEquals(17, events.snapshot().captured(), "The count continues");
+    events.resize(3);
+    assertEquals(3, events.capacity());
+    events.resize(RecentEvents.MAX_CAPACITY);
+    assertEquals(List.of("event 14", "event 15", "event 16"), messages(events.snapshot()));
+    assertThrows(IllegalArgumentException.class, () -> events.resize(0));
+    assertThrows(IllegalArgumentException.class, () -> events.resize(RecentEvents.MAX_CAPACITY + 1));
+    assertThrows(IllegalArgumentException.class, () -> new RecentEvents(RecentEvents.MAX_CAPACITY + 1, EventLevel.INFO));
+  }
+
+  @Test
+  void parsesTheCapacity() {
+    assertEquals(256, LoggingBackends.capacity(null));
+    assertEquals(256, LoggingBackends.capacity(" "));
+    assertEquals(1000, LoggingBackends.capacity(" 1000 "));
+    assertEquals(1, LoggingBackends.capacity("1"));
+    assertEquals(4096, LoggingBackends.capacity("4096"));
+    assertEquals(256, LoggingBackends.capacity("many"), "Not a number: the default");
+    assertEquals(256, LoggingBackends.capacity("1.5"));
+    assertEquals(1, LoggingBackends.capacity("0"), "Within the limits");
+    assertEquals(1, LoggingBackends.capacity("-5"));
+    assertEquals(4096, LoggingBackends.capacity("4097"));
+    assertEquals(4096, LoggingBackends.capacity("99999999999999999999"));
+    assertEquals(1, LoggingBackends.capacity("-99999999999999999999"));
+  }
+
+  /**
+   * Threads adding events while the ring is resized: once they are done, the ring holds the most
+   * recent events, none lost to a resize.
+   */
+  @Test
+  void keepsConcurrentEventsWhenResized() throws Exception {
+    int threads = 4;
+    int each = 20_000;
+    RecentEvents events = new RecentEvents(16, EventLevel.TRACE);
+    ExecutorService executor = Executors.newFixedThreadPool(threads + 1);
+    CountDownLatch start = new CountDownLatch(1);
+    AtomicBoolean writing = new AtomicBoolean(true);
+    try {
+      List<Future<?>> writers = new ArrayList<>();
+      for (int t = 0; t < threads; t++) {
+        String thread = "t" + t;
+        writers.add(executor.submit(() -> {
+          start.await();
+          for (int i = 0; i < each; i++) events.add(new RecentEvent(i, EventLevel.INFO, "logger", thread, String.valueOf(i), null, false));
+          return null;
+        }));
+      }
+      Future<Integer> resizer = executor.submit(() -> {
+        start.await();
+        int resizes = 0;
+        int[] capacities = {64, 8, 1024, 16, 4096, 32};
+        while (writing.get()) {
+          events.resize(capacities[resizes++ % capacities.length]);
+          RecentEvents.Snapshot snapshot = events.snapshot();
+          assertTrue(snapshot.events().size() <= RecentEvents.MAX_CAPACITY);
+        }
+        return resizes;
+      });
+      start.countDown();
+      for (Future<?> writer : writers) writer.get(30, TimeUnit.SECONDS);
+      writing.set(false);
+      assertTrue(resizer.get(30, TimeUnit.SECONDS) > 0);
+    } finally {
+      executor.shutdownNow();
+    }
+    // The most recent events, as many as the smallest capacity, are held whichever ring they were
+    // first added to: a lost one would leave its slot empty
+    events.resize(8);
+    RecentEvents.Snapshot snapshot = events.snapshot();
+    assertEquals((long) threads * each, snapshot.captured());
+    assertEquals(8, snapshot.events().size());
+  }
+
+  @Test
   void capturesAtOrAboveTheThreshold() {
     RecentEvents events = new RecentEvents(8, EventLevel.WARN);
     assertFalse(events.accepts(EventLevel.TRACE));

@@ -9,6 +9,7 @@ These are Berlioz global properties, usually set in `config-<mode>.xml`. The hos
 | `berlioz.admin.username` | Fallback BASIC login user | No default account |
 | `berlioz.admin.password` | Fallback password; use a generated PBKDF2 hash for deployed hosts | No default password |
 | `berlioz.admin.logs` | Comma-separated log files/directories relative to the data folder | Discover logback file appenders when available |
+| `berlioz.admin.logs.recent-capacity` | Number of recent log events held (logback), from 1 to 4096; applied when the configuration is loaded or reloaded, keeping the events captured | 256 |
 | `bastille.psml.root` | PSML repository root configuration; legacy name retained | See [repository contract](../design/psml.md) for fallback resolution |
 
 For authentication precedence, HTTPS requirements, hash generation, filter mapping and XML examples, see [access integration](../access.md). Cache registration is a Java API, not a configuration property: see [cache integration](../guides/caches.md).

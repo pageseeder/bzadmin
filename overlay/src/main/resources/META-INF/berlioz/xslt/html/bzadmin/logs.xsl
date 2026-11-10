@@ -222,7 +222,7 @@
   </p>
   <div class="row">
     <div class="medium-8 columns">
-      <p>The last events that the application logged at or above the capture threshold.</p>
+      <p>The last events that the application logged at or above the capture threshold: at most <xsl:value-of select="@capacity"/>, set by the global property <code>berlioz.admin.logs.recent-capacity</code>.</p>
       <p class="muted" id="recent-threshold-note">The capture threshold does not change what the application logs<xsl:if test="@root-level">: its level (root logger) is <b><xsl:value-of select="@root-level"/></b></xsl:if>.
         <xsl:if test="@root-level and index-of($levels, @threshold) lt index-of($levels, @root-level)">Events below <xsl:value-of select="@root-level"/> are not logged, so not captured.</xsl:if></p>
     </div>

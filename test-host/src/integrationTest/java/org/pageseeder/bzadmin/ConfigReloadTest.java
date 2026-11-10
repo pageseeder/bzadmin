@@ -30,9 +30,13 @@ final class ConfigReloadTest {
 
   private static @Nullable BerliozHost host;
 
+  /** The configuration of the host when it started (a test breaks it). */
+  private static String original = "";
+
   @BeforeAll
   static void start() throws Exception {
     host = BerliozHost.start("/");
+    original = Files.readString(host.webInf().resolve("config/config-test.xml"));
   }
 
   @AfterAll
@@ -68,6 +72,44 @@ final class ConfigReloadTest {
     Document broken = parse(host.post(RELOAD, "berlioz-reload=true").body());
     assertEquals("true", xpath(broken, "/berlioz-control/@authorized"));
     assertEquals("green", colour());
+  }
+
+  /**
+   * The number of recent log events held follows {@code berlioz.admin.logs.recent-capacity} when
+   * the configuration is reloaded, within its limits, and keeps the events already captured.
+   */
+  @Test
+  void resizesTheRecentEvents() throws Exception {
+    Path config = host.webInf().resolve("config/config-test.xml");
+    Document before = recent();
+    assertEquals("256", xpath(before, "//recent-logs/@capacity"));
+    int held = Integer.parseInt(xpath(before, "count(//event)"));
+    long captured = Long.parseLong(xpath(before, "//recent-logs/@captured"));
+
+    Files.writeString(config, capacity("1000"));
+    assertEquals(200, host.post(RELOAD, "berlioz-reload=true").statusCode());
+    Document resized = recent();
+    assertEquals("1000", xpath(resized, "//recent-logs/@capacity"));
+    assertTrue(Long.parseLong(xpath(resized, "//recent-logs/@captured")) >= captured, "The count continues");
+    assertTrue(Integer.parseInt(xpath(resized, "count(//event)")) >= held, "The events captured are kept");
+    assertTrue(host.get("/bzadmin/logs.html").body().contains("at most 1000, set by the global property"));
+
+    Files.writeString(config, capacity("99999"));
+    host.post(RELOAD, "berlioz-reload=true");
+    assertEquals("4096", xpath(recent(), "//recent-logs/@capacity"), "At most 4096");
+
+    Files.writeString(config, original);
+    host.post(RELOAD, "berlioz-reload=true");
+    assertEquals("256", xpath(recent(), "//recent-logs/@capacity"), "The default when not set");
+  }
+
+  /** The original configuration with this number of recent events. */
+  private static String capacity(String value) {
+    return original.replace("<admin>", "<admin>\n      <logs recent-capacity=\"" + value + "\"/>");
+  }
+
+  private static Document recent() throws Exception {
+    return parse(host.get("/bzadmin/logs/recent.src").body());
   }
 
   /** The value of the property {@code fixture.colour} on the Config page. */

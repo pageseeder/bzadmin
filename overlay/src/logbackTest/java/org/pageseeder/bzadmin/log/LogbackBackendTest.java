@@ -209,6 +209,20 @@ final class LogbackBackendTest {
   }
 
   @Test
+  void keepsTheEventsCapturedWhenResized() {
+    Logger logger = this.context.getLogger("app");
+    for (int i = 0; i < 200; i++) logger.info("event {}", i);
+    this.backend.recentEvents().resize(1000);
+    for (int i = 200; i < 1200; i++) logger.info("event {}", i);
+    RecentEvents.Snapshot snapshot = this.backend.recentEvents().snapshot();
+    assertEquals(1200, snapshot.captured());
+    assertEquals(1000, snapshot.events().size());
+    assertEquals("event 200", snapshot.events().get(0).message());
+    this.backend.recentEvents().resize(10);
+    assertEquals("event 1190", this.backend.recentEvents().snapshot().events().get(0).message());
+  }
+
+  @Test
   void capturesFromConcurrentThreads() throws InterruptedException, ExecutionException, TimeoutException {
     int threads = 8;
     int each = 5_000;

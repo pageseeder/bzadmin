@@ -6,6 +6,16 @@ Set the global property `berlioz.admin.logs` to comma-separated files or directo
 
 Recent events require logback. File reading works without a logging backend when locations are configured explicitly. Changing the recent-event capture threshold does not change application logger levels.
 
+By default, the Recent view holds the last 256 events. To hold more or fewer, set `berlioz.admin.logs.recent-capacity` to a number from 1 to 4096; a value out of range is brought within it, and one that is not a number is ignored, with a warning in the log. The capture starts before Berlioz loads its configuration, so the number applies once the configuration is loaded, and again whenever it is reloaded; the most recent events that fit are kept. Each event holds at most about 8,000 characters of message and stack trace, so 4096 events take at most around 80 MB, and usually a few megabytes.
+
+```xml
+<berlioz>
+  <admin>
+    <logs recent-capacity="1000"/>
+  </admin>
+</berlioz>
+```
+
 ## PSML documents
 
 The read-only repository uses `bastille.psml.root` (the property name is retained for compatibility; Bastille is not required). See [PSML design](../design/psml.md) for root configuration and bounds.

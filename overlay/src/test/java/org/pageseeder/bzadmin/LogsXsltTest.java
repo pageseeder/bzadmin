@@ -129,6 +129,7 @@ final class LogsXsltTest {
         + "</recent-logs>");
     assertTrue(html.replaceAll("\\s+", " ").contains("Captured from <b>logback</b> by an appender that bzadmin attaches to the root logger"), html);
     assertTrue(html.contains("<dt>Captured</dt><dd class=\"key-metric-value\">300</dd>"), "The counts are a key metric");
+    assertTrue(html.contains("at most 256, set by the global property <code>berlioz.admin.logs.recent-capacity</code>"), html);
     assertFalse(html.contains("2 shown"), html);
     assertTrue(html.contains("its level (root logger) is <b>INFO</b>"), html);
     assertTrue(html.contains("Events below INFO are not logged, so not captured."), html);
