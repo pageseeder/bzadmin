@@ -33,6 +33,9 @@ To fix in the next Berlioz release; each has a report draft.
 | An error dispatch is matched by method | For a POST or other non-GET request, the error page loses its detail ("Only the following are allowed: GET,HEAD") and `res.reset()` removes the headers set before the error, including the `WWW-Authenticate` challenge of container BASIC authentication. On Tomcat, PUT and DELETE are answered 405 and PATCH 501 | A documented [error page for 401](../access.md#error-page-for-401) |
 | With `berlioz.errors.handle=false`, Berlioz sets `javax.servlet.error.exception` before `sendError` | Tomcat's `StandardHostValve` handles that attribute as an uncaught exception: with an error page for `java.lang.Exception`, as Kickstart declares, the error of a generator that throws, such as an `InvalidParameterException` (400), is answered 500. Statuses that generators return (`Response.status`) are not affected, nor is Jetty. Berlioz could pass the exception in its own attribute, as it does for `ERROR_RENDERING_DEPTH`, and set `javax.servlet.error.*` only when it renders the error itself | None; documented as a known limitation on Tomcat |
 | `redirect-mapping-1.0.dtd` declares `permanent (true \| false)` | The schema that Berlioz validates against requires `yes` or `no`, so a file written to the DTD is invalid and the filter has no rules | The Redirects view reports it as `invalid` |
+| `AppInitializer.configureLogger` resets the logback context before parsing the file | When the last logback file it tries fails to load (malformed XML, a file that cannot be read), the context stays as the reset left it: root at DEBUG and no appender, so nothing is logged anywhere, with one console line. Berlioz could configure the console with logback's `BasicConfigurator` when no file loads after a reset, and say so | The [logging configuration](logging-configuration.md) verdict `not-writing` |
+| `AppInitializer.configureLogger` reports "logback config file OK" when Joran recorded errors | Joran reports most problems (an unknown appender class, a file appender that cannot open its file) as ERROR statuses, not exceptions, so the part in error is missing without warning. Berlioz could check the statuses since just before `doConfigure` (`StatusUtil.getHighestLevel(threshold)`) and print them (`StatusPrinter2.printInCaseOfErrorsOrWarnings(context, threshold)`), as logback's own initialisation does | The verdict `problems`, with the statuses since the last reset |
+| A logging file that fails to load is followed by the next candidate | A malformed `logback-<mode>.xml` is silently replaced by `logback.xml`, with only a console line. Berlioz could report the configuration as failed | The view says that Berlioz goes on to a later candidate, without knowing whether it did |
 
 ## Diagnostics of Berlioz's own state
 
@@ -62,6 +65,20 @@ their mapping.
 
 - **Correct:** one reload, consistent state.
 - **Removes:** the `reload-not-covered` warning and its mapping analysis.
+
+### Logging initialisation
+
+A read-only snapshot of what `AppInitializer.configureLogger` did, available once Berlioz is set up, for example
+`GlobalSettings.getLoggingSetup()` with a generator: the logging framework (`logback`, `log4j` or none), the
+mode, and each candidate in the order tried, with its path and outcome (`absent`, `loaded`, `loaded-with-errors`,
+`failed`, with the class and message of the exception), the file in use, and when.
+
+- **Correct:** the overlay would show which file loaded and which failed before it. logback does not keep its
+  configuration file (since 1.5.27, only when `scan` is on, and a reset clears it), no status marks Berlioz's
+  reset, and logback's configuration events are documented as intended for internal testing.
+- **Less fragile:** the overlay copies the order of the candidates, which can change with Berlioz.
+- **Removes:** the overlay's copy of the candidate order in the
+  [logging configuration](logging-configuration.md#configuration-files).
 
 ### Configuration and reload results
 

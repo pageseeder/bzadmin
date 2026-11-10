@@ -1,6 +1,6 @@
 # Log files and recent events
 
-The Logs page has two sources: bounded file reads and optional live event capture. Both require the admin verdict. Logging libraries remain host dependencies; absent logback must leave the page usable with an explicit unsupported state.
+The Logs page has two sources: bounded file reads and optional live event capture. Both require the admin verdict. Logging libraries remain host dependencies; absent logback must leave the page usable with an explicit unsupported state. A third view, planned for 0.14.1, says whether logging is writing events: see [logging configuration](logging-configuration.md).
 
 ## File discovery and reads
 

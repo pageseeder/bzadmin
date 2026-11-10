@@ -11,6 +11,7 @@ These documents explain current behavior, integration contracts and design ratio
 | PSML files | [Repository and browsing](psml.md) | PsmlFilesTest and repository unit tests |
 | Redirects and forwards | [Redirects contract](redirects.md) | RedirectsTest, MappingParserTest and TargetsTest |
 | Logs | [Files and recent events](logs.md) | AdminOperationsTest, NoLogbackHostTest and isolated logback tests |
+| Logging configuration (planned for 0.14.1) | [Logging configuration](logging-configuration.md) | Planned: isolated logback tests, NoLogbackHostTest, LogsXsltTest |
 | XSLT | [Resources and documentation](xslt.md), [resolver decision](xslt-resolution-decision.md) | XsltDocumentationTest and resolver/documenter tests |
 | Application and system | [Diagnostics](diagnostics.md), [output schemas](metadata-contract.md) | DiagnosticsTest and frontend sampling tests |
 
