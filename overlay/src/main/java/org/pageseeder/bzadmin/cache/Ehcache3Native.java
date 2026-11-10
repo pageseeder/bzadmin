@@ -61,6 +61,7 @@ final class Ehcache3Native extends JCacheNative {
   /** The field that holds the statistics service, by class of manager; empty for other classes. */
   private static final ClassValue<Optional<Field>> STATISTICS_SERVICE = new ClassValue<>() {
     @Override
+    @SuppressWarnings("java:S3011") // Only read: EHCache 3 has no public access to the manager's statistics service; falls back to the MBean
     protected Optional<Field> computeValue(Class<?> type) {
       for (Class<?> c = type; c != null; c = c.getSuperclass()) {
         if (!MANAGER.equals(c.getName())) continue;
