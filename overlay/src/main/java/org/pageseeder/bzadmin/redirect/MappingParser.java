@@ -189,12 +189,8 @@ final class MappingParser {
   }
 
   private static int find(byte[] bytes, byte[] target, int from) {
-    outer:
     for (int i = Math.max(0, from); i <= bytes.length - target.length; i++) {
-      for (int j = 0; j < target.length; j++) {
-        if (bytes[i + j] != target[j]) continue outer;
-      }
-      return i;
+      if (Arrays.equals(bytes, i, i + target.length, target, 0, target.length)) return i;
     }
     return -1;
   }

@@ -22,6 +22,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *
  * <p>The capacity can {@linkplain #resize(int) change} while events are captured: the most recent
  * events that fit are kept, and the number captured continues.
+ *
+ * @author Christophe Lauret
+ * @version 0.14.1
  */
 final class RecentEvents {
 
@@ -47,8 +50,8 @@ final class RecentEvents {
    * @param threshold The capture threshold.
    */
   RecentEvents(int capacity, EventLevel threshold) {
-    this.ring = new AtomicReference<>(new Ring(checkCapacity(capacity)));
     this.threshold = threshold;
+    this.ring = new AtomicReference<>(new Ring(checkCapacity(capacity)));
   }
 
   /**
