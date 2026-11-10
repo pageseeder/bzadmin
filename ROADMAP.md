@@ -37,6 +37,7 @@ Qualify a Berlioz 1.0 candidate when available before claiming compatibility.
 
 - Richer cache statistics, capacity estimates and side-effect-free entry inspection.
 - Clearer cache registration and integration guidance before freezing the public API.
+- An option when registering a native Caffeine cache to hide its keys, so that the entries view shows only their number by type; an entry could still be removed by typing its key.
 - PSML broken-link auditing.
 - Logging configuration diagnostics, to reveal an application whose logging configuration did not load correctly: the file in use, its load status and the effective levels. Temporary debug levels and reloading the configuration need further discussion.
 - Additional logging integrations, including Log4j2 recent events.
