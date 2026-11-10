@@ -7,7 +7,8 @@ reconstructing them in an overlay. Each lists what the overlay would then remove
 its current code until a replacement is released, adopted and tested
 ([architecture](../architecture.md)).
 
-Berlioz 0.14.5 is the reference. Items are grouped by kind, most valuable first.
+Berlioz 0.14.5 is the reference; fixes made since are marked with the release that will include them.
+Items are grouped by kind, most valuable first.
 
 ## Principle
 
@@ -29,13 +30,21 @@ To fix in the next Berlioz release; each has a report draft.
 
 | Defect | Effect | Overlay workaround |
 | --- | --- | --- |
-| `RedirectFilter` or `RelocationFilter` without a `config` parameter | Every request through the filter fails with a `NullPointerException` (500), although it logs that it has no effect | The Redirects view reports it as `no-config` |
-| An error dispatch is matched by method | For a POST or other non-GET request, the error page loses its detail ("Only the following are allowed: GET,HEAD") and `res.reset()` removes the headers set before the error, including the `WWW-Authenticate` challenge of container BASIC authentication. On Tomcat, PUT and DELETE are answered 405 and PATCH 501 | A documented [error page for 401](../access.md#error-page-for-401) |
-| With `berlioz.errors.handle=false`, Berlioz sets `javax.servlet.error.exception` before `sendError` | Tomcat's `StandardHostValve` handles that attribute as an uncaught exception: with an error page for `java.lang.Exception`, as Kickstart declares, the error of a generator that throws, such as an `InvalidParameterException` (400), is answered 500. Statuses that generators return (`Response.status`) are not affected, nor is Jetty. Berlioz could pass the exception in its own attribute, as it does for `ERROR_RENDERING_DEPTH`, and set `javax.servlet.error.*` only when it renders the error itself | None; documented as a known limitation on Tomcat |
-| `redirect-mapping-1.0.dtd` declares `permanent (true \| false)` | The schema that Berlioz validates against requires `yes` or `no`, so a file written to the DTD is invalid and the filter has no rules | The Redirects view reports it as `invalid` |
 | `AppInitializer.configureLogger` resets the logback context before parsing the file | When the last logback file it tries fails to load (malformed XML, a file that cannot be read), the context stays as the reset left it: root at DEBUG and no appender, so nothing is logged anywhere, with one console line. Berlioz could configure the console with logback's `BasicConfigurator` when no file loads after a reset, and say so | The [logging configuration](logging-configuration.md) verdict `not-writing` |
 | `AppInitializer.configureLogger` reports "logback config file OK" when Joran recorded errors | Joran reports most problems (an unknown appender class, a file appender that cannot open its file) as ERROR statuses, not exceptions, so the part in error is missing without warning. Berlioz could check the statuses since just before `doConfigure` (`StatusUtil.getHighestLevel(threshold)`) and print them (`StatusPrinter2.printInCaseOfErrorsOrWarnings(context, threshold)`), as logback's own initialisation does | The verdict `problems`, with the statuses since the last reset |
 | A logging file that fails to load is followed by the next candidate | A malformed `logback-<mode>.xml` is silently replaced by `logback.xml`, with only a console line. Berlioz could report the configuration as failed | The view says that Berlioz goes on to a later candidate, without knowing whether it did |
+
+### Fixed in Berlioz 0.14.6
+
+Fixed on the Berlioz `dev` branch, not released yet. The overlay keeps its workaround until it requires
+0.14.6, then removes or simplifies it as below.
+
+| Defect | Fix in Berlioz | Once the overlay requires 0.14.6 |
+| --- | --- | --- |
+| `RedirectFilter` or `RelocationFilter` without a `config` parameter failed every request with a `NullPointerException` (500) | The filter passes requests through, as its startup warning says. A configuration file without rules is now logged as a warning, and every log message of both filters names the filter instance | The `no-config` report stays useful as information, but no longer warns of failing requests |
+| An error dispatch was matched by method | When rendering an error (`javax.servlet.error.status_code` set), `BerliozServlet` looks the service up as GET (HEAD stays HEAD), so the error page and its message are kept for POST, PUT, DELETE, PATCH and QUERY. `ErrorHandlerServlet` handles every method (no more 405 for PUT and DELETE, 501 for PATCH). Resetting an error response keeps `WWW-Authenticate`, `Proxy-Authenticate`, `Allow` and `Retry-After`, which also restores the `Allow` header of a 405 with `berlioz.errors.handle=true` | Remove the documented [error page for 401](../access.md#error-page-for-401) |
+| With `berlioz.errors.handle=false`, Berlioz set `javax.servlet.error.exception` before `sendError`, which Tomcat answered 500 | Berlioz sets `javax.servlet.error.exception` and `exception_type` only when it renders the error itself. The exception is passed in a new public attribute, `ErrorHandlerServlet.BERLIOZ_ERROR_EXCEPTION` (`org.pageseeder.berlioz.error_exception`), which `ErrorHandlerServlet` and `GetErrorDetails` read when the standard one is absent. This applies to Jetty as well | Remove the known limitation on Tomcat. Any overlay code that reads the exception of an error sent by Berlioz should fall back to `BERLIOZ_ERROR_EXCEPTION` |
+| `redirect-mapping-1.0.dtd` declared `permanent (true \| false)` | The DTD declares `(yes \| no)`, as the schema and the parser do; a test validates against the shipped DTD. The public copy at `pageseeder.org/schema/berlioz/` is not part of the release and needs the same correction | The `invalid` report stays for files that really are invalid; `true` and `false` are now invalid under the DTD as well |
 
 ## Diagnostics of Berlioz's own state
 
@@ -115,7 +124,9 @@ the control it accepts, such as `control="reload:services"`, and apply control p
 services, and only for POST.
 
 - **Secure:** a control parameter on an ordinary URL never triggers a reload, in any application, with
-  or without the overlay.
+  or without the overlay. It would also cover error dispatches: an error page served by `BerliozServlet`
+  receives the parameters of the request that failed, so an authorized `berlioz-reload` is applied again
+  while the error page renders.
 - **Removes:** the control-parameter policy of `AdminFilter`, keeping only its authorization.
 
 ### Redaction of values
