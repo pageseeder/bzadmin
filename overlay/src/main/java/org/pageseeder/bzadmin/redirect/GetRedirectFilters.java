@@ -98,32 +98,49 @@ public final class GetRedirectFilters implements Generator {
     out.field("type", registration.type.id());
     out.field("name", registration.name);
     out.optionalField("config", registration.config);
-    MappingParser.@Nullable Result result = null;
-    if (registration.config == null) {
+    MappingParser.@Nullable Result result = config(out, registration, root);
+    mappings(out, registration);
+    out.startArray(WARNINGS, ContextOption.JSON_ONLY);
+    if (!reloadCovered) warning(out, "reload-not-covered", 0);
+    out.endArray();
+    if (result != null) rules(out, registration.type, result.rules, adminPaths);
+    out.endObject();
+  }
+
+  /**
+   * Writes the status of the configuration file of the filter.
+   *
+   * @return the result of parsing the file if its rules can be listed, or {@code null}.
+   */
+  private static MappingParser.@Nullable Result config(OutputWriter out, Registration registration, @Nullable String root) {
+    @Nullable String config = registration.config;
+    if (config == null) {
       out.field(STATUS, "no-config");
-    } else {
-      MappingFile file = MappingFile.read(root, registration.config);
-      if (file.status == MappingFile.Status.MISSING) {
-        out.field(STATUS, "missing");
-      } else if (file.status != MappingFile.Status.READ || file.bytes == null) {
-        unreadable(out, file.status.id, file.message);
-      } else {
-        result = MappingParser.parse(file.bytes, registration.type, MappingParser.schema(registration.type));
-        if (result.tooLarge) {
-          unreadable(out, MappingFile.Status.TOO_LARGE.id, null);
-          result = null;
-        } else {
-          out.field(STATUS, result.valid ? "active" : "invalid");
-          out.optionalField("message", result.message);
-          if (result.parsed) {
-            out.field("rules", result.total);
-            out.field("listed", result.rules.size());
-          } else {
-            result = null;
-          }
-        }
-      }
+      return null;
     }
+    MappingFile file = MappingFile.read(root, config);
+    if (file.status == MappingFile.Status.MISSING) {
+      out.field(STATUS, "missing");
+      return null;
+    }
+    if (file.status != MappingFile.Status.READ || file.bytes == null) {
+      unreadable(out, file.status.id, file.message);
+      return null;
+    }
+    MappingParser.Result result = MappingParser.parse(file.bytes, registration.type, MappingParser.schema(registration.type));
+    if (result.tooLarge) {
+      unreadable(out, MappingFile.Status.TOO_LARGE.id, null);
+      return null;
+    }
+    out.field(STATUS, result.valid ? "active" : "invalid");
+    out.optionalField("message", result.message);
+    if (!result.parsed) return null;
+    out.field("rules", result.total);
+    out.field("listed", result.rules.size());
+    return result;
+  }
+
+  private static void mappings(OutputWriter out, Registration registration) {
     out.startArray("mappings", ContextOption.JSON_ONLY);
     for (String pattern : registration.urlPatterns) {
       out.startObject("mapping");
@@ -136,11 +153,6 @@ public final class GetRedirectFilters implements Generator {
       out.endObject();
     }
     out.endArray();
-    out.startArray(WARNINGS, ContextOption.JSON_ONLY);
-    if (!reloadCovered) warning(out, "reload-not-covered", 0);
-    out.endArray();
-    if (result != null) rules(out, registration.type, result.rules, adminPaths);
-    out.endObject();
   }
 
   private static void unreadable(OutputWriter out, String reason, @Nullable String message) {
@@ -156,17 +168,7 @@ public final class GetRedirectFilters implements Generator {
     for (int i = 0; i < rules.size(); i++) {
       Rule rule = rules.get(i);
       int position = i + 1;
-      List<Warning> warnings = new ArrayList<>();
-      @Nullable String key = rule.from != null && rule.to != null && parses(rule.to) ? key(rule.from) : null;
-      if (key == null) {
-        warnings.add(new Warning("ignored-rule", 0));
-      } else {
-        Integer first = positions.putIfAbsent(key, position);
-        if (first != null) warnings.add(new Warning("duplicate-from", first));
-      }
-      if (type == FilterType.RELOCATION && rule.to != null && Targets.forwardsToAdmin(rule.to, adminPaths)) {
-        warnings.add(new Warning("forwards-to-admin", 0));
-      }
+      List<Warning> warnings = warnings(type, rule, position, positions, adminPaths);
       out.startObject("rule");
       out.field("position", position);
       out.field("from", Targets.bound(rule.from != null ? rule.from : "", Targets.MAX_VALUE));
@@ -178,6 +180,25 @@ public final class GetRedirectFilters implements Generator {
       out.endObject();
     }
     out.endArray();
+  }
+
+  /**
+   * @return the warnings of the rule at the position, recording its pattern in the positions.
+   */
+  private static List<Warning> warnings(FilterType type, Rule rule, int position, Map<String, Integer> positions,
+      List<String> adminPaths) {
+    List<Warning> warnings = new ArrayList<>();
+    @Nullable String key = rule.from != null && rule.to != null && parses(rule.to) ? key(rule.from) : null;
+    if (key == null) {
+      warnings.add(new Warning("ignored-rule", 0));
+    } else {
+      Integer first = positions.putIfAbsent(key, position);
+      if (first != null) warnings.add(new Warning("duplicate-from", first));
+    }
+    if (type == FilterType.RELOCATION && rule.to != null && Targets.forwardsToAdmin(rule.to, adminPaths)) {
+      warnings.add(new Warning("forwards-to-admin", 0));
+    }
+    return warnings;
   }
 
   private static String effect(FilterType type, Rule rule) {
