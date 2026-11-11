@@ -57,8 +57,10 @@ keeps its code until it requires 0.14.6.
 name: `name`, `type` (`redirect` or `relocation`), `config` (the parameter, relative to `WEB-INF`,
 omitted when unsafe), `exists`, `status` (`no-config`, `not-loaded`, `loaded`, `failed`), `loaded` (time
 of the last load), `reload-pending`, `failure` (generic, or the loader's message and its cause when
-`berlioz.errors.detail` is not `minimal`), `rule-count`, `limit` (when more than 2000 rules), and the
-rules loaded: `from`, `to` and, for redirects, `permanent`. Targets are redacted with the overlay's
+`berlioz.errors.detail` is not `minimal`), `rule-count`, `ignored-count`, `limit` (when a list has more
+than 2000 entries), the rules loaded (`from`, `to` and, for redirects, `permanent`), and the rules that
+the filter ignores because a pattern is missing or invalid (`ignored-rule`: `position` among the rules of
+the file, from 1, `reason` `missing-from`, `invalid-from`, `missing-to` or `invalid-to`, `from`, `to`). Targets are redacted with the overlay's
 rules (user information removed, query values other than a template expression `[REDACTED]`). XML and
 JSON; one snapshot per request for the content and the ETag.
 
@@ -68,12 +70,11 @@ Once the overlay requires 0.14.6:
   `schema/*.xsd` in `org.pageseeder.bzadmin.redirect`, and `Targets.redact` for rule targets. The view
   shows the rules Berlioz applies, not the file.
 - **Keeps:** the filter registrations from the Servlet API (`not-mapped`, URL patterns, servlet names),
-  matched to the snapshot by filter name; the rule positions, `duplicate-from` and `forwards-to-admin`,
-  computed from the loaded rules.
+  matched to the snapshot by filter name; `duplicate-from` and `forwards-to-admin`, computed from the
+  loaded rules; `ignored-rule`, from the ignored rules of the snapshot. Rule positions follow from the
+  positions of the ignored rules, since the loaded rules are in file order.
 - **Changes:** `missing`, `unreadable` and `invalid` become `failed` with `exists` and the failure
-  message; `not-loaded` is new (a filter loads its rules on its first request). `ignored-rule` is lost:
-  Berlioz drops a rule whose pattern does not parse and only logs it. If the view must keep it, keep the
-  parser for that warning only, or propose that Berlioz report ignored rules.
+  message; `not-loaded` is new (a filter loads its rules on its first request).
 
 ### Reloads that reach every filter
 
