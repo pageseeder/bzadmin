@@ -41,6 +41,7 @@ Fixed on the Berlioz `dev` branch, not released yet. The overlay keeps its worka
 | `AppInitializer.configureLogger` reset the logback context before parsing the file, so a last file that failed to load (malformed XML, a file that cannot be read) left root at DEBUG with no appender: nothing was logged | When no logback file that exists can be loaded, Berlioz configures a console appender at INFO and says so on the console and in a warning | The [logging configuration](logging-configuration.md) verdict `not-writing` no longer arises from a failed file after Berlioz's reset; keep it for configurations that write nowhere |
 | `AppInitializer.configureLogger` reported "logback config file OK" when Joran recorded errors. With logback 1.5, an appender with an unknown class leaves the whole file unapplied (root at DEBUG, no appender), not only that appender | Berlioz prints the WARN and ERROR statuses added by the file, reports it as loaded with errors and logs a warning; the file is kept, as logback does | Keep the verdict `problems`: Berlioz reports on the console and in the log, which the overlay does not read |
 | A logging file that failed to load was silently replaced by the next candidate, for example `logback.xml` after a malformed `logback-<mode>.xml` | Berlioz says on the console that it uses the later file and logs a warning naming the failed one | The view can refer to that warning; knowing which file is in use still needs the [logging initialisation](#logging-initialisation) snapshot |
+| An error dispatch applied `berlioz-reload` again: an error page receives the parameters of the request that failed, so an authorized reload that caused the error, such as `berlioz-reload=services` with an invalid services file, was requested again while the error page rendered | Reload scopes are never applied while an error is rendered (`javax.servlet.error.status_code` set), by `BerliozServlet`, `RedirectFilter` and `RelocationFilter` alike. `berlioz-profile` still applies | Nothing to remove: the overlay has no workaround. An error on a control POST no longer reloads twice |
 | `redirect-mapping-1.0.dtd` declared `permanent (true \| false)` | The DTD declares `(yes \| no)`, as the schema and the parser do; a test validates against the shipped DTD. The public copy at `pageseeder.org/schema/berlioz/` is not part of the release and needs the same correction | The `invalid` report stays for files that really are invalid; `true` and `false` are now invalid under the DTD as well |
 
 ## Diagnostics of Berlioz's own state
@@ -62,14 +63,22 @@ and the loaded rules (from, to, permanent).
 - **Removes:** `MappingFile`, `MappingParser` and the copied DOCTYPE handling in
   `org.pageseeder.bzadmin.redirect` ([redirects contract](redirects.md)).
 
-### Reloads that reach every component
+### Reloads that reach every filter
 
 A reload with the `redirects` scope applies only to a filter that the reload request passes through,
-so a filter mapped to some paths keeps its old rules after "Reload everything". Components that load
-configuration could register with a reload registry, so that a reload applies to all of them, whatever
-their mapping.
+so a filter mapped to some paths keeps its old rules after "Reload everything", and so does a second
+filter instance mapped elsewhere. Berlioz could keep a reload counter, incremented whenever the
+`redirects` scope is applied, by the servlet or by a filter. Each filter records the counter when it
+loads its rules, and reloads them on its next request once the counter has changed. The servlet lists
+`redirects` in `X-Berlioz-Reload` only when at least one filter is initialized.
 
-- **Correct:** one reload, consistent state.
+- **Correct:** one reload reaches every filter instance, whatever its mapping.
+- **Simple:** no registration or lifecycle, no new public API, and one atomic read per request. A
+  registry of reloadable components, which would reload on the control request itself, was considered
+  and set aside for this reason (2026-11-11).
+- **Lazy:** the rules are reloaded where they are next used, as at startup, so an invalid file shows on
+  the filter's next request, not in the reload response. The [filter snapshot](#redirect-and-relocation-filters)
+  reports when each filter loaded and its load error.
 - **Removes:** the `reload-not-covered` warning and its mapping analysis.
 
 ### Logging initialisation
@@ -78,6 +87,11 @@ A read-only snapshot of what `AppInitializer.configureLogger` did, available onc
 `GlobalSettings.getLoggingSetup()` with a generator: the logging framework (`logback`, `log4j` or none), the
 mode, and each candidate in the order tried, with its path and outcome (`absent`, `loaded`, `loaded-with-errors`,
 `failed`, with the class and message of the exception), the file in use, and when.
+
+Berlioz configures logging because the configuration differs for each mode: production may turn off DEBUG for
+some packages and add appenders that send alerts, such as SMTP. Berlioz keeps that involvement minimal, but only
+Berlioz knows what it loaded, so it should say so. What matters to developers is a configuration that works in
+development and fails on staging or production: the snapshot shows that on the server itself.
 
 - **Correct:** the overlay would show which file loaded and which failed before it. logback does not keep its
   configuration file (since 1.5.27, only when `scan` is on, and a reset clears it), no status marks Berlioz's
@@ -93,9 +107,8 @@ Already tracked in the [metadata contract](metadata-contract.md):
 - the effective value of each global property and its origin (file, deprecation alias, system
   property);
 - whether a configuration reload failed: Berlioz keeps the last valid configuration and only logs it;
-- the reload scopes applied, for generators (only the `X-Berlioz-Reload` response header has them);
 - the provenance of the effective cache control of a service;
-- a stable schema for `ListRuntimeServices` and the other `@Beta` generators used.
+- a stable schema for `ListRuntimeServices`.
 
 ## Security inside Berlioz
 
@@ -112,20 +125,6 @@ the request and the service, failing closed when it denies or fails.
 - **Efficient:** one check per request instead of one per generator.
 - **Removes:** the guard delegates, and the class names shown through them.
 
-### Control parameters on declared services only
-
-Berlioz applies `berlioz-reload` before the service runs, on any request with the parameter and control
-authorization. The overlay therefore rejects control parameters on every admin request except three POST
-services, each with its own scopes (`AdminFilter.CONTROL_SERVICES`). Berlioz could let a service declare
-the control it accepts, such as `control="reload:services"`, and apply control parameters only on such
-services, and only for POST.
-
-- **Secure:** a control parameter on an ordinary URL never triggers a reload, in any application, with
-  or without the overlay. It would also cover error dispatches: an error page served by `BerliozServlet`
-  receives the parameters of the request that failed, so an authorized `berlioz-reload` is applied again
-  while the error page renders.
-- **Removes:** the control-parameter policy of `AdminFilter`, keeping only its authorization.
-
 ### Redaction of values
 
 `Redaction` redacts by name (password, secret, key, token…). Values that hold credentials whatever
@@ -139,11 +138,30 @@ properties and redirect targets alike, with the rules of the overlay's
 - **Secure:** one policy in every generator that writes these values, for every output format.
 - **Removes:** the overlay's own redaction of targets and its `GetSystemProperties`.
 
-## Public helpers
+## Rejected
 
-- **Thread and JVM metrics:** Berlioz's `Threads` and `OptionalMetrics` helpers are package-private, so
-  the overlay keeps its own `OptionalMetrics` and thread details. Making them public, or adding the
-  thread origin and activity to Berlioz's `ListThreads`, would remove the copies.
+Proposed and declined on 2026-11-11. The overlay keeps the code named in each item.
+
+- **Control parameters on declared services only:** let a service declare the control it accepts, such
+  as `control="reload:services"`, and apply control parameters only on such services, and only for POST.
+  Which admin URLs accept control is administration policy, which stays in the overlay
+  ([principle](#principle)). Berlioz already closes control parameters by default and requires
+  authorization for them. A service attribute would add configuration to Berlioz and break every
+  application that uses `?berlioz-reload=` today. Its strongest argument, control applied again while an
+  error page renders, is fixed in 0.14.6 ([defects](#fixed-in-berlioz-0146)). The overlay keeps its
+  control-parameter policy (`AdminFilter.CONTROL_SERVICES`).
+- **Reload scopes applied, for generators:** the generators that run on a control request are admin
+  generators, and the `X-Berlioz-Reload` response header already gives the client the scopes applied;
+  the frontend reads it.
+- **Stable schemas for every `@Beta` generator used:** too open-ended to commit to. A stable
+  `ListRuntimeServices` schema is planned for Berlioz 1.0; another generator can be proposed on its own,
+  with the fields the overlay relies on.
+- **Public thread and JVM metric helpers:** make Berlioz's package-private `Threads` and
+  `OptionalMetrics` public, or add the thread origin and activity to Berlioz's `ListThreads`. Thread
+  classification is a presentation heuristic, which Berlioz already decided stays in the overlay, and
+  public helpers would become API that Berlioz must keep stable for a few lines of MBean access. A metric
+  that Berlioz generators lack can be proposed as a field of the generator. The overlay keeps
+  `OptionalMetrics`, `ThreadOrigin`, `ThreadDetails`, `ListThreads` and `GetThreadInfo`.
 
 ## Not proposed
 
