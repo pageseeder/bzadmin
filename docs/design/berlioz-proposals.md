@@ -42,44 +42,58 @@ Fixed on the Berlioz `dev` branch, not released yet. The overlay keeps its worka
 | `AppInitializer.configureLogger` reported "logback config file OK" when Joran recorded errors. With logback 1.5, an appender with an unknown class leaves the whole file unapplied (root at DEBUG, no appender), not only that appender | Berlioz prints the WARN and ERROR statuses added by the file, reports it as loaded with errors and logs a warning; the file is kept, as logback does | Keep the verdict `problems`: Berlioz reports on the console and in the log, which the overlay does not read |
 | A logging file that failed to load was silently replaced by the next candidate, for example `logback.xml` after a malformed `logback-<mode>.xml` | Berlioz says on the console that it uses the later file and logs a warning naming the failed one | The view can refer to that warning; knowing which file is in use still needs the [logging initialisation](#logging-initialisation) snapshot |
 | An error dispatch applied `berlioz-reload` again: an error page receives the parameters of the request that failed, so an authorized reload that caused the error, such as `berlioz-reload=services` with an invalid services file, was requested again while the error page rendered | Reload scopes are never applied while an error is rendered (`javax.servlet.error.status_code` set), by `BerliozServlet`, `RedirectFilter` and `RelocationFilter` alike. `berlioz-profile` still applies | Nothing to remove: the overlay has no workaround. An error on a control POST no longer reloads twice |
+| Rules reloaded by `RedirectFilter` or `RelocationFilter` were held in a field that was not safely published, so other request threads were not guaranteed to see them | The rules are published through a `volatile` field | Nothing to remove |
 | `redirect-mapping-1.0.dtd` declared `permanent (true \| false)` | The DTD declares `(yes \| no)`, as the schema and the parser do; a test validates against the shipped DTD. The public copy at `pageseeder.org/schema/berlioz/` is not part of the release and needs the same correction | The `invalid` report stays for files that really are invalid; `true` and `false` are now invalid under the DTD as well |
 
-## Diagnostics of Berlioz's own state
+## Implemented in Berlioz 0.14.6
+
+Implemented on the Berlioz `dev` branch, not released yet (Berlioz theme 18, items 11 and 12). The overlay
+keeps its code until it requires 0.14.6.
 
 ### Redirect and relocation filters
 
-`RedirectFilter.diagnosticSnapshot()` and `RelocationFilter.diagnosticSnapshot()`, with a generator,
-as `BerliozConfig` and `ErrorHandlerServlet` already do: for each filter instance, its name, the
-`config` parameter, whether the file exists, whether rules are loaded, when, how many, the load error,
-and the loaded rules (from, to, permanent).
+`GetRedirectConfig` (content `redirect-config`) and `RedirectFilter.diagnosticSnapshot()` (the same as
+`RelocationFilter.diagnosticSnapshot()`) report every initialized filter instance, sorted by type, then
+name: `name`, `type` (`redirect` or `relocation`), `config` (the parameter, relative to `WEB-INF`,
+omitted when unsafe), `exists`, `status` (`no-config`, `not-loaded`, `loaded`, `failed`), `loaded` (time
+of the last load), `reload-pending`, `failure` (generic, or the loader's message and its cause when
+`berlioz.errors.detail` is not `minimal`), `rule-count`, `limit` (when more than 2000 rules), and the
+rules loaded: `from`, `to` and, for redirects, `permanent`. Targets are redacted with the overlay's
+rules (user information removed, query values other than a template expression `[REDACTED]`). XML and
+JSON; one snapshot per request for the content and the ETag.
 
-- **Correct:** the view would show the rules Berlioz applies, not a file that can differ until the
-  next reload.
-- **Efficient and less fragile:** the overlay reads and parses each file again, repeats the DOCTYPE
-  handling of `ConfigLoader`, its 1,000,000-byte limit and its pattern parsing, and validates with
-  `schema/*.xsd`, which is not a public API.
-- **Secure:** the overlay resolves and reads files under `WEB-INF` with its own confinement rules;
-  Berlioz already holds the loaded rules.
-- **Removes:** `MappingFile`, `MappingParser` and the copied DOCTYPE handling in
-  `org.pageseeder.bzadmin.redirect` ([redirects contract](redirects.md)).
+Once the overlay requires 0.14.6:
+
+- **Removes:** `MappingFile`, `MappingParser`, the copied DOCTYPE handling and the use of
+  `schema/*.xsd` in `org.pageseeder.bzadmin.redirect`, and `Targets.redact` for rule targets. The view
+  shows the rules Berlioz applies, not the file.
+- **Keeps:** the filter registrations from the Servlet API (`not-mapped`, URL patterns, servlet names),
+  matched to the snapshot by filter name; the rule positions, `duplicate-from` and `forwards-to-admin`,
+  computed from the loaded rules.
+- **Changes:** `missing`, `unreadable` and `invalid` become `failed` with `exists` and the failure
+  message; `not-loaded` is new (a filter loads its rules on its first request). `ignored-rule` is lost:
+  Berlioz drops a rule whose pattern does not parse and only logs it. If the view must keep it, keep the
+  parser for that warning only, or propose that Berlioz report ignored rules.
 
 ### Reloads that reach every filter
 
-A reload with the `redirects` scope applies only to a filter that the reload request passes through,
-so a filter mapped to some paths keeps its old rules after "Reload everything", and so does a second
-filter instance mapped elsewhere. Berlioz could keep a reload counter, incremented whenever the
-`redirects` scope is applied, by the servlet or by a filter. Each filter records the counter when it
-loads its rules, and reloads them on its next request once the counter has changed. The servlet lists
-`redirects` in `X-Berlioz-Reload` only when at least one filter is initialized.
+A reload with the `redirects` scope applied only to the filters that the reload request passed
+through. Berlioz now keeps a reload counter, incremented once per request with the authorized
+`redirects` scope, by `BerliozServlet` or by a filter; each filter reloads its rules on its next request
+once the counter has changed. `X-Berlioz-Reload` lists `redirects` for a reload through the servlet when
+a filter with a `config` file is initialized. The reload is lazy: an invalid file shows on the filter's
+next request, as `status="failed"` in the snapshot, not in the reload response; `reload-pending` shows
+a reload not applied yet. A registry of reloadable components, which would reload on the control request
+itself, was set aside as more mechanism than the problem needs (2026-11-11).
 
-- **Correct:** one reload reaches every filter instance, whatever its mapping.
-- **Simple:** no registration or lifecycle, no new public API, and one atomic read per request. A
-  registry of reloadable components, which would reload on the control request itself, was considered
-  and set aside for this reason (2026-11-11).
-- **Lazy:** the rules are reloaded where they are next used, as at startup, so an invalid file shows on
-  the filter's next request, not in the reload response. The [filter snapshot](#redirect-and-relocation-filters)
-  reports when each filter loaded and its load error.
-- **Removes:** the `reload-not-covered` warning and its mapping analysis.
+Once the overlay requires 0.14.6:
+
+- **Removes:** the `reload-not-covered` warning and its mapping analysis (`FilterRegistrations.matches`
+  for the reload path).
+- **Changes:** "Reload everything" reports `redirects` whenever the host maps a filter with a
+  `config` file, whatever its mapping.
+
+## Diagnostics of Berlioz's own state
 
 ### Logging initialisation
 
@@ -130,13 +144,14 @@ the request and the service, failing closed when it denies or fails.
 `Redaction` redacts by name (password, secret, key, token…). Values that hold credentials whatever
 their name are shown: a URL with user information (`https://user:password@host/`) in a system property
 or a global property, or a token in a query string. The Redirects view now redacts targets itself
-(`Targets.redact`), and the System page system properties (`SystemProperties.redact`: URL user
+(`Targets.redact`; from Berlioz 0.14.6, the [filter snapshot](#redirect-and-relocation-filters) redacts
+them with the same rules), and the System page system properties (`SystemProperties.redact`: URL user
 information, parameters with sensitive names, the program arguments of `sun.java.command`). Berlioz could add value-based redaction, such as `Redaction.redactUrl`, used for
 properties and redirect targets alike, with the rules of the overlay's
 [system properties](metadata-contract.md#system-properties).
 
 - **Secure:** one policy in every generator that writes these values, for every output format.
-- **Removes:** the overlay's own redaction of targets and its `GetSystemProperties`.
+- **Removes:** the overlay's `GetSystemProperties`.
 
 ## Rejected
 

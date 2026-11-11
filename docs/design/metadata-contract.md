@@ -166,10 +166,10 @@ Berlioz 0.14.5 is the reference and minimum version. Recheck these contracts bef
   mapping files (removal of a DOCTYPE containing `-//Berlioz` or `//Weborganic`, the 1,000,000-byte
   limit) and validates with the schemas of the Berlioz JAR (`schema/redirect-mapping-1.0.xsd`,
   `schema/relocation-mapping-1.0.xsd`), without failing when they are missing. It parses patterns with
-  `org.pageseeder.berlioz.furi.URIPattern`, which is public. Recheck these with each Berlioz version.
+  `org.pageseeder.berlioz.furi.URIPattern`, which is public. Recheck these with each Berlioz version; Berlioz 0.14.6 reports the loaded rules instead ([proposals](berlioz-proposals.md#redirect-and-relocation-filters)).
 - **Thread diagnostics:** Berlioz's `ListThreads` and `GetThreadInfo` report the contention details since 0.14.5, but the overlay keeps its own (`ListThreads`, `GetThreadInfo`, `ThreadDetails`) for the origin and activity of each thread; Berlioz's `Threads` and `OptionalMetrics` helpers are package-private, so the overlay keeps its own `OptionalMetrics` (making them public was [rejected](berlioz-proposals.md#rejected)).
 
-Missing upstream (to propose for Berlioz 1.0, as tracked in the roadmap): provenance of effective values; whether a configuration reload failed (Berlioz keeps the last valid configuration and only logs it); a stable `ListRuntimeServices` schema; the rules loaded by the redirect filters. These and other proposals are explained in the [proposals for Berlioz](berlioz-proposals.md).
+Missing upstream (to propose for Berlioz 1.0, as tracked in the roadmap): provenance of effective values; whether a configuration reload failed (Berlioz keeps the last valid configuration and only logs it); a stable `ListRuntimeServices` schema. The rules loaded by the redirect filters, and reloads that reach every filter, are implemented for Berlioz 0.14.6 (`GetRedirectConfig`). These and other proposals are explained in the [proposals for Berlioz](berlioz-proposals.md).
 
 ## Legacy WAR overlay
 
