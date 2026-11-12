@@ -92,26 +92,6 @@ interface Container extends AutoCloseable {
   }
 
   /**
-   * @return the status of an invalid or missing parameter on a host with Berlioz kickstart.
-   * @see #invalidParameter(boolean)
-   */
-  static int invalidParameter() {
-    return invalidParameter(true);
-  }
-
-  /**
-   * The status of an invalid or missing parameter (Berlioz's {@code InvalidParameterException}):
-   * 400, but 500 on Tomcat with an error page for {@code java.lang.Exception}, as kickstart declares.
-   * With {@code berlioz.errors.handle=false}, Berlioz sets {@code javax.servlet.error.exception}
-   * before {@code sendError(400)}, and Tomcat handles that attribute as an uncaught exception.
-   *
-   * @param kickstart Whether the host has the error pages of Berlioz kickstart.
-   */
-  static int invalidParameter(boolean kickstart) {
-    return tomcat() && kickstart ? 500 : 400;
-  }
-
-  /**
    * @return the port of the plain HTTP connector.
    */
   int port();

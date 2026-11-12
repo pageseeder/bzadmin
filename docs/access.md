@@ -122,8 +122,15 @@ Without these properties, roles grant nothing. Tested with `web-container.xml` n
 
 #### Error page for 401
 
-Declare an error page for 401 that Berlioz does not serve, such as a static file with an extension
-that Berlioz is not mapped to:
+Not needed since Berlioz 0.14.6: the container's challenge reaches the client for every method, with
+Berlioz's general error page. Tested with `web-container.xml`.
+
+With Berlioz 0.14.5, that error page rendered the error for GET and HEAD only, so a POST or other
+request without credentials received a 401 Berlioz error document without `WWW-Authenticate` (on Tomcat,
+PUT and DELETE received 405 and PATCH 501), and a client that sends credentials only when challenged
+failed instead of asking for them. Hosts declared an error page for 401 that Berlioz does not serve,
+such as a static file with an extension that Berlioz is not mapped to. It still works, and can be
+removed after upgrading Berlioz:
 
 ```xml
 <error-page>
@@ -132,14 +139,8 @@ that Berlioz is not mapped to:
 </error-page>
 ```
 
-Without it, the container sends its challenges to Berlioz's general error page, which renders the
-error for GET and HEAD only. A POST or other request without credentials then receives a 401 Berlioz
-error document without `WWW-Authenticate`, so a client that sends credentials only when challenged,
-such as a script or a browser that has not signed in yet, fails instead of asking for them. On Tomcat, PUT and
-DELETE receive 405 and PATCH 501 instead of 401. With the
-error page, every method receives the challenge; other errors are still rendered by Berlioz. Responses
-of `AdminFilter`, including the fallback login's challenge, do not use error pages and are unaffected.
-Tested with `web-container-401.xml`.
+Responses of `AdminFilter`, including the fallback login's challenge, do not use error pages and are
+unaffected. Tested with `web-container-401.xml`.
 
 ### C. The fallback login
 

@@ -137,7 +137,7 @@ final class DiagnosticsTest {
     assertTrue(Integer.parseInt(xpath(xml, "count(//thread/stacktrace/element)")) > 0);
     assertTrue(host.get("/bzadmin/system/thread.html?id=" + id).body().contains("<div id=\"thread-info\">"));
     assertEquals(404, host.get("/bzadmin/system/thread.xml?id=" + Long.MAX_VALUE).statusCode());
-    assertEquals(Container.invalidParameter(), host.get("/bzadmin/system/thread.xml?id=x").statusCode());
+    assertEquals(400, host.get("/bzadmin/system/thread.xml?id=x").statusCode());
   }
 
   @Test

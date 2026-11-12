@@ -432,34 +432,33 @@ final class AccessPolicyTest {
     }
 
     /**
-     * Known defect (0.14.0 known limitations): an anonymous POST is challenged by the container,
-     * whose general error page ({@code /error.auto}, Berlioz's {@code ErrorHandlerServlet}) only
-     * allows GET and HEAD. It replaces the response with a Berlioz problem document, keeping the
-     * 401 but not the {@code WWW-Authenticate} challenge, so a client is never asked for
-     * credentials. The admin filter never sees the request. A GET keeps its challenge.
-     *
-     * <p>Replace with the expected challenge when fixing it.
+     * Without an error page for 401, every method receives the container's challenge: since Berlioz
+     * 0.14.6, the general error page ({@code /error.auto}, Berlioz's {@code ErrorHandlerServlet}) handles
+     * every method and keeps {@code WWW-Authenticate}. In Berlioz 0.14.5, it allowed GET and HEAD only,
+     * so other methods lost the challenge (405 and 501 on Tomcat). The admin filter never sees the
+     * request.
      */
     @Test
-    @Tag("known-defect")
-    void anonymousPostLosesContainerChallenge() throws Exception {
-      HttpResponse<String> get = host().as(null).get("/bzadmin/config.src");
-      assertEquals(401, get.statusCode());
-      assertEquals(List.of("basic realm=\"berlioz administration\""),
-          get.headers().allValues("WWW-Authenticate").stream().map(c -> c.toLowerCase(Locale.ROOT)).collect(Collectors.toList()));
-
-      for (String path : new String[]{"/bzadmin/api/cache/clear.src", "/bzadmin/api/config/reload.json", "/bzadmin/config.html"}) {
-        for (String form : new String[]{"", null}) {
-          String label = "POST " + path + (form == null ? " (no body)" : "");
-          HttpResponse<String> response = host().as(null).send("POST", path, form, "X-Requested-With", "XMLHttpRequest");
-          assertEquals(401, response.statusCode(), label);
-          assertTrue(response.headers().allValues("WWW-Authenticate").isEmpty(), "No challenge: " + label);
-          assertEquals("no-store", response.headers().firstValue("Cache-Control").orElse(""), label);
-          if (!path.endsWith(".html")) {
-            assertTrue(response.body().contains("Only the following are allowed: GET,HEAD"), label);
-          }
-          assertNoAdminData(response.body(), label);
-        }
+    void challengesEveryMethodWithoutErrorPage() throws Exception {
+      String[][] requests = {
+          {null, "GET", "/bzadmin/config.src", null},
+          {null, "POST", "/bzadmin/api/cache/clear.src", ""},
+          {null, "POST", "/bzadmin/api/cache/clear.src", null},
+          {null, "POST", "/bzadmin/api/config/reload.json", ""},
+          {null, "POST", "/bzadmin/config.html", null},
+          {"unknown", "POST", "/bzadmin/api/cache/clear.src", ""},
+          {null, "PUT", "/bzadmin/config.src", ""},
+          {null, "DELETE", "/bzadmin/config.src", null},
+          {null, "PATCH", "/bzadmin/api/cache/clear.src", ""}};
+      for (String[] r : requests) {
+        String label = r[0] + ": " + r[1] + " " + r[2] + (r[3] == null ? " (no body)" : "");
+        HttpResponse<String> response = host().as(r[0]).send(r[1], r[2], r[3], "X-Requested-With", "XMLHttpRequest");
+        assertEquals(401, response.statusCode(), label + ": " + response.body());
+        assertEquals(List.of("basic realm=\"berlioz administration\""),
+            response.headers().allValues("WWW-Authenticate").stream().map(c -> c.toLowerCase(Locale.ROOT)).collect(Collectors.toList()), label);
+        assertTrue(response.headers().firstValue("ETag").isEmpty(), "No ETag: " + label);
+        assertFalse(response.body().contains("Only the following are allowed"), label);
+        assertNoAdminData(response.body(), label);
       }
     }
 
@@ -616,14 +615,9 @@ final class AccessPolicyTest {
         for (String path : new String[]{"/bzadmin/config.src", "/bzadmin/api/cache/clear.src", "/bzadmin/api/config/reload.json"}) {
           String label = user + ": " + method + " " + path;
           HttpResponse<String> response = this.host.as(user).send(method, path, "", "X-Requested-With", "XMLHttpRequest");
-          int expected = this.example.deniedStatus(user);
-          // Tomcat dispatches the container's challenge to Berlioz's general error page with the method
-          // of the request, which Berlioz answers 405 (501 for PATCH), with WWW-Authenticate: hosts
-          // declare an error page for 401 (ContainerLoginWithErrorPage)
-          if (Container.tomcat() && expected == 401 && this.example == HostExample.CONTAINER && !method.equals("OPTIONS")) {
-            expected = method.equals("PATCH") ? 501 : 405;
-          }
-          assertEquals(expected, response.statusCode(), label);
+          // Since Berlioz 0.14.6, the container's challenge keeps its status for every method, on
+          // Tomcat as well (0.14.5 answered 405, and 501 for PATCH)
+          assertEquals(this.example.deniedStatus(user), response.statusCode(), label);
           assertNoAdminData(response.body(), label);
         }
       }

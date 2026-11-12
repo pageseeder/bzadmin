@@ -14,22 +14,12 @@ final class AdminRoutes {
   }
 
   /**
-   * @return the routes on a host with Berlioz kickstart, whose error pages include one for
-   *   {@code java.lang.Exception} (see {@link Container#invalidParameter(boolean)}).
+   * @return the routes, with or without Berlioz kickstart: since Berlioz 0.14.6, an invalid or missing
+   *   parameter is 400 on Tomcat as well, with the error pages of kickstart and
+   *   {@code berlioz.errors.handle=false} (0.14.5 answered 500).
    */
   static Stream<Arguments> routes() {
-    return routes(true);
-  }
-
-  /**
-   * @return the routes on a host without Berlioz kickstart (mapped by prefix), without error pages.
-   */
-  static Stream<Arguments> routesWithoutKickstart() {
-    return routes(false);
-  }
-
-  private static Stream<Arguments> routes(boolean kickstart) {
-    int invalidParameter = Container.invalidParameter(kickstart);
+    int invalidParameter = 400;
     return Stream.of(
         Arguments.of("/bzadmin/config", 200),
         Arguments.of("/bzadmin/services", 200),

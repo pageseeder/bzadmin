@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Test host (HostExample.CONTAINER, descriptor web-container-401.xml): web-container.xml with a
-  static error page for 401, the workaround for container challenges of non-GET requests, which
-  Berlioz's general error page renders without their WWW-Authenticate header.
+  static error page for 401, the workaround for container challenges of non-GET requests that
+  Berlioz 0.14.5 needed (its general error page dropped their WWW-Authenticate header). Kept to test
+  that hosts which still declare it are unaffected.
 
   Container BASIC authentication over HTTPS, administrators by
   container role (berlioz.admin.role.view and .operate in config-test.xml), then the admin filter.
