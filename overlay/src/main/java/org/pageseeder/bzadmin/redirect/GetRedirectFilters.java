@@ -1,11 +1,10 @@
 package org.pageseeder.bzadmin.redirect;
 
-import static org.pageseeder.bzadmin.berlioz.CapturedOutput.flag;
-import static org.pageseeder.bzadmin.berlioz.CapturedOutput.number;
-import static org.pageseeder.bzadmin.berlioz.CapturedOutput.objects;
-import static org.pageseeder.bzadmin.berlioz.CapturedOutput.text;
+import static org.pageseeder.bzadmin.berlioz.SnapshotFields.flag;
+import static org.pageseeder.bzadmin.berlioz.SnapshotFields.number;
+import static org.pageseeder.bzadmin.berlioz.SnapshotFields.objects;
+import static org.pageseeder.bzadmin.berlioz.SnapshotFields.text;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,6 @@ import org.pageseeder.berlioz.output.OutputWriter.ContextOption;
 import org.pageseeder.berlioz.servlet.RedirectFilter;
 import org.pageseeder.bzadmin.access.AdminGuard;
 import org.pageseeder.bzadmin.access.AdminPermission;
-import org.pageseeder.bzadmin.berlioz.CapturedOutput;
 import org.pageseeder.bzadmin.redirect.FilterRegistrations.Registration;
 
 /**
@@ -101,11 +99,8 @@ public final class GetRedirectFilters implements Generator {
    * @return the entries of Berlioz's snapshot by type and filter name.
    */
   private static Map<String, Map<String, Object>> snapshot() {
-    Map<String, Object> root = CapturedOutput.capture(RedirectFilter.diagnosticSnapshot()::writeTo);
     Map<String, Map<String, Object>> entries = new HashMap<>();
-    Map<String, Object> config = CapturedOutput.object(root, "redirect-config");
-    if (config == null) return entries;
-    for (Map<String, Object> entry : objects(config, "filters")) {
+    for (Map<String, Object> entry : RedirectFilter.diagnosticSnapshot().entries()) {
       String type = text(entry, "type");
       String name = text(entry, "name");
       if (type != null && name != null) entries.put(key(type, name), entry);

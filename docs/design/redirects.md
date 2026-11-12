@@ -32,8 +32,8 @@ The design depends on Berlioz 0.14.6:
   type, `config` (omitted when unsafe), `exists`, `status`, the time of the last load, `reload-pending`,
   a failure message (generic unless `berlioz.errors.detail` is not `minimal`), the counts, and at most
   2000 loaded and 2000 ignored rules, with targets redacted by `Redaction.redactUriPattern`. Reading it
-  neither loads nor logs. It is a `ConfigurationSnapshot`, which only writes itself: the overlay captures
-  that output into maps (`CapturedOutput`).
+  neither loads nor logs. It is a `ConfigurationSnapshot`: the overlay reads its filters as maps with
+  `entries()` (Berlioz 0.14.6), through the typed reads of `SnapshotFields`.
 
 ## Filter status
 
@@ -189,11 +189,11 @@ the verdict, `no-store`.
 ## Implementation
 
 Java: `overlay/src/main/java/org/pageseeder/bzadmin/redirect/` (`GetRedirectFilters`, with
-`FilterRegistrations` and `Targets`) and `org.pageseeder.bzadmin.berlioz.CapturedOutput`; the servlet
+`FilterRegistrations` and `Targets`) and `org.pageseeder.bzadmin.berlioz.SnapshotFields`; the servlet
 context reaches the generator through the verdict of `AdminFilter` (`AdminGuard.context`). Presentation:
 the Redirects view of `overlay/src/main/resources/META-INF/berlioz/xslt/html/bzadmin/config.xsl`. Tests:
 `RedirectsTest` on the test host `web-redirects.xml`, with fixtures written at test time;
-`CapturedOutputTest` and `TargetsTest`. The dev host maps both filters with example rules
+`SnapshotFieldsTest` and `TargetsTest`. The dev host maps both filters with example rules
 (`test-host/src/main/webapp/WEB-INF/config/redirects.xml`, `relocations.xml`).
 
 ## Upstream

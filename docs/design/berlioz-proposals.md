@@ -76,8 +76,7 @@ Adopted on the overlay's `dev` branch against 0.14.6-rc.1 (2026-11-12; [redirect
   positions of the ignored rules, since the loaded rules are in file order.
 - **Changed:** `missing`, `unreadable` and `invalid` became `failed` with `exists` and the failure
   message; `not-loaded` is new (a filter loads its rules on its first request), and so is
-  `not-initialized`, for a registration without a snapshot entry. The snapshot is read by capturing its
-  output (`CapturedOutput`), since it has no accessors ([proposal](#read-access-to-diagnostic-snapshots)).
+  `not-initialized`, for a registration without a snapshot entry. The snapshot is read with `entries()` ([read access](#read-access-to-diagnostic-snapshots)).
 
 ### Reloads that reach every filter
 
@@ -143,8 +142,8 @@ implemented yet (2026-11-12):
   verdict has `startup-file-failed`, `startup-file-with-errors` and `startup-console-default` issues while no
   reset was observed since startup. An `unsupported` verdict keeps the startup, to show logback files that
   Berlioz ignored. The resets observed by the adapter and the scan watch list stay, since they cover
-  reconfigurations after startup. The snapshot is read with `CapturedOutput`
-  ([proposal](#read-access-to-diagnostic-snapshots)).
+  reconfigurations after startup. The snapshot is read with `fields()`
+  ([read access](#read-access-to-diagnostic-snapshots)).
 
 ### Configuration load status
 
@@ -173,6 +172,21 @@ Adopted on the overlay's `dev` branch against 0.14.6-rc.1 (2026-11-12):
   configuration failed to reload instead of pointing to the logs. The `global-config` content of the
   `config.xml` fixture is from a new capture.
 
+### Read access to diagnostic snapshots
+
+`ConfigurationSnapshot.entries()` and `fields()` return the content of a snapshot, such as
+`RedirectFilter.diagnosticSnapshot()` or `AppInitializer.loggingSnapshot()`, as unmodifiable maps keyed
+by the names of the XML/JSON schema. Values are a `String`, `Boolean`, `Long`, `List<String>`, nested map
+or list of maps; a field without a value is omitted. Checked against 0.14.6-rc.2.
+
+Adopted on the overlay's `dev` branch (2026-11-12):
+
+- **Removed:** `CapturedOutput`, the `OutputWriter` that captured `writeTo` into maps, and its test of
+  unbalanced output.
+- **Kept:** its typed reads (`text`, `number`, `flag`, `object`, `objects`), as `SnapshotFields`, which
+  read a field of another type as absent. `GetRedirectFilters` reads the filters with `entries()`; the
+  [logging configuration](logging-configuration.md#startup) will read the startup with `fields()`.
+
 ## Diagnostics of Berlioz's own state
 
 ### Configuration and reload results
@@ -183,19 +197,6 @@ Already tracked in the [metadata contract](metadata-contract.md):
   property);
 - the provenance of the effective cache control of a service;
 - a stable schema for `ListRuntimeServices`.
-
-### Read access to diagnostic snapshots
-
-`ConfigurationSnapshot` exposes only `writeTo(OutputWriter)` and `etag()`. The Redirects view combines
-the snapshot of the redirect filters with the registrations of the Servlet API and computes warnings
-from the loaded rules, so it captures the output into maps with an `OutputWriter` of its own
-(`CapturedOutput`). A read-only accessor, such as `List<Map<String, Object>> entries()` returning the
-frozen entries already held, would expose the same allowlisted fields without a second representation.
-It could still go into 0.14.6, since it adds API only.
-
-- **Correct:** the overlay reads the fields, not their serialization, which does not depend on how
-  `writeTo` names arrays and items.
-- **Removes:** `CapturedOutput`, here and for the logging and other snapshots the overlay may read.
 
 ### Consistent folder placeholders
 

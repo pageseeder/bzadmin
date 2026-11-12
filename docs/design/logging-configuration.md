@@ -44,8 +44,8 @@ The design depends on Berlioz 0.14.6 and logback 1.5 behavior:
   `loaded`, `loaded-with-errors`, `failed`), `in-use`, `problem-count` and, when `berlioz.errors.detail` is not
   `minimal`, `failure` and at most 20 `problem` (`level`, `message`), with folders replaced by `[webinf]` and
   `[appdata]` and credentials redacted. No absolute path. It records the startup only, not a later
-  reconfiguration such as a `scan`. It has no accessors: the overlay reads it by capturing its output
-  (`CapturedOutput`, as for the redirect filters).
+  reconfiguration such as a `scan`. The overlay reads it as maps with `fields()`, through
+  `SnapshotFields`, as for the redirect filters.
 - **Appenders that stop.** A file appender that cannot open its file is never started. An output stream appender
   that fails to write stops itself ("IO failure in appender"), for example when the disk is full. logback drops
   the events of an appender that is not started, until the next configuration.
@@ -226,7 +226,7 @@ The Application page summary has the verdict only, `logging/@configuration`, wit
 
 Java: `LoggingBackend.configuration()`, implemented by `LogbackBackend`, which records resets in its existing
 listener and returns a bounded snapshot without logback classes; the startup from `AppInitializer.loggingSnapshot()`,
-read with `CapturedOutput`; generator `GetLoggingConfiguration`. XSLT: the Configuration view and the notice in `logs.xsl`; the Application page
+read with `fields()` and `SnapshotFields`; generator `GetLoggingConfiguration`. XSLT: the Configuration view and the notice in `logs.xsl`; the Application page
 summary in `GetApplicationSummary`. Tests:
 
 - `logbackTest`: a valid configuration (`writing`); a reset context (`not-writing`); a file appender on an

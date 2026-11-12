@@ -9,7 +9,7 @@ These documents explain current behavior, integration contracts and design ratio
 | Configuration and services | [Metadata contract](metadata-contract.md) | BerliozMetadataTest, ConfigReloadTest, ServiceReloadTest |
 | Cache administration | [Cache contract](cache-contract.md) | CacheAdminTest and isolated provider tests in `overlay/src/cacheTest` |
 | PSML files | [Repository and browsing](psml.md) | PsmlFilesTest and repository unit tests |
-| Redirects and forwards | [Redirects contract](redirects.md) | RedirectsTest, CapturedOutputTest and TargetsTest |
+| Redirects and forwards | [Redirects contract](redirects.md) | RedirectsTest, SnapshotFieldsTest and TargetsTest |
 | Logs | [Files and recent events](logs.md) | AdminOperationsTest, NoLogbackHostTest and isolated logback tests |
 | Logging configuration (planned for 0.14.1) | [Logging configuration](logging-configuration.md) | Planned: isolated logback tests, NoLogbackHostTest, LogsXsltTest |
 | XSLT | [Resources and documentation](xslt.md), [resolver decision](xslt-resolution-decision.md) | XsltDocumentationTest and resolver/documenter tests |
