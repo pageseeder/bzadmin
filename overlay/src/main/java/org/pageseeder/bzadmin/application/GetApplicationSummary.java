@@ -38,7 +38,7 @@ import org.pageseeder.bzadmin.log.LoggingBackends;
  *   <component name="java" product="OpenJDK 64-Bit Server VM" vendor="Eclipse Adoptium" version="11.0.32+1"/>
  *   <component name="xslt" product="SAXON" version="HE 12.10" vendor="Saxonica" xslt-version="3.0" factory="net.sf.saxon.TransformerFactoryImpl"/>
  *   <component name="container" product="jetty/10.0.26" servlet-api="4.0"/>
- *   <logging backend="logback" recent-events="true" log-files="backend"/>
+ *   <logging backend="logback" recent-events="true" log-files="backend" configuration="writing"/>
  *   <cache-provider id="ehcache2" label="EHCache 2.11.0.3.31" managers="2"/>
  *   <access roles="true" fallback-login="false"/>
  *   <status services="ready" configuration="ready" properties="12" xslt-cache="manual"/>
@@ -57,6 +57,8 @@ import org.pageseeder.bzadmin.log.LoggingBackends;
  *
  * <p>{@code log-files} is {@code property} when the host lists its log files in
  * {@value LogFiles#PROPERTY}, otherwise {@code backend} (the directories of the logging framework).
+ * The logging {@code configuration} is the verdict of {@code GetLoggingConfiguration} only, with no
+ * path, name or message.
  * {@code configuration} is the load status of the global configuration reported by Berlioz
  * ({@code GlobalSettings.getLoadDiagnostics()}: {@code pending}, {@code ready}, {@code reload-failed}
  * when Berlioz keeps the last valid properties, {@code startup-failed}), or {@code none} when it
@@ -147,6 +149,7 @@ public final class GetApplicationSummary implements Generator {
     out.field("backend", LoggingBackends.name());
     out.field("recent-events", LoggingBackends.capturesRecentEvents());
     out.field("log-files", isSet(LogFiles.PROPERTY) ? "property" : "backend");
+    out.field("configuration", LoggingBackends.configurationVerdict());
     out.endObject();
   }
 

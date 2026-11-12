@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What the admin pages can use of the logging framework of the host: the directories of its log
- * files and the recent events. Each is optional, and none is needed to read the log files that the
+ * files, the recent events and its configuration. Each is optional, and none is needed to read the log files that the
  * host registers (see {@link LogFiles}).
  *
  * @see LoggingBackends
@@ -43,6 +43,13 @@ interface LoggingBackend {
    * @return the level of the root logger of the application, or {@code null} when unknown.
    */
   @Nullable EventLevel rootLevel();
+
+  /**
+   * @return the configuration of the logging framework, or {@code null} when it is not supported.
+   */
+  default @Nullable LoggingConfiguration configuration() {
+    return null;
+  }
 
   /**
    * Stops capturing events and releases what was attached to the logging framework.

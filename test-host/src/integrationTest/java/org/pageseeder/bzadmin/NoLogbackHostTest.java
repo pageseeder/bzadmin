@@ -65,6 +65,30 @@ final class NoLogbackHostTest {
     assertEquals(200, host.get("/bzadmin/logs.json").statusCode());
   }
 
+  /**
+   * Without logback, the logging configuration is unsupported: the startup says which backend SLF4J uses
+   * and that Berlioz ignored its logback files.
+   */
+  @Test
+  void reportsTheLoggingConfigurationAsUnsupported() throws Exception {
+    HttpResponse<String> response = host.get("/bzadmin/logs.src?view=config");
+    assertEquals(200, response.statusCode(), response.body());
+    Document xml = parse(response.body());
+    String config = "//logging-configuration";
+    assertEquals("unsupported", xpath(xml, config + "/@verdict"));
+    assertEquals("0", xpath(xml, "count(" + config + "/issue)"));
+    String backend = xpath(xml, config + "/startup/@backend");
+    assertFalse(backend.isEmpty());
+    assertFalse("logback".equals(backend), backend);
+    assertFalse(xpath(xml, config + "/startup/@logger-factory").isEmpty(), "Names the factory of another backend");
+    String logback = config + "/startup/candidate[@framework='logback']";
+    assertFalse("0".equals(xpath(xml, "count(" + logback + ")")), response.body());
+    assertEquals("0", xpath(xml, "count(" + logback + "[@outcome != 'ignored' and @outcome != 'absent'])"), response.body());
+    assertEquals("unsupported", xpath(parse(host.get("/bzadmin/application.src").body()), "//logging/@configuration"));
+    String html = host.get("/bzadmin/logs.html?view=config").body();
+    assertTrue(html.contains("The logging configuration can only be inspected with logback."), html);
+  }
+
   @Test
   void reportsTheThresholdAsNotImplemented() throws Exception {
     HttpResponse<String> response = host.post("/bzadmin/api/logs/recent/threshold.src", "threshold=WARN");

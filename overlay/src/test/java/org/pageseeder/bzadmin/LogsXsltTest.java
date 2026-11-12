@@ -285,6 +285,77 @@ final class LogsXsltTest {
     return transform(service, view, content(name, status, content));
   }
 
+  private static final String PROBLEMS = "<logging-configuration framework='logback' version='1.5.38' verdict='problems'>"
+      + "<issue type='stopped-appender' severity='error' appender='a2' name='FILE'/>"
+      + "<issue type='startup-file-failed' severity='warning' location='webinf' path='config/logback-test.xml'/>"
+      + "<resets count='1' last='2026-11-10T01:01:59Z'/>";
+
+  private static final String DETAILS = "<appender id='a2' name='FILE' class='ch.qos.logback.core.FileAppender' started='false' writes='false' file='/var/log/app.log' loggers='ROOT'/>"
+      + "<appender id='a1' name='CONSOLE' class='ch.qos.logback.core.ConsoleAppender' started='true' writes='true' loggers='ROOT'/>"
+      + "<loggers total='2'><logger name='ROOT' level='INFO' effective-level='INFO' additive='true' output='true' appenders='a1 a2'/>"
+      + "<logger name='org.example.Isolated' effective-level='INFO' additive='false' output='false' appenders=''/></loggers>"
+      + "<scan enabled='false'/>"
+      + "<statuses since='reset' errors='1' warnings='0' infos='3'><status level='ERROR' time='2026-11-10T01:02:03Z' origin='ch.qos.logback.core.FileAppender'"
+      + " message='openFile(/var/log/app.log) failed'><cause class='java.io.FileNotFoundException' message='Permission denied'/></status></statuses>"
+      + "<startup initialised='true' framework='logback' backend='logback' configuration='file' mode='test' time='2026-11-10T01:02:00Z' current='true'>"
+      + "<candidate framework='logback' location='webinf' path='config/logback-test.xml' outcome='failed' problem-count='1'/>"
+      + "<candidate framework='logback' location='webinf' path='config/logback.xml' outcome='loaded' in-use='true'/></startup>";
+
+  @Test
+  void showsTheLoggingConfiguration() throws Exception {
+    String html = transform("bzadmin-logs", "config", content("logs-config", "ok", PROBLEMS + DETAILS + "</logging-configuration>")
+        + content("logs-files", "ok", FILES) + content("logs-recent", "ok", RECENT));
+    assertTrue(html.contains("<a href=\"/ctx/bzadmin/logs.html?view=config\" class=\"choice active\" aria-current=\"page\">Configuration</a>"), html);
+    assertTrue(html.contains("Logging has problems: some events may be lost."), html);
+    assertTrue(html.contains("The appender <code>FILE</code> is not started: logback drops its events."), html);
+    assertTrue(html.contains("At startup, <code>[webinf]/config/logback-test.xml</code> failed to load, and Berlioz used a later file."), html);
+    assertTrue(html.contains("<span class=\"tag warning\">not started</span>"), html);
+    assertTrue(html.contains("<code>/var/log/app.log</code>"), html);
+    assertTrue(html.contains("<code>org.example.Isolated</code>"), html);
+    assertTrue(html.contains("<td>CONSOLE, FILE</td>"), "Appenders by name: " + html);
+    assertTrue(html.contains("openFile(/var/log/app.log) failed"), html);
+    assertTrue(html.contains("Caused by: java.io.FileNotFoundException: Permission denied"), html);
+    assertTrue(html.contains("Berlioz configured logback with <code>[webinf]/config/logback.xml</code>."), html);
+    assertTrue(html.contains("1: the details are in the startup log."), html);
+    assertFalse(html.contains("logging-notice"), "No notice in the Configuration view: " + html);
+    assertFalse(html.contains("set-threshold"), html);
+    assertFalse(html.contains("switch-logs"), html);
+  }
+
+  @Test
+  void showsANoticeInTheOtherViews() throws Exception {
+    String config = content("logs-config", "ok", PROBLEMS + "</logging-configuration>");
+    String recent = transform("bzadmin-logs", "", config + content("logs-files", "ok", FILES) + content("logs-recent", "ok", RECENT));
+    assertTrue(recent.contains("<div class=\"alert callout logging-notice\" role=\"alert\">"), recent);
+    assertTrue(recent.contains("<a href=\"/ctx/bzadmin/logs.html?view=config\">See the logging configuration</a>"), recent);
+    assertTrue(recent.indexOf("logging-notice") < recent.indexOf("set-threshold"), "Above the view: " + recent);
+    String files = transform("bzadmin-logs", "files", config + content("logs-files", "ok", FILES));
+    assertTrue(files.contains("logging-notice"), files);
+
+    String writing = transform("bzadmin-logs", "", content("logs-config", "ok",
+        "<logging-configuration framework='logback' verdict='writing'><issue type='console-only' severity='warning'/><resets count='0'/></logging-configuration>")
+        + content("logs-recent", "ok", RECENT));
+    assertFalse(writing.contains("logging-notice"), writing);
+    String unsupported = transform("bzadmin-logs", "", content("logs-config", "ok",
+        "<logging-configuration framework='org.slf4j.helpers.NOPLoggerFactory' verdict='unsupported'/>") + content("logs-recent", "ok", RECENT));
+    assertFalse(unsupported.contains("logging-notice"), unsupported);
+  }
+
+  @Test
+  void showsAStartupThatNoLongerApplies() throws Exception {
+    String html = page("bzadmin-logs", "config", "logs-config", "ok",
+        "<logging-configuration framework='org.slf4j.helpers.NOPLoggerFactory' verdict='unsupported'>"
+        + "<startup initialised='true' framework='logback' backend='nop' configuration='none' current='false' logger-factory='org.slf4j.helpers.NOPLoggerFactory'>"
+        + "<candidate framework='logback' location='webinf' path='config/logback.xml' outcome='ignored'/></startup></logging-configuration>");
+    assertTrue(html.contains("The logging configuration can only be inspected with logback."), html);
+    assertTrue(html.contains("Logging was reconfigured after startup, so this record may no longer apply."), html);
+    assertTrue(html.contains("SLF4J uses <code>nop</code> (<code>org.slf4j.helpers.NOPLoggerFactory</code>)."), html);
+    assertTrue(html.contains(">ignored</span>"), html);
+    String none = page("bzadmin-logs", "config", "logs-config", "ok",
+        "<logging-configuration framework='logback' verdict='writing'><startup initialised='false'/></logging-configuration>");
+    assertTrue(none.contains("Berlioz did not configure logging"), none);
+  }
+
   /** The Logs page with both of its generators. */
   private static String logsPage(String service, String view, String recent, String files) throws Exception {
     return transform(service, view, content("logs-files", "ok", files) + content("logs-recent", "ok", recent));

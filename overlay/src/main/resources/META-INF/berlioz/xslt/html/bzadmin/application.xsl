@@ -149,6 +149,13 @@
           <tr><th scope="row"><a href="{f:to-path('/bzadmin/logs')}">Logs</a></th><td>
             <strong><xsl:value-of select="@backend"/></strong>
             <p><xsl:value-of select="if (@recent-events = 'true') then 'Recent event capture is available.' else 'This backend does not provide recent event capture. Log files may still be available.'"/></p>
+            <xsl:choose>
+              <xsl:when test="@configuration = 'writing'"><p class="logging-configuration"><svg-icon name="ok"/> Logging writes events.</p></xsl:when>
+              <xsl:when test="@configuration = ('problems', 'not-writing')">
+                <p class="logging-configuration"><span class="tag warning"><xsl:value-of select="if (@configuration = 'problems') then 'Logging problems' else 'Logging writes nowhere'"/></span>
+                <xsl:text> </xsl:text><a href="{f:to-path('/bzadmin/logs')}?view=config">See the logging configuration</a>.</p>
+              </xsl:when>
+            </xsl:choose>
           </td></tr>
         </xsl:for-each>
         <tr><th scope="row"><a href="{f:to-path('/bzadmin/cache')}">Caches</a></th><td>

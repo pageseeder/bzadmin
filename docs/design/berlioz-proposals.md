@@ -132,8 +132,8 @@ and the application data folder are replaced by `[webinf]` and `[appdata]` in me
 `native-setting` value, which are redacted. XML and JSON; one snapshot per request for the content and the ETag.
 It reports the startup only, not a later reconfiguration. Checked against 0.14.6-rc.1.
 
-Adopted in the design of the [logging configuration](logging-configuration.md#startup), which is not
-implemented yet (2026-11-12):
+Adopted in the [logging configuration](logging-configuration.md#startup) (designed 2026-11-12, implemented
+2026-11-13 against 0.14.6-rc.3):
 
 - **Removed from the design:** the overlay's copy of the candidate order, computed from `GlobalSettings`, with
   absolute paths, and the 0.14.5 behavior it worked around (a failed file leaving root at DEBUG without an
@@ -155,7 +155,7 @@ the last valid properties are kept and listed), `loaded` (last successful load) 
 only while it has failed), ISO 8601. After a failure, `load-failure` follows the properties, kept until the next
 successful load: `source` (the name of the file that failed, such as `config-dev.xml`) and a generic message; when
 `berlioz.errors.detail` is not `minimal`, `line` and the parser's description of the error, with the paths of
-`WEB-INF` and the application data folder replaced by `[WEB-INF]` and `[app-data]` and redacted with
+`WEB-INF` and the application data folder replaced by `[webinf]` and `[appdata]` and redacted with
 `Redaction.redactValue`. JSON uses `loadStatus` and `loadFailure`. The ETag changes with the load status and the
 time of a failure. Same shape as the service load diagnostics of `ListRuntimeServices`, without `retry-after`,
 since the configuration is only reloaded on request. `properties/@source` is unchanged: it names the mode file when
@@ -185,7 +185,16 @@ Adopted on the overlay's `dev` branch (2026-11-12):
   unbalanced output.
 - **Kept:** its typed reads (`text`, `number`, `flag`, `object`, `objects`), as `SnapshotFields`, which
   read a field of another type as absent. `GetRedirectFilters` reads the filters with `entries()`; the
-  [logging configuration](logging-configuration.md#startup) will read the startup with `fields()`.
+  [logging configuration](logging-configuration.md#startup) reads the startup with `fields()`.
+
+### Consistent folder placeholders
+
+Berlioz's diagnostics replace the application data and `WEB-INF` folders with the same tokens, `[appdata]` and
+`[webinf]`: the configuration load failure (`GlobalSettings`) used `[app-data]` and `[WEB-INF]`, which became
+`[appdata]` and `[webinf]` after 0.14.6-rc.1, as in the logging snapshot, its `native-setting` and the candidate
+`location` (`appdata` or `webinf`, from `LoggingSetup`).
+
+Adopted (2026-11-13): no change in the overlay, since no code or fixture reads either spelling.
 
 ## Diagnostics of Berlioz's own state
 
@@ -197,17 +206,6 @@ Already tracked in the [metadata contract](metadata-contract.md):
   property);
 - the provenance of the effective cache control of a service;
 - a stable schema for `ListRuntimeServices`.
-
-### Consistent folder placeholders
-
-Two 0.14.6 diagnostics replace the same folders with different tokens: the configuration load failure uses
-`[WEB-INF]` and `[app-data]` (`GlobalSettings`), the logging snapshot `[webinf]` and `[appdata]`, and `appdata` or
-`webinf` as candidate `location` (`LoggingSetup`). Since both are new in 0.14.6, one spelling could still be chosen
-before the release, so that a client recognises a folder whatever the diagnostic.
-
-- **Correct:** one token per folder across Berlioz's diagnostics.
-- **Removes:** nothing in the overlay today; the view of the logging configuration would otherwise explain two
-  spellings.
 
 ## Security inside Berlioz
 

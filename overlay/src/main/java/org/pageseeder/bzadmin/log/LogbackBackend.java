@@ -2,11 +2,14 @@ package org.pageseeder.bzadmin.log;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -34,7 +37,8 @@ import org.jspecify.annotations.Nullable;
  * the logging thread, within the bounds of {@link RecentEvent}.
  *
  * <p>The appender is attached again when the logger context is reset (reconfiguration), detached
- * when the context stops, and detached with its listener on {@link #stop()}.
+ * when the context stops, and detached with its listener on {@link #stop()}. The listener records the
+ * number of resets and the time of the last one, for the {@linkplain #configuration() configuration}.
  */
 final class LogbackBackend implements LoggingBackend {
 
@@ -54,6 +58,12 @@ final class LogbackBackend implements LoggingBackend {
 
   /** Whether stopped: the appender is no longer attached again. */
   private volatile boolean stopped;
+
+  /** The number of resets observed. */
+  private final AtomicInteger resets = new AtomicInteger();
+
+  /** The time of the last reset observed, in milliseconds, or 0. */
+  private final AtomicLong lastReset = new AtomicLong();
 
   private LogbackBackend(LoggerContext context) {
     this.context = context;
@@ -99,6 +109,21 @@ final class LogbackBackend implements LoggingBackend {
   @Override
   public @Nullable EventLevel rootLevel() {
     return level(root().getLevel());
+  }
+
+  @Override
+  public LoggingConfiguration configuration() {
+    long last = this.lastReset.get();
+    return LogbackInspection.inspect(this.context, this.capture, version(), this.resets.get(),
+        last > 0 ? Instant.ofEpochMilli(last) : null);
+  }
+
+  /**
+   * Records a reset, as the listener does.
+   */
+  void reset(long time) {
+    this.lastReset.set(time);
+    this.resets.incrementAndGet();
   }
 
   @Override
@@ -239,6 +264,7 @@ final class LogbackBackend implements LoggingBackend {
     public void onReset(LoggerContext context) {
       // A reset detaches and stops every appender of the root logger (when the context stops too,
       // before onStop)
+      reset(System.currentTimeMillis());
       if (!LogbackBackend.this.stopped) attach();
     }
 

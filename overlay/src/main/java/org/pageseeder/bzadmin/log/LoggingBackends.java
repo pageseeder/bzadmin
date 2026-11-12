@@ -90,6 +90,14 @@ public final class LoggingBackends {
   }
 
   /**
+   * @return the verdict of the logging configuration: {@code writing}, {@code problems},
+   *   {@code not-writing}, {@code unsupported} or {@code unavailable}.
+   */
+  public static String configurationVerdict() {
+    return GetLoggingConfiguration.configuration(current()).verdict.toString();
+  }
+
+  /**
    * @return the logging framework, detected and started on first use.
    */
   static LoggingBackend current() {

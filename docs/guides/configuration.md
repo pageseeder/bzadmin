@@ -8,6 +8,8 @@ In the Files view, the selector lists files without a date in their name first, 
 
 Recent events require logback. File reading works without a logging backend when locations are configured explicitly. Changing the recent-event capture threshold does not change application logger levels.
 
+The Configuration view says whether logging writes events, and why not when it does not: appenders that are not started, loggers with no output, logback's error and warning messages, and the logging files that Berlioz tried at startup, with the one in use. Every view of the Logs page shows a notice when logging loses events or writes nowhere. It requires logback 1.5; with another logging framework, it shows only what Berlioz did at startup. It is read-only: it does not change levels or reload the configuration. See [logging configuration](../design/logging-configuration.md).
+
 By default, the Recent view holds the last 256 events. To hold more or fewer, set `berlioz.admin.logs.recent-capacity` to a number from 1 to 4096; a value out of range is brought within it, and one that is not a number is ignored, with a warning in the log. The capture starts before Berlioz loads its configuration, so the number applies once the configuration is loaded, and again whenever it is reloaded; the most recent events that fit are kept. Each event holds at most about 8,000 characters of message and stack trace, so 4096 events take at most around 80 MB, and usually a few megabytes.
 
 ```xml

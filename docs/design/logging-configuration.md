@@ -1,7 +1,7 @@
 # Logging configuration
 
-Planned for 0.14.1, not implemented. Designed for Berlioz 0.14.6, which reports how it configured logging at
-startup ([proposals for Berlioz](berlioz-proposals.md#logging-initialisation)).
+Implemented for 0.14.1, against Berlioz 0.14.6, which reports how it configured logging at startup
+([proposals for Berlioz](berlioz-proposals.md#logging-initialisation)).
 
 A Configuration view on the Logs page (`/bzadmin/logs?view=config`) says whether the application's logging is
 writing events, and shows why not when it is not: the appenders, the loggers, logback's status messages and the
@@ -154,7 +154,8 @@ What Berlioz did at startup, from its snapshot, labelled as a record of the star
 - **Resets.** The time of the last reset observed and the number of resets since the adapter started. Berlioz
   resets once for each logback file it tries; a `scan` reconfiguration resets too. When the adapter started after
   Berlioz configured logging, such as with a generator used without `AdminFilter`, it observed none and says so.
-- **Scan.** Whether logback watches files for changes, and which, from its watch list, when `scan` is on.
+- **Scan.** Whether logback watches files for changes, and the names of the files it watches (not their
+  folders), from its watch list, when `scan` is on.
 
 ## Output
 
@@ -164,7 +165,7 @@ Configuration view. It writes the details only with `view=config`.
 
 ```xml
 <logging-configuration framework="logback" version="1.5.38" verdict="problems">
-  <issue type="stopped-appender" severity="error" appender="a2"/>
+  <issue type="stopped-appender" severity="error" appender="a2" name="FILE"/>
   <issue type="error-status" severity="error" count="1"/>
   <resets count="1" last="2026-11-10T01:02:03Z"/>
   <!-- With view=config -->
@@ -177,6 +178,7 @@ Configuration view. It writes the details only with `view=config`.
     <logger name="ROOT" level="INFO" effective-level="INFO" additive="true" output="true" appenders="a1 a2 a3"/>
     <logger name="org.pageseeder" level="DEBUG" effective-level="DEBUG" additive="true" output="true" appenders=""/>
   </loggers>
+  <scan enabled="false"/>
   <statuses since="reset" errors="1" warnings="0" infos="42">
     <status level="ERROR" time="2026-11-10T01:02:03Z" origin="ch.qos.logback.core.rolling.RollingFileAppender"
             message="openFile(/var/log/app/app.log,true) call failed.">
@@ -192,12 +194,15 @@ Configuration view. It writes the details only with `view=config`.
 </logging-configuration>
 ```
 
-`startup` has the fields of the snapshot, as Berlioz names them, without `logger-factory` unless the backend is not
+An issue names an appender by its ID and name, a logger by its name, or a startup file by its `location` and
+`path`, and counts with `count`. Appenders have the `holder` that holds them, if any, and `capture="true"` for the
+overlay's. Turbo filters are `turbo-filter` elements with their `class`, when there are any. `startup` has the fields of the snapshot, as Berlioz names them, without `logger-factory` unless the backend is not
 logback, and `current="false"` when the adapter observed a reset after its `time`. Without logback:
 `<logging-configuration framework="..." verdict="unsupported">` with only `startup`, which says whether Berlioz
 found logback files that it ignored. In JSON: `{"framework": "logback", "version": "1.5.38", "verdict":
 "problems", "issues": [...], "resets": {...}, "appenders": [...], "loggers": {"total": 2, "items": [...]},
-"statuses": {...}, "startup": {..., "candidates": [...]}}`, names in camel case, as the other log generators.
+"turboFilters": [...], "scan": {...}, "statuses": {..., "items": [{..., "causes": [...]}]}, "startup": {...,
+"candidates": [...]}}`, names in camel case, as the other log generators.
 
 The Application page summary has the verdict only, `logging/@configuration`, with no path, name or message
 ([metadata contract](metadata-contract.md#application-page-bzadmin-application)).
@@ -212,6 +217,7 @@ The Application page summary has the verdict only, `logging/@configuration`, wit
 | Status messages and causes | Redacted by value (URL user information, parameters with sensitive names). They can still contain paths and logger names. |
 | Appender settings, encoders, the configuration file's contents | Never read: network and SMTP appenders hold credentials. |
 | Logger names, appender names and classes | Shown. |
+| Files watched by `scan` | Their names only, not their folders. |
 
 ## Not in scope
 
@@ -224,22 +230,31 @@ The Application page summary has the verdict only, `logging/@configuration`, wit
 
 ## Implementation and tests
 
-Java: `LoggingBackend.configuration()`, implemented by `LogbackBackend`, which records resets in its existing
-listener and returns a bounded snapshot without logback classes; the startup from `AppInitializer.loggingSnapshot()`,
-read with `fields()` and `SnapshotFields`; generator `GetLoggingConfiguration`. XSLT: the Configuration view and the notice in `logs.xsl`; the Application page
-summary in `GetApplicationSummary`. Tests:
+Java (`org.pageseeder.bzadmin.log`): `LoggingBackend.configuration()`, implemented by `LogbackBackend`, which
+records resets in its existing listener, with `LogbackInspection`, which walks the context and returns a bounded
+`LoggingConfiguration` without logback classes; `LoggingStartup`, the startup from `AppInitializer.loggingSnapshot()`,
+read with `fields()` and `SnapshotFields`; generator `GetLoggingConfiguration` (`logs-config`, first in
+`bzadmin-logs`, so that the notice is above the other views). XSLT: the Configuration view and the notice in
+`logs.xsl`; the Application page summary in `GetApplicationSummary` (`LoggingBackends.configurationVerdict()`) and
+`application.xsl`. Tests:
 
-- `logbackTest`: a valid configuration (`writing`); a reset context (`not-writing`); a file appender on an
+- `logbackTest` (`LogbackInspectionTest`): a valid configuration (`writing`); a reset context (`not-writing`); a file appender on an
   unwritable path (`stopped-appender`, `error-status`); an appender stopped after a write failure; an unknown
   appender class (`error-status`); an `additivity="false"` logger whose appender is stopped (`no-output`); a
   logger with output through `AsyncAppender`, and none when its nested appender is stopped; a logger at `OFF` with
   no output (no issue); only console appenders (`console-only`); statuses before the last reset left out; the
-  bounds; redaction of a URL in a status message.
+  bounds; redaction of a URL in a status message; turbo filters; logback older than 1.5 (`unavailable`).
+- `LoggingConfigurationOutputTest`: the output in every view and with `view=config`, in XML and JSON; the
+  `startup-*` issues while the startup is current, none after a later reset, one `startup-console-default` and
+  none when Berlioz did not configure logging; `logger-factory` only without logback.
 - `NoLogbackHostTest`: `unsupported`, with the startup's `backend` and logback files `ignored` or `absent`.
-- Packaged host with a `logback-<mode>.xml` that is not well-formed: `startup-file-failed` and the next candidate
-  in use, or `startup-console-default` when it is the only file; with `berlioz.errors.detail=standard`, the
-  failure reason, and no absolute path in any format.
+- Not yet: a packaged host with a `logback-<mode>.xml` that is not well-formed (`startup-file-failed` and the
+  next candidate in use, or `startup-console-default` when it is the only file; with
+  `berlioz.errors.detail=standard`, the failure reason, and no absolute path in any format). The test host cannot
+  write files into `WEB-INF` before Berlioz starts; the issues are tested on snapshot fields
+  (`LoggingConfigurationOutputTest`) and the snapshot by Berlioz.
 - `LogsXsltTest`: the view, the notice in the other views, and no notice when `writing`.
-- Packaged host: the test host reports `writing`, with its mode's logback file `in-use` (`loaded`), although it
-  also has a classpath `logback.xml`; a `scan` reconfiguration makes `current="false"` and drops the `startup-*`
-  issues.
+- `LoggingConfigurationTest` (packaged host): the test host reports `writing`, with its mode's logback file
+  `in-use` (`loaded`), although it also has a classpath `logback.xml`; no absolute path in the startup in XML or
+  JSON; details only with `view=config`; the verdict on the Application page; no content without access. Not yet:
+  a `scan` reconfiguration making `current="false"` (tested on snapshot fields).

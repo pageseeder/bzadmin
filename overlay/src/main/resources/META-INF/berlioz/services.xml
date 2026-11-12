@@ -122,9 +122,11 @@
     <generator class="org.pageseeder.bzadmin.system.GetThreadInfo" name="thread"  target="main"/>
   </service>
 
-  <!-- The Recent view, or the Files view with view=files (bzadmin/logs.xsl) -->
+  <!-- The Recent view, the Files view with view=files, or the Configuration view with view=config (bzadmin/logs.xsl) -->
   <service id="bzadmin-logs" method="get">
     <url pattern="/bzadmin/logs" />
+    <!-- Whether logging writes events: the verdict and issues always (a notice above every view), the details with view=config -->
+    <generator class="org.pageseeder.bzadmin.log.GetLoggingConfiguration" name="logs-config" target="main"/>
     <!-- The registered log files, by ID -->
     <generator class="org.pageseeder.bzadmin.log.ListLogFiles" name="logs-files"   target="main"/>
     <!-- The recent events captured by the logging adapter (logback), if any -->

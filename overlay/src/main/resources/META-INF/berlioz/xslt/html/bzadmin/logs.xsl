@@ -22,15 +22,250 @@
     <xsl:with-param name="label"  select="'Files'"/>
     <xsl:with-param name="active" select="$view = 'files'"/>
   </xsl:call-template>
+  <xsl:call-template name="bzadmin-secondary-link">
+    <xsl:with-param name="href"   select="concat(f:to-path('/bzadmin/logs'), '?view=config')"/>
+    <xsl:with-param name="label"  select="'Configuration'"/>
+    <xsl:with-param name="active" select="$view = 'config'"/>
+  </xsl:call-template>
 </xsl:template>
 
-<!-- The view of the logs page: 'files' (the log files, and a log file), or '' for the recent events -->
+<!--
+  The view of the logs page: 'files' (the log files, and a log file), 'config' (the logging
+  configuration), or '' for the recent events
+-->
 <xsl:function name="f:logs-view" as="xs:string">
   <xsl:param name="content" as="element(content)"/>
   <xsl:variable name="root" select="$content/root()/root"/>
-  <xsl:sequence select="if ($root/@service = 'bzadmin-logs-raw'
-                            or $root/header/http-parameters/parameter[@name = 'view'][1] = 'files') then 'files' else ''"/>
+  <xsl:variable name="view" select="string($root/header/http-parameters/parameter[@name = 'view'][1])"/>
+  <xsl:sequence select="if ($root/@service = 'bzadmin-logs-raw' or $view = 'files') then 'files'
+                        else if ($view = 'config') then 'config' else ''"/>
 </xsl:function>
+
+<!--
+  The logging configuration: the whole Configuration view, or a notice above the other views when
+  logging does not write events or loses some
+-->
+<xsl:template match="content[@name='logs-config']" mode="bzadmin-content">
+  <xsl:variable name="view" select="f:logs-view(.)"/>
+  <xsl:for-each select="logging-configuration">
+    <xsl:choose>
+      <xsl:when test="$view = 'config'">
+        <xsl:apply-templates select="." mode="bzadmin-logs-config"/>
+      </xsl:when>
+      <xsl:when test="@verdict = ('problems', 'not-writing')">
+        <section>
+          <div class="alert callout logging-notice" role="alert">
+            <p><svg-icon name="warning"/> <b><xsl:value-of select="f:logging-verdict(@verdict)"/></b>
+            <xsl:text> </xsl:text><a href="{f:to-path('/bzadmin/logs')}?view=config">See the logging configuration</a>.</p>
+          </div>
+        </section>
+      </xsl:when>
+    </xsl:choose>
+  </xsl:for-each>
+</xsl:template>
+
+<!-- The sentence that states a verdict of the logging configuration -->
+<xsl:function name="f:logging-verdict" as="xs:string">
+  <xsl:param name="verdict" as="xs:string"/>
+  <xsl:sequence select="if ($verdict = 'writing') then 'Logging writes events.'
+                   else if ($verdict = 'problems') then 'Logging has problems: some events may be lost.'
+                   else if ($verdict = 'not-writing') then 'Logging writes events nowhere: no appender writes.'
+                   else if ($verdict = 'unsupported') then 'The logging configuration can only be inspected with logback.'
+                   else 'The logging configuration cannot be inspected with this version of logback: it needs logback 1.5.'"/>
+</xsl:function>
+
+<!-- The description of an issue of the logging configuration -->
+<xsl:function name="f:logging-issue" as="item()*">
+  <xsl:param name="issue" as="element(issue)"/>
+  <xsl:variable name="file" select="concat('[', $issue/@location, ']/', $issue/@path)"/>
+  <xsl:choose>
+    <xsl:when test="$issue/@type = 'stopped-appender'">The appender <code><xsl:value-of select="($issue/@name, $issue/@appender)[1]"/></code> is not started: logback drops its events.</xsl:when>
+    <xsl:when test="$issue/@type = 'no-output'">The logger <code><xsl:value-of select="$issue/@logger"/></code> has no output: no appender that writes is attached to it or, while it is additive, to its ancestors.</xsl:when>
+    <xsl:when test="$issue/@type = 'error-status'"><xsl:value-of select="$issue/@count"/> error status message<xsl:if test="$issue/@count != 1">s</xsl:if> since the last reset.</xsl:when>
+    <xsl:when test="$issue/@type = 'warning-status'"><xsl:value-of select="$issue/@count"/> warning status message<xsl:if test="$issue/@count != 1">s</xsl:if> since the last reset.</xsl:when>
+    <xsl:when test="$issue/@type = 'console-only'">Every appender that writes is a console appender: under a container, the console may go nowhere visible.</xsl:when>
+    <xsl:when test="$issue/@type = 'statuses-dropped'">logback reported <xsl:value-of select="$issue/@count"/> status messages and keeps 300: some are not shown.</xsl:when>
+    <xsl:when test="$issue/@type = 'startup-file-failed'">At startup, <code><xsl:value-of select="$file"/></code> failed to load, and Berlioz used a later file.</xsl:when>
+    <xsl:when test="$issue/@type = 'startup-file-with-errors'">At startup, <code><xsl:value-of select="$file"/></code> loaded with <xsl:value-of select="$issue/@count"/> problem<xsl:if test="$issue/@count != 1">s</xsl:if>: see the status messages.</xsl:when>
+    <xsl:when test="$issue/@type = 'startup-console-default'">At startup, no logging file could be loaded: Berlioz logs to the console at INFO.</xsl:when>
+    <xsl:otherwise><xsl:value-of select="$issue/@type"/></xsl:otherwise>
+  </xsl:choose>
+</xsl:function>
+
+<!--
+  The Configuration view: the verdict and its issues, the appenders and loggers, the status messages,
+  and what Berlioz did at startup
+-->
+<xsl:template match="logging-configuration" mode="bzadmin-logs-config">
+  <xsl:variable name="config" select="."/>
+  <section class="panel logging-verdict">
+    <div class="callout{if (@verdict = ('problems', 'not-writing')) then ' alert' else ''}">
+      <p><svg-icon name="{if (@verdict = 'writing') then 'ok' else if (@verdict = ('problems', 'not-writing')) then 'warning' else 'info-circle'}"/>
+      <xsl:text> </xsl:text><b><xsl:value-of select="f:logging-verdict(@verdict)"/></b>
+      <xsl:if test="@version"><xsl:text> </xsl:text><span class="muted"><xsl:value-of select="@framework"/><xsl:text> </xsl:text><xsl:value-of select="@version"/></span></xsl:if></p>
+      <xsl:if test="@verdict = 'unsupported'"><p>The logging framework of this application is <code><xsl:value-of select="@framework"/></code>.</p></xsl:if>
+      <xsl:if test="issue">
+      <ul class="logging-issues">
+        <xsl:for-each select="issue">
+          <li class="{@severity}"><span class="tag{if (@severity = 'error') then ' warning' else ''}"><xsl:value-of select="@severity"/></span><xsl:text> </xsl:text><xsl:sequence select="f:logging-issue(.)"/></li>
+        </xsl:for-each>
+      </ul>
+      </xsl:if>
+    </div>
+    <p class="muted">"Writes" means that logback will try to write: it does not say that the output is read. An appender that fails on every write without stopping is reported as writing, with its error status messages.</p>
+  </section>
+
+  <xsl:if test="appender">
+  <section class="panel">
+    <h3>Appenders</h3>
+    <div class="table-scroll" tabindex="0" role="group" aria-label="Appenders"><table class="basic-table logging-appenders" aria-label="Appenders">
+      <thead><tr><th>Name</th><th>Class</th><th>State</th><th>File</th><th>Loggers</th></tr></thead>
+      <tbody>
+        <xsl:for-each select="appender">
+          <tr data-id="{@id}">
+            <td><xsl:value-of select="@name"/><xsl:if test="@holder"><span class="muted"> in <xsl:value-of select="($config/appender[@id = current()/@holder]/@name, current()/@holder)[1]"/></span></xsl:if></td>
+            <td title="{@class}"><xsl:sequence select="f:abbr-classname(@class)"/></td>
+            <td>
+              <xsl:choose>
+                <xsl:when test="@capture = 'true'"><span class="tag">recent events</span></xsl:when>
+                <xsl:when test="@started = 'false'"><span class="tag warning">not started</span></xsl:when>
+                <xsl:when test="@writes = 'true'"><span class="tag success">writes</span></xsl:when>
+                <xsl:otherwise><span class="tag">does not write</span></xsl:otherwise>
+              </xsl:choose>
+            </td>
+            <td><xsl:if test="@file"><code><xsl:value-of select="@file"/></code></xsl:if></td>
+            <td><xsl:value-of select="tokenize(@loggers, ' ')" separator=", "/></td>
+          </tr>
+        </xsl:for-each>
+      </tbody>
+    </table></div>
+  </section>
+  </xsl:if>
+
+  <xsl:for-each select="loggers[logger]">
+  <section class="panel">
+    <h3>Loggers</h3>
+    <p class="muted">The root and the loggers with a level or appenders of their own<xsl:if test="number(@total) gt count(logger)">: the first <xsl:value-of select="count(logger)"/> of <xsl:value-of select="@total"/></xsl:if>.</p>
+    <div class="table-scroll" tabindex="0" role="group" aria-label="Loggers"><table class="basic-table logging-loggers" aria-label="Loggers">
+      <thead><tr><th>Name</th><th>Level</th><th>Effective level</th><th>Additive</th><th>Appenders</th><th>Output</th></tr></thead>
+      <tbody>
+        <xsl:for-each select="logger">
+          <tr>
+            <td><code><xsl:value-of select="@name"/></code></td>
+            <td><xsl:value-of select="@level"/></td>
+            <td><xsl:value-of select="@effective-level"/></td>
+            <td><xsl:value-of select="if (@additive = 'true') then 'Yes' else 'No'"/></td>
+            <td><xsl:value-of select="for $id in tokenize(@appenders, ' ') return string(($config/appender[@id = $id]/@name, $id)[1])" separator=", "/></td>
+            <td><xsl:choose>
+              <xsl:when test="@output = 'true'"><span class="tag success">yes</span></xsl:when>
+              <xsl:when test="@effective-level = 'OFF'"><span class="tag">off</span></xsl:when>
+              <xsl:otherwise><span class="tag warning">none</span></xsl:otherwise>
+            </xsl:choose></td>
+          </tr>
+        </xsl:for-each>
+      </tbody>
+    </table></div>
+    <xsl:if test="../turbo-filter">
+    <p>Turbo filters, which can accept or deny events whatever the levels: <xsl:for-each select="../turbo-filter"><code title="{@class}"><xsl:sequence select="f:abbr-classname(@class)"/></code><xsl:if test="position() != last()">, </xsl:if></xsl:for-each>.</p>
+    </xsl:if>
+  </section>
+  </xsl:for-each>
+
+  <xsl:for-each select="statuses">
+  <section class="panel">
+    <h3>Status messages</h3>
+    <p class="muted">The warnings and errors that logback reported <xsl:value-of select="if (@since = 'reset') then 'since its last reset' else 'since it started'"/>, most recent first:
+      <xsl:value-of select="@errors"/> error<xsl:if test="@errors != 1">s</xsl:if>, <xsl:value-of select="@warnings"/> warning<xsl:if test="@warnings != 1">s</xsl:if>, <xsl:value-of select="@infos"/> information message<xsl:if test="@infos != 1">s</xsl:if>.</p>
+    <xsl:if test="status">
+    <div class="table-scroll" tabindex="0" role="group" aria-label="Status messages"><table class="basic-table events logging-statuses" aria-label="Status messages">
+      <thead><tr><th class="time">Time</th><th class="level">Level</th><th>Origin</th><th>Message</th></tr></thead>
+      <tbody>
+        <xsl:for-each select="status">
+          <tr class="{lower-case(@level)}">
+            <td><xsl:sequence select="f:last-modified(@time)"/></td>
+            <td><svg-icon name="{if (@level = 'ERROR') then 'error' else 'warning'}" title="{@level}"/></td>
+            <td title="{@origin}"><xsl:if test="@origin"><xsl:sequence select="f:abbr-classname(@origin)"/></xsl:if></td>
+            <td><xsl:value-of select="@message"/>
+              <xsl:for-each select="cause"><br/><span class="muted">Caused by: <xsl:value-of select="@class"/><xsl:if test="@message">: <xsl:value-of select="@message"/></xsl:if></span></xsl:for-each>
+            </td>
+          </tr>
+        </xsl:for-each>
+      </tbody>
+    </table></div>
+    </xsl:if>
+  </section>
+  </xsl:for-each>
+
+  <xsl:apply-templates select="startup" mode="bzadmin-logs-config"/>
+
+  <xsl:if test="resets or scan">
+  <section class="panel">
+    <h3>Resets and scan</h3>
+    <xsl:for-each select="resets">
+    <p><xsl:choose>
+      <xsl:when test="@count = 0">No reset of the logger context observed since bzadmin started.</xsl:when>
+      <xsl:otherwise><xsl:value-of select="@count"/> reset<xsl:if test="@count != 1">s</xsl:if> of the logger context observed, the last <xsl:sequence select="f:last-modified(@last)"/>. Berlioz resets it once for each logback file it tries; a <code>scan</code> reconfiguration resets it too.</xsl:otherwise>
+    </xsl:choose></p>
+    </xsl:for-each>
+    <xsl:for-each select="scan">
+    <p><xsl:choose>
+      <xsl:when test="@enabled = 'true'">logback watches <xsl:value-of select="tokenize(@files, ' ')" separator=", "/> for changes (<code>scan</code>).</xsl:when>
+      <xsl:otherwise>logback does not watch its configuration for changes.</xsl:otherwise>
+    </xsl:choose></p>
+    </xsl:for-each>
+  </section>
+  </xsl:if>
+</xsl:template>
+
+<!--
+  What Berlioz did at startup, from its snapshot
+-->
+<xsl:template match="startup" mode="bzadmin-logs-config">
+  <section class="panel logging-startup">
+    <h3>Startup</h3>
+    <xsl:choose>
+      <xsl:when test="@initialised = 'false'">
+        <p>Berlioz did not configure logging: it was not started by its <code>AppInitializer</code>.</p>
+      </xsl:when>
+      <xsl:otherwise>
+        <p class="muted">What Berlioz did when the application started<xsl:if test="@time">, <xsl:sequence select="f:last-modified(@time)"/></xsl:if><xsl:if test="@mode"> (mode <code><xsl:value-of select="@mode"/></code>)</xsl:if>.</p>
+        <xsl:if test="@current = 'false'">
+        <div class="warning callout"><p>Logging was reconfigured after startup, so this record may no longer apply.</p></div>
+        </xsl:if>
+        <p><xsl:choose>
+          <xsl:when test="@configuration = 'file'">Berlioz configured <xsl:value-of select="@framework"/> with <code>[<xsl:value-of select="candidate[@in-use = 'true']/@location"/>]/<xsl:value-of select="candidate[@in-use = 'true']/@path"/></code>.</xsl:when>
+          <xsl:when test="@configuration = 'console-default'">No logging file could be loaded: Berlioz logs to the console at INFO.</xsl:when>
+          <xsl:when test="@configuration = 'native'">Berlioz looked at none of its logging files (<code>berlioz.logging=native</code>): the backend uses its own configuration.</xsl:when>
+          <xsl:otherwise>Berlioz found none of its logging files: logback uses its own configuration, perhaps a <code>logback.xml</code> on the classpath.</xsl:otherwise>
+        </xsl:choose>
+        <xsl:if test="@backend and @backend != 'logback'"> SLF4J uses <code><xsl:value-of select="@backend"/></code><xsl:if test="@logger-factory"> (<code><xsl:value-of select="@logger-factory"/></code>)</xsl:if>.</xsl:if></p>
+        <xsl:for-each select="native-setting">
+        <p>The system property <code><xsl:value-of select="@name"/></code> is set to <code><xsl:value-of select="@value"/></code>, a hint that Berlioz does not check.</p>
+        </xsl:for-each>
+        <xsl:if test="candidate">
+        <div class="table-scroll" tabindex="0" role="group" aria-label="Logging files considered"><table class="basic-table logging-candidates" aria-label="Logging files considered">
+          <thead><tr><th>File</th><th>Framework</th><th>Outcome</th><th>Problems</th></tr></thead>
+          <tbody>
+            <xsl:for-each select="candidate">
+              <tr>
+                <td><code>[<xsl:value-of select="@location"/>]/<xsl:value-of select="@path"/></code><xsl:if test="@in-use = 'true'"><xsl:text> </xsl:text><span class="tag success">in use</span></xsl:if></td>
+                <td><xsl:value-of select="@framework"/></td>
+                <td><span class="tag{if (@outcome = ('failed', 'loaded-with-errors')) then ' warning' else if (@outcome = 'loaded') then ' success' else ''}"><xsl:value-of select="@outcome"/></span>
+                  <xsl:if test="@framework = 'log4j' and @in-use = 'true'"><xsl:text> </xsl:text><span class="tag">deprecated</span></xsl:if></td>
+                <td>
+                  <xsl:if test="@failure"><p><xsl:value-of select="@failure"/></p></xsl:if>
+                  <xsl:for-each select="problem"><p><span class="muted"><xsl:value-of select="upper-case(@level)"/></span><xsl:text> </xsl:text><xsl:value-of select="@message"/></p></xsl:for-each>
+                  <xsl:if test="@problem-count and not(problem)"><xsl:value-of select="@problem-count"/>: the details are in the startup log.</xsl:if>
+                </td>
+              </tr>
+            </xsl:for-each>
+          </tbody>
+        </table></div>
+        </xsl:if>
+      </xsl:otherwise>
+    </xsl:choose>
+  </section>
+</xsl:template>
 
 <!--
   Displays the log files that can be read (Files view), with a form to show one in #log-content
