@@ -12,7 +12,7 @@ if (page) {
     const button = form.querySelector('button');
     button.disabled = true;
     try {
-      const { authorized, applied, services } = await postControl(form);
+      const { authorized, applied, services, configuration } = await postControl(form);
       if (!authorized) {
         flash(button, 'Not reloaded: requires the permission to operate', { type: 'error' });
         return;
@@ -26,21 +26,14 @@ if (page) {
         anchor: button,
         error: 'Unable to load configuration'
       });
-      if (services === 'reload-failed') {
-        flash(button, 'Reload of the services failed: Berlioz keeps running the last valid services', {
-          type: 'error',
-          timeout: 10000
-        });
+      const failed = [
+        configuration === 'reload-failed' && 'the configuration (Berlioz keeps the last valid one)',
+        services === 'reload-failed' && 'the services (Berlioz keeps running the last valid ones)'
+      ].filter(Boolean);
+      if (failed.length) {
+        flash(button, `Reload of ${failed.join(' and of ')} failed`, { type: 'error', timeout: 10000 });
       } else if (shown) {
-        // Berlioz does not report a configuration that fails to load: it keeps the last valid one
-        // The redirect rules are only reloaded when the host maps the Berlioz redirect filters
-        flash(
-          button,
-          `Reloaded (${applied.join(', ')}): if the configuration has an error, Berlioz keeps the last valid one, see the logs`,
-          {
-            timeout: 10000
-          }
-        );
+        flash(button, `Reloaded (${applied.join(', ')})`);
       }
     } catch (error) {
       flash(button, `Unable to reload: ${error.message}`, { type: 'error' });

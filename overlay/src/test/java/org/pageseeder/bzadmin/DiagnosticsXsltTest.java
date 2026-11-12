@@ -30,7 +30,7 @@ final class DiagnosticsXsltTest {
         + "<cache-provider id='ehcache2' label='EHCache 2.11.0.3.31' managers='2'/>"
         + "<cache-provider id='jcache' label='JCache' managers='1'/>"
         + "<access roles='true' fallback-login='true'/>"
-        + "<status services='ready' configuration='loaded' properties='12' xslt-cache='manual'/>"
+        + "<status services='ready' configuration='ready' properties='12' xslt-cache='manual'/>"
         + "</application-summary>");
     assertTrue(html.contains("<dd class=\"key-metric-value\">test</dd>"), html);
     assertTrue(html.contains("<th>Berlioz administration</th>"), html);
@@ -66,7 +66,7 @@ final class DiagnosticsXsltTest {
         + "<component name='java' version='11.0.32+1'/>"
         + "<logging backend='org.slf4j.helpers.NOPLoggerFactory' recent-events='false' log-files='property'/>"
         + "<access roles='false' fallback-login='false'/>"
-        + "<status services='reload-failed' configuration='empty' properties='0' xslt-cache='auto'/>"
+        + "<status services='reload-failed' configuration='reload-failed' properties='0' xslt-cache='auto'/>"
         + "</application-summary>");
     assertTrue(html.contains("<tr data-component=\"bzadmin\"><th>Berlioz administration</th><td>Unknown</td>"), html);
     assertTrue(html.contains("Unknown: the container does not identify itself to Berlioz"), html);
@@ -79,7 +79,7 @@ final class DiagnosticsXsltTest {
     assertEquals(2, html.split("name=\"warning\" class=\"metric-status-icon\" aria-hidden=\"true\"", -1).length - 1, html);
     assertTrue(html.contains("<p>Host access attribute.</p>"), html);
     assertTrue(html.contains("Berlioz keeps running the previous valid registry."), html);
-    assertTrue(html.contains("The summary cannot distinguish an empty file from a load failure."), html);
+    assertTrue(html.contains("The last reload failed: Berlioz keeps the last valid configuration."), html);
   }
 
   @Test

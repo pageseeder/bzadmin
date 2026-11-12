@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Properties;
 import org.jspecify.annotations.Nullable;
 import org.pageseeder.berlioz.BerliozOption;
+import org.pageseeder.berlioz.ConfigLoadDiagnostics;
 import org.pageseeder.berlioz.GlobalSettings;
 import org.pageseeder.berlioz.content.Environment;
 import org.pageseeder.berlioz.content.Generator;
@@ -40,7 +41,7 @@ import org.pageseeder.bzadmin.log.LoggingBackends;
  *   <logging backend="logback" recent-events="true" log-files="backend"/>
  *   <cache-provider id="ehcache2" label="EHCache 2.11.0.3.31" managers="2"/>
  *   <access roles="true" fallback-login="false"/>
- *   <status services="ready" configuration="loaded" properties="12" xslt-cache="manual"/>
+ *   <status services="ready" configuration="ready" properties="12" xslt-cache="manual"/>
  * </application-summary>
  * }</pre>
  *
@@ -56,14 +57,16 @@ import org.pageseeder.bzadmin.log.LoggingBackends;
  *
  * <p>{@code log-files} is {@code property} when the host lists its log files in
  * {@value LogFiles#PROPERTY}, otherwise {@code backend} (the directories of the logging framework).
- * {@code configuration} is {@code none} without a configuration file, {@code empty} when it has no
- * property (including a configuration that failed to load), and {@code loaded} otherwise.
+ * {@code configuration} is the load status of the global configuration reported by Berlioz
+ * ({@code GlobalSettings.getLoadDiagnostics()}: {@code pending}, {@code ready}, {@code reload-failed}
+ * when Berlioz keeps the last valid properties, {@code startup-failed}), or {@code none} when it
+ * loaded without a configuration file.
  *
  * <p>In JSON: {@code {"mode": "test", "components": [{"name": "bzadmin", ...}], "logging": {...},
  * "cacheProviders": [{"id": "ehcache2", ...}], "access": {...}, "status": {...}}} (names in camel case).
  *
  * @author Christophe Lauret
- * @version 0.14.0
+ * @version 0.14.1
  */
 public final class GetApplicationSummary implements Generator {
 
@@ -175,16 +178,15 @@ public final class GetApplicationSummary implements Generator {
   private static void status(OutputWriter out) {
     out.startObject("status");
     out.field("services", ServiceLoader.getInstance().getLoadStatus());
-    int properties = GlobalSettings.countProperties();
-    out.field("configuration", configuration(GlobalSettings.getPropertiesFile(), properties));
-    out.field("properties", properties);
+    out.field("configuration", configuration(GlobalSettings.getLoadDiagnostics().status(), GlobalSettings.getPropertiesFile()));
+    out.field("properties", GlobalSettings.countProperties());
     out.field("xslt-cache", XsltCacheMode.from(GlobalSettings.get(BerliozOption.XSLT_CACHE)).toString());
     out.endObject();
   }
 
-  private static String configuration(@Nullable File file, int properties) {
-    if (file == null || !file.exists()) return "none";
-    return properties == 0 ? "empty" : "loaded";
+  private static String configuration(String status, @Nullable File file) {
+    boolean ready = ConfigLoadDiagnostics.READY.equals(status);
+    return ready && (file == null || !file.exists()) ? "none" : status;
   }
 
   private static boolean isSet(String property) {

@@ -65,17 +65,19 @@ the file, from 1, `reason` `missing-from`, `invalid-from`, `missing-to` or `inva
 [redaction of values](#redaction-of-values)). XML and
 JSON; one snapshot per request for the content and the ETag.
 
-Once the overlay requires 0.14.6:
+Adopted on the overlay's `dev` branch against 0.14.6-rc.1 (2026-11-12; [redirects](redirects.md)):
 
-- **Removes:** `MappingFile`, `MappingParser`, the copied DOCTYPE handling and the use of
-  `schema/*.xsd` in `org.pageseeder.bzadmin.redirect`, and `Targets.redact` for rule targets. The view
+- **Removed:** `MappingFile`, `MappingParser`, the copied DOCTYPE handling and the use of
+  `schema/*.xsd` in `org.pageseeder.bzadmin.redirect`, and `Targets.redact`. The view
   shows the rules Berlioz applies, not the file.
-- **Keeps:** the filter registrations from the Servlet API (`not-mapped`, URL patterns, servlet names),
+- **Kept:** the filter registrations from the Servlet API (`not-mapped`, URL patterns, servlet names),
   matched to the snapshot by filter name; `duplicate-from` and `forwards-to-admin`, computed from the
   loaded rules; `ignored-rule`, from the ignored rules of the snapshot. Rule positions follow from the
   positions of the ignored rules, since the loaded rules are in file order.
-- **Changes:** `missing`, `unreadable` and `invalid` become `failed` with `exists` and the failure
-  message; `not-loaded` is new (a filter loads its rules on its first request).
+- **Changed:** `missing`, `unreadable` and `invalid` became `failed` with `exists` and the failure
+  message; `not-loaded` is new (a filter loads its rules on its first request), and so is
+  `not-initialized`, for a registration without a snapshot entry. The snapshot is read by capturing its
+  output (`CapturedOutput`), since it has no accessors ([proposal](#read-access-to-diagnostic-snapshots)).
 
 ### Reloads that reach every filter
 
@@ -88,12 +90,12 @@ next request, as `status="failed"` in the snapshot, not in the reload response; 
 a reload not applied yet. A registry of reloadable components, which would reload on the control request
 itself, was set aside as more mechanism than the problem needs (2026-11-11).
 
-Once the overlay requires 0.14.6:
+Adopted with the filter snapshot (2026-11-12):
 
-- **Removes:** the `reload-not-covered` warning and its mapping analysis (`FilterRegistrations.matches`
-  for the reload path).
-- **Changes:** "Reload everything" reports `redirects` whenever the host maps a filter with a
-  `config` file, whatever its mapping.
+- **Removed:** the `reload-not-covered` warning and its mapping analysis (`FilterRegistrations.matches`,
+  `coversReload` and `reloadPaths`).
+- **Changed:** "Reload everything" reports `redirects` whenever the host maps a filter with a
+  `config` file, whatever its mapping; the view shows `reload-pending` until a filter's next request.
 
 ### Redaction of values
 
@@ -105,12 +107,14 @@ headers and parameters of error details, in XML and JSON. `GetSystemProperties` 
 arguments of `sun.java.command`. Redirect targets use `Redaction.redactUriPattern`, with the same user
 information rule: a target keeps its user name now (`https://user:[REDACTED]@host/`), where it was removed.
 
-Once the overlay requires 0.14.6:
+Adopted on the overlay's `dev` branch against 0.14.6-rc.1 (2026-11-12):
 
-- **Removes:** `GetSystemProperties` and `SystemProperties` (use Berlioz's generator through a guard
-  delegate), and `Targets.redact` with the filter snapshot.
-- **Changes:** the [system properties](metadata-contract.md#system-properties) rules also match a
-  parameter after whitespace (`host=db password=s3cret`).
+- **Removed:** the overlay's `GetSystemProperties` and `SystemProperties`; the System page uses
+  Berlioz's generator through the guard delegate `guard.berlioz.system.GetSystemProperties`.
+  `Targets.redact` went with the [filter snapshot](#redirect-and-relocation-filters).
+- **Changed:** the [system properties](metadata-contract.md#system-properties) rules also match a
+  parameter after whitespace (`host=db password=s3cret`), and `sun.java.command` keeps a main class
+  even when an argument is a JAR. The global configuration is redacted by value as well.
 
 ### Logging initialisation
 
@@ -151,14 +155,16 @@ time of a failure. Same shape as the service load diagnostics of `ListRuntimeSer
 since the configuration is only reloaded on request. `properties/@source` is unchanged: it names the mode file when
 there is one, even when that file is the one that failed.
 
-Once the overlay requires 0.14.6:
+Adopted on the overlay's `dev` branch against 0.14.6-rc.1 (2026-11-12):
 
-- **Removes:** the guess in `GetApplicationSummary.configuration`: `empty` stood for an empty or failed
+- **Removed:** the guess in `GetApplicationSummary.configuration`: `empty` stood for an empty or failed
   configuration, and a failed reload showed `loaded` with the last valid properties.
-- **Changes:** `status/@configuration` and the `global-config` view can use `load-status`, with an alert for
-  `reload-failed` and `startup-failed` like the one for services ("Berlioz keeps the last valid configuration"),
-  and `load-failure` for the file that failed. The `metadata-contract` fixtures for `global-config` need a new
-  capture, since `load-status` and `loaded` are now always present.
+- **Changed:** `status/@configuration` is Berlioz's `load-status`, or `none` when ready without a file
+  (`loaded` became `ready`). The `global-config` view has an alert for `reload-failed` and `startup-failed`
+  like the one for services, with the file that failed, and the time of the last load.
+  `GetBerliozControl` reports `configuration` after a reload, so the Config page says when the
+  configuration failed to reload instead of pointing to the logs. The `global-config` content of the
+  `config.xml` fixture is from a new capture.
 
 ## Diagnostics of Berlioz's own state
 
@@ -171,12 +177,25 @@ Already tracked in the [metadata contract](metadata-contract.md):
 - the provenance of the effective cache control of a service;
 - a stable schema for `ListRuntimeServices`.
 
+### Read access to diagnostic snapshots
+
+`ConfigurationSnapshot` exposes only `writeTo(OutputWriter)` and `etag()`. The Redirects view combines
+the snapshot of the redirect filters with the registrations of the Servlet API and computes warnings
+from the loaded rules, so it captures the output into maps with an `OutputWriter` of its own
+(`CapturedOutput`). A read-only accessor, such as `List<Map<String, Object>> entries()` returning the
+frozen entries already held, would expose the same allowlisted fields without a second representation.
+It could still go into 0.14.6, since it adds API only.
+
+- **Correct:** the overlay reads the fields, not their serialization, which does not depend on how
+  `writeTo` names arrays and items.
+- **Removes:** `CapturedOutput`, here and for the logging and other snapshots the overlay may read.
+
 ## Security inside Berlioz
 
 ### An authorization hook for services
 
 Every Berlioz generator used by an admin service is wrapped in a delegate that checks the verdict of
-`AdminFilter` before calling it (12 delegates in `org.pageseeder.bzadmin.guard`), so that a generator
+`AdminFilter` before calling it (13 delegates in `org.pageseeder.bzadmin.guard`), so that a generator
 invoked outside the filter's route denies. A hook in Berlioz, checked before any generator of a service
 or group runs, would do this once: for example an authorizer declared on a services group, called with
 the request and the service, failing closed when it denies or fails.

@@ -65,13 +65,28 @@ final class ConfigReloadTest {
     assertEquals("berlioz-control", reload.getDocumentElement().getNodeName(), response.body());
     assertEquals("true", xpath(reload, "/berlioz-control/@authorized"));
     assertEquals("ready", xpath(reload, "/berlioz-control/@services"));
+    assertEquals("ready", xpath(reload, "/berlioz-control/@configuration"));
     assertEquals("green", colour());
 
-    // A configuration that fails to load keeps the last valid properties (Berlioz 0.14.5)
+    // A configuration that fails to load keeps the last valid properties, and says so (Berlioz 0.14.6)
     Files.writeString(config, "<global><berlioz>");
     Document broken = parse(host.post(RELOAD, "berlioz-reload=true").body());
     assertEquals("true", xpath(broken, "/berlioz-control/@authorized"));
+    assertEquals("reload-failed", xpath(broken, "/berlioz-control/@configuration"));
     assertEquals("green", colour());
+    Document page = parse(host.get("/bzadmin/config.src").body());
+    assertEquals("reload-failed", xpath(page, "//properties/@load-status"));
+    assertFalse(xpath(page, "//properties/@failed").isEmpty());
+    assertEquals("config-test.xml", xpath(page, "//properties/load-failure/@source"));
+    assertEquals("", xpath(page, "//properties/load-failure/@line"), "No line with berlioz.errors.detail=minimal");
+    assertTrue(host.get("/bzadmin/config.html").body().contains("The last reload of the global configuration failed <time "));
+    assertEquals("reload-failed", xpath(parse(host.get("/bzadmin/application.src").body()), "//application-summary/status/@configuration"));
+
+    // Fixed: the status is ready again
+    Files.writeString(config, original);
+    assertEquals("ready", xpath(parse(host.post(RELOAD, "berlioz-reload=true").body()), "/berlioz-control/@configuration"));
+    assertEquals("", xpath(parse(host.get("/bzadmin/config.src").body()), "//properties/load-failure/@source"));
+    assertEquals("blue", colour());
   }
 
   /**

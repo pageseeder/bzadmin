@@ -61,7 +61,7 @@ final class DiagnosticsTest {
     assertEquals("true", xpath(xml, "//application-summary/access/@roles"));
     assertEquals("false", xpath(xml, "//application-summary/access/@fallback-login"));
     assertEquals("ready", xpath(xml, "//application-summary/status/@services"));
-    assertEquals("loaded", xpath(xml, "//application-summary/status/@configuration"));
+    assertEquals("ready", xpath(xml, "//application-summary/status/@configuration"));
   }
 
   @Test

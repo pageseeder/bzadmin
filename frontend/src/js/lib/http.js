@@ -98,9 +98,10 @@ export function post(url, params = {}) {
  * service runs, listing the scopes it applied in the `X-Berlioz-Reload` header.
  *
  * @param {HTMLFormElement} form
- * @returns {Promise<{authorized: boolean, applied: string[], services: ?string}>} whether the user
- *   can operate, the scopes Berlioz applied, and the load status of the services after the request
- *   (`reload-failed` when Berlioz keeps running the last valid services)
+ * @returns {Promise<{authorized: boolean, applied: string[], services: ?string, configuration: ?string}>}
+ *   whether the user can operate, the scopes Berlioz applied, and the load status of the services and of
+ *   the global configuration after the request (`reload-failed` when Berlioz keeps running the last
+ *   valid services, or keeps the last valid configuration)
  */
 export async function postControl(form) {
   const xhr = await load(form.action, 'application/xml', {
@@ -111,7 +112,8 @@ export async function postControl(form) {
   return {
     authorized: control?.getAttribute('authorized') === 'true',
     applied: reloadScopes(xhr.getResponseHeader(RELOAD_HEADER)),
-    services: control?.getAttribute('services') ?? null
+    services: control?.getAttribute('services') ?? null,
+    configuration: control?.getAttribute('configuration') ?? null
   };
 }
 

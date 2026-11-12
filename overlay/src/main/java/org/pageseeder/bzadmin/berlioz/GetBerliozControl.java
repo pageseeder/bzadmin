@@ -14,8 +14,9 @@ import org.pageseeder.bzadmin.access.AdminPermission;
 /**
  * Indicates whether the admin user can use the Berlioz control parameters of the admin pages
  * ({@code berlioz-reload} with the scopes of each page), the effective XSLT cache mode and the
- * load status of the services ({@code pending}, {@code ready}, {@code startup-failed} or
- * {@code reload-failed}: Berlioz keeps running the last valid services when a reload fails).
+ * load status of the services and of the global configuration ({@code pending}, {@code ready},
+ * {@code startup-failed} or {@code reload-failed}: Berlioz keeps running the last valid services, and
+ * keeps the last valid configuration, when a reload fails; the configuration's since Berlioz 0.14.6).
  *
  * <p>{@link org.pageseeder.bzadmin.access.AdminFilter} authorises the control parameter of a POST
  * to its admin service for users with {@link AdminPermission#OPERATE}, and rejects control
@@ -25,11 +26,11 @@ import org.pageseeder.bzadmin.access.AdminPermission;
  * direct services of this generator alone, so its response includes the load status.
  *
  * <pre>{@code
- * <berlioz-control authorized="true" xslt-cache="manual" services="ready"/>
+ * <berlioz-control authorized="true" xslt-cache="manual" services="ready" configuration="ready"/>
  * }</pre>
  *
  * @author Christophe Lauret
- * @version 0.14.0
+ * @version 0.14.1
  */
 public final class GetBerliozControl implements Generator {
 
@@ -41,6 +42,7 @@ public final class GetBerliozControl implements Generator {
     out.field("authorized", authorized);
     out.field("xslt-cache", XsltCacheMode.from(GlobalSettings.get(BerliozOption.XSLT_CACHE)).toString());
     out.field("services", ServiceLoader.getInstance().getLoadStatus());
+    out.field("configuration", GlobalSettings.getLoadDiagnostics().status());
     out.endObject();
     return Response.ok();
   }

@@ -3,7 +3,7 @@
   Display the Berlioz configuration.
 
   Contents (see docs/implementation/metadata-contract.md):
-  - 'global-config'         GetGlobalConfig: configured global properties (sensitive values redacted)
+  - 'global-config'         GetGlobalConfig: configured global properties (sensitive values redacted) and load status
   - 'berlioz-options'       ListBerliozOptions: options of this Berlioz version with their defaults
   - 'berlioz-config'        GetBerliozConfig: Berlioz servlets, the XSLT processor and the servlet container
   - 'error-handler-config'  GetErrorHandlerConfig: Berlioz error handler servlets
@@ -123,6 +123,7 @@
 <xsl:template match="content[@name='global-config']" mode="bzadmin-config">
   <xsl:variable name="properties" select="properties/property"/>
   <xsl:variable name="options" select="//content[@name='berlioz-options']//option"/>
+  <xsl:apply-templates select="properties/@load-status" mode="bzadmin-config"/>
   <xsl:call-template name="config-key-metrics">
     <xsl:with-param name="properties" select="$properties"/>
     <xsl:with-param name="options" select="$options"/>
@@ -133,6 +134,7 @@
       <xsl:when test="properties/@source">Configured in <code><xsl:value-of select="properties/@source"/></code>. </xsl:when>
       <xsl:otherwise>No global configuration file. </xsl:otherwise>
     </xsl:choose>
+    <xsl:if test="properties/@loaded">Loaded <xsl:sequence select="f:datetime-diff(xs:dateTime(properties/@loaded))"/>. </xsl:if>
     <xsl:text>Sensitive values are redacted.</xsl:text>
   </p>
 
@@ -187,6 +189,44 @@
   @param properties The configured global properties
   @param options    The options of this Berlioz version
 -->
+<!--
+  Status of the global configuration, when the last load failed, with the file that failed (Berlioz
+  0.14.6). Berlioz only reports the line and the parser's message when 'berlioz.errors.detail' is not
+  'minimal'.
+-->
+<xsl:template match="@load-status" mode="bzadmin-config">
+  <xsl:choose>
+    <xsl:when test=". = 'reload-failed'">
+      <div class="alert callout" role="alert">
+        <p><svg-icon name="warning"/> <b>The last reload of the global configuration failed<xsl:apply-templates select="../@failed" mode="bzadmin-config"/>.</b>
+        Berlioz keeps the last valid configuration, listed below.</p>
+        <xsl:apply-templates select="../load-failure" mode="bzadmin-config"/>
+      </div>
+    </xsl:when>
+    <xsl:when test=". = 'startup-failed'">
+      <div class="alert callout" role="alert">
+        <p><svg-icon name="warning"/> <b>The global configuration could not be loaded<xsl:apply-templates select="../@failed" mode="bzadmin-config"/>.</b>
+        Berlioz uses the default value of every option.</p>
+        <xsl:apply-templates select="../load-failure" mode="bzadmin-config"/>
+      </div>
+    </xsl:when>
+  </xsl:choose>
+</xsl:template>
+
+<!-- When the last load failed -->
+<xsl:template match="@failed" mode="bzadmin-config">
+  <xsl:text> </xsl:text><xsl:sequence select="f:datetime-diff(xs:dateTime(.))"/>
+</xsl:template>
+
+<!-- The cause of the last failed load: the file, and the line and message when Berlioz reports them -->
+<xsl:template match="load-failure" mode="bzadmin-config">
+  <p class="config-load-failure">
+    <xsl:if test="@source">In <code><xsl:value-of select="@source"/></code><xsl:if test="@line">, line <xsl:value-of select="@line"/></xsl:if>: </xsl:if>
+    <xsl:value-of select="."/>
+    <xsl:if test="not(@line)">. See the logs for the cause.</xsl:if>
+  </p>
+</xsl:template>
+
 <xsl:template name="config-key-metrics">
   <xsl:param name="properties" as="element(property)*"/>
   <xsl:param name="options" as="element(option)*"/>

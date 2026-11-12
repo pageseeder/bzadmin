@@ -33,6 +33,33 @@ final class MetadataXsltTest {
     assertTrue(html.contains("XSLT template caching"), "Explanation from the 0.14.5 catalog");
   }
 
+  /**
+   * Berlioz 0.14.6: the load status of the global configuration, with an alert when the last load
+   * failed, naming the file, and the line and the parser's message when Berlioz reports them.
+   */
+  @Test
+  void rendersTheLoadStatusOfTheConfiguration() throws Exception {
+    String ready = render(fixture("config.xml"));
+    assertTrue(ready.contains("Loaded <time "), ready);
+    assertFalse(ready.contains("role=\"alert\""), ready);
+
+    String failed = fixture("config.xml").replace("load-status=\"ready\"", "load-status=\"reload-failed\" failed=\"2026-11-12T11:20:00Z\"")
+        .replace("</properties>", "<load-failure source=\"config-test.xml\">Unable to load the configuration file</load-failure></properties>");
+    String html = render(failed);
+    assertTrue(html.contains("The last reload of the global configuration failed <time "), html);
+    assertTrue(html.contains("Berlioz keeps the last valid configuration, listed below."), html);
+    assertTrue(html.contains("<p class=\"config-load-failure\">In <code>config-test.xml</code>: Unable to load the configuration file. See the logs for the cause.</p>"), html);
+    assertTrue(valueCell(html, "berlioz.xslt.cache").matches("<td[^>]*><code>false</code>"), "The last valid properties");
+
+    String detailed = render(failed.replace("<load-failure source=\"config-test.xml\">Unable to load the configuration file",
+        "<load-failure source=\"config-test.xml\" line=\"3\">XML document structures must start and end within the same entity."));
+    assertTrue(detailed.contains("In <code>config-test.xml</code>, line 3: XML document structures must start and end within the same entity.</p>"), detailed);
+
+    String startup = render(failed.replace("load-status=\"reload-failed\"", "load-status=\"startup-failed\""));
+    assertTrue(startup.contains("The global configuration could not be loaded <time "), startup);
+    assertTrue(startup.contains("Berlioz uses the default value of every option."), startup);
+  }
+
   @Test
   void summarisesTheConfigurationInKeyMetrics() throws Exception {
     String html = render(fixture("config.xml"));

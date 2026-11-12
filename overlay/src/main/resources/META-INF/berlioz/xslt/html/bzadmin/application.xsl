@@ -69,11 +69,12 @@
         <xsl:with-param name="label" select="$label"/>
         <xsl:with-param name="value" select="if (. = 'mode') then string($summary/@mode)
           else if (. = 'berlioz') then string($summary/component[@name = 'berlioz']/@version)
-          else if (. = 'configuration') then (if ($state = 'loaded') then concat($summary/status/@properties, ' properties') else if ($state = 'empty') then 'Empty or failed' else 'No file')
+          else if (. = 'configuration' and $state = 'ready') then concat($summary/status/@properties, ' properties')
+          else if ($state = 'none') then 'No file'
           else if ($state = 'ready') then 'Ready' else if ($state = 'pending') then 'Pending' else if ($state = 'reload-failed') then 'Reload failed' else if ($state = 'startup-failed') then 'Startup failed' else 'Unknown'"/>
-        <xsl:with-param name="status-icon" select="if ($state = ('ready', 'loaded')) then 'ok' else if ($state = ('reload-failed', 'startup-failed', 'empty')) then 'warning' else ()"/>
+        <xsl:with-param name="status-icon" select="if ($state = 'ready') then 'ok' else if ($state = ('reload-failed', 'startup-failed')) then 'warning' else ()"/>
         <xsl:with-param name="zero-muted" select="false()"/>
-        <xsl:with-param name="warning" select="$state = ('reload-failed', 'startup-failed', 'empty')"/>
+        <xsl:with-param name="warning" select="$state = ('reload-failed', 'startup-failed')"/>
         <xsl:with-param name="info" as="node()*">
           <button type="button" class="info-button link-button" popovertarget="application-info-{$name}" aria-label="About {$label}"><svg-icon name="info-circle"/></button>
         </xsl:with-param>
@@ -93,9 +94,12 @@
   </p>
   <p id="application-info-configuration" class="info-popover" popover="">
     <xsl:choose>
-      <xsl:when test="status/@configuration = 'loaded'">The tick means global properties were loaded, not that their values were validated. Berlioz option defaults are listed on the Configuration page.</xsl:when>
-      <xsl:when test="status/@configuration = 'empty'">No global properties were loaded. The summary cannot distinguish an empty file from a load failure. <a href="{f:to-path('/bzadmin/logs')}">Check the logs</a>.</xsl:when>
-      <xsl:otherwise>No global configuration file was found.</xsl:otherwise>
+      <xsl:when test="status/@configuration = 'ready'">The tick means global properties were loaded, not that their values were validated. Berlioz option defaults are listed on the Configuration page.</xsl:when>
+      <xsl:when test="status/@configuration = 'pending'">The global configuration is waiting to load.</xsl:when>
+      <xsl:when test="status/@configuration = 'reload-failed'">The last reload failed: Berlioz keeps the last valid configuration. The Configuration page shows the file that failed.</xsl:when>
+      <xsl:when test="status/@configuration = 'startup-failed'">The global configuration could not be loaded: Berlioz uses the default value of every option. The Configuration page shows the file that failed.</xsl:when>
+      <xsl:when test="status/@configuration = 'none'">No global configuration file was found.</xsl:when>
+      <xsl:otherwise>The configuration load status is not recognised.</xsl:otherwise>
     </xsl:choose>
     <xsl:text> Reload this page to update. </xsl:text><a href="{f:to-path('/bzadmin/config')}">View configuration</a>.
   </p>
