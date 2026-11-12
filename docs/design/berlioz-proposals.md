@@ -40,14 +40,14 @@ Fixed on the Berlioz `dev` branch, not released yet. The overlay keeps its worka
 | With `berlioz.errors.handle=false`, Berlioz set `javax.servlet.error.exception` before `sendError`, which Tomcat answered 500 | Berlioz sets `javax.servlet.error.exception` and `exception_type` only when it renders the error itself. The exception is passed in a new public attribute, `ErrorHandlerServlet.BERLIOZ_ERROR_EXCEPTION` (`org.pageseeder.berlioz.error_exception`), which `ErrorHandlerServlet` and `GetErrorDetails` read when the standard one is absent. This applies to Jetty as well | Remove the known limitation on Tomcat. Any overlay code that reads the exception of an error sent by Berlioz should fall back to `BERLIOZ_ERROR_EXCEPTION` |
 | `AppInitializer.configureLogger` reset the logback context before parsing the file, so a last file that failed to load (malformed XML, a file that cannot be read) left root at DEBUG with no appender: nothing was logged | When no logback file that exists can be loaded, Berlioz configures a console appender at INFO and says so on the console and in a warning | The [logging configuration](logging-configuration.md) verdict `not-writing` no longer arises from a failed file after Berlioz's reset; keep it for configurations that write nowhere |
 | `AppInitializer.configureLogger` reported "logback config file OK" when Joran recorded errors. With logback 1.5, an appender with an unknown class leaves the whole file unapplied (root at DEBUG, no appender), not only that appender | Berlioz prints the WARN and ERROR statuses added by the file, reports it as loaded with errors and logs a warning; the file is kept, as logback does | Keep the verdict `problems`: Berlioz reports on the console and in the log, which the overlay does not read |
-| A logging file that failed to load was silently replaced by the next candidate, for example `logback.xml` after a malformed `logback-<mode>.xml` | Berlioz says on the console that it uses the later file and logs a warning naming the failed one | The view can refer to that warning; knowing which file is in use still needs the [logging initialisation](#logging-initialisation) snapshot |
+| A logging file that failed to load was silently replaced by the next candidate, for example `logback.xml` after a malformed `logback-<mode>.xml` | Berlioz says on the console that it uses the later file and logs a warning naming the failed one | The view can refer to that warning; the [logging initialisation](#logging-initialisation) snapshot tells which file is in use |
 | An error dispatch applied `berlioz-reload` again: an error page receives the parameters of the request that failed, so an authorized reload that caused the error, such as `berlioz-reload=services` with an invalid services file, was requested again while the error page rendered | Reload scopes are never applied while an error is rendered (`javax.servlet.error.status_code` set), by `BerliozServlet`, `RedirectFilter` and `RelocationFilter` alike. `berlioz-profile` still applies | Nothing to remove: the overlay has no workaround. An error on a control POST no longer reloads twice |
 | Rules reloaded by `RedirectFilter` or `RelocationFilter` were held in a field that was not safely published, so other request threads were not guaranteed to see them | The rules are published through a `volatile` field | Nothing to remove |
 | `redirect-mapping-1.0.dtd` declared `permanent (true \| false)` | The DTD declares `(yes \| no)`, as the schema and the parser do; a test validates against the shipped DTD. The public copy at `pageseeder.org/schema/berlioz/` is not part of the release and needs the same correction | The `invalid` report stays for files that really are invalid; `true` and `false` are now invalid under the DTD as well |
 
 ## Implemented in Berlioz 0.14.6
 
-Implemented on the Berlioz `dev` branch, not released yet (Berlioz theme 18, items 11 and 12). The overlay
+Implemented on the Berlioz `dev` branch, not released yet (Berlioz theme 18, items 11 to 15). The overlay
 keeps its code until it requires 0.14.6.
 
 ### Redirect and relocation filters
@@ -60,8 +60,9 @@ of the last load), `reload-pending`, `failure` (generic, or the loader's message
 `berlioz.errors.detail` is not `minimal`), `rule-count`, `ignored-count`, `limit` (when a list has more
 than 2000 entries), the rules loaded (`from`, `to` and, for redirects, `permanent`), and the rules that
 the filter ignores because a pattern is missing or invalid (`ignored-rule`: `position` among the rules of
-the file, from 1, `reason` `missing-from`, `invalid-from`, `missing-to` or `invalid-to`, `from`, `to`). Targets are redacted with the overlay's
-rules (user information removed, query values other than a template expression `[REDACTED]`). XML and
+the file, from 1, `reason` `missing-from`, `invalid-from`, `missing-to` or `invalid-to`, `from`, `to`). Targets are redacted with `Redaction.redactUriPattern`
+(password of the user information, query values other than a template expression `[REDACTED]`; see
+[redaction of values](#redaction-of-values)). XML and
 JSON; one snapshot per request for the content and the ETag.
 
 Once the overlay requires 0.14.6:
@@ -94,26 +95,72 @@ Once the overlay requires 0.14.6:
 - **Changes:** "Reload everything" reports `redirects` whenever the host maps a filter with a
   `config` file, whatever its mapping.
 
-## Diagnostics of Berlioz's own state
+### Redaction of values
+
+`Redaction.redact(name, value)` and `redactHeader(name, value)` now also redact by value when the
+name is not sensitive (`Redaction.redactValue`): the password of a URL anywhere in the value (the whole
+user information without `:`), and the value of a parameter with a sensitive name after `?`, `&`, `;`,
+whitespace or at the start. This applies to `GetGlobalConfig`, `GetSystemProperties` and the request
+headers and parameters of error details, in XML and JSON. `GetSystemProperties` also replaces the program
+arguments of `sun.java.command`. Redirect targets use `Redaction.redactUriPattern`, with the same user
+information rule: a target keeps its user name now (`https://user:[REDACTED]@host/`), where it was removed.
+
+Once the overlay requires 0.14.6:
+
+- **Removes:** `GetSystemProperties` and `SystemProperties` (use Berlioz's generator through a guard
+  delegate), and `Targets.redact` with the filter snapshot.
+- **Changes:** the [system properties](metadata-contract.md#system-properties) rules also match a
+  parameter after whitespace (`host=db password=s3cret`).
 
 ### Logging initialisation
 
-A read-only snapshot of what `AppInitializer.configureLogger` did, available once Berlioz is set up, for example
-`GlobalSettings.getLoggingSetup()` with a generator: the logging framework (`logback`, `log4j` or none), the
-mode, and each candidate in the order tried, with its path and outcome (`absent`, `loaded`, `loaded-with-errors`,
-`failed`, with the class and message of the exception), the file in use, and when.
+`AppInitializer.loggingSnapshot()` and the `GetLoggingConfig` generator (content `logging-config`) report what
+`AppInitializer.configureLogger` did at startup (Berlioz theme 18, item 14): `initialised` (`false` when Berlioz
+was not started by `AppInitializer`), `framework` (`logback`, `log4j` or `none`), `mode`, `logger-factory` (the
+SLF4J factory class), `time`, `console-default` (no file could be loaded, logback logs to the console at INFO),
+and each candidate in the order considered: `framework`, `location` (`app-data` or `web-inf`), `path` relative
+to it, `outcome` (`absent`, `ignored` when SLF4J is not bound to logback, `loaded`, `loaded-with-errors`,
+`failed`), `in-use`, `problem-count`, and, when `berlioz.errors.detail` is not `minimal`, `failure` (the class and
+message of the exception) and at most 20 `problem` (`level`, `message`). Absolute paths are never reported:
+those of `WEB-INF` and the application data folder are replaced by `[WEB-INF]` and `[app-data]` in messages,
+which are redacted with `Redaction.redactValue`. XML and JSON; one snapshot per request for the content and the
+ETag. It reports the startup only, not a later reconfiguration.
 
-Berlioz configures logging because the configuration differs for each mode: production may turn off DEBUG for
-some packages and add appenders that send alerts, such as SMTP. Berlioz keeps that involvement minimal, but only
-Berlioz knows what it loaded, so it should say so. What matters to developers is a configuration that works in
-development and fails on staging or production: the snapshot shows that on the server itself.
+Once the overlay requires 0.14.6:
 
-- **Correct:** the overlay would show which file loaded and which failed before it. logback does not keep its
-  configuration file (since 1.5.27, only when `scan` is on, and a reset clears it), no status marks Berlioz's
-  reset, and logback's configuration events are documented as intended for internal testing.
-- **Less fragile:** the overlay copies the order of the candidates, which can change with Berlioz.
 - **Removes:** the overlay's copy of the candidate order in the
-  [logging configuration](logging-configuration.md#configuration-files).
+  [logging configuration](logging-configuration.md#configuration-files) (computed from `GlobalSettings`).
+- **Changes:** the candidates show what Berlioz tried and what loaded, not what it would try; the file in use
+  and the file that failed before it come from the snapshot. The `not-writing` and `problems` verdicts can refer
+  to it. The resets observed by the adapter and the scan watch list stay, since they cover reconfigurations
+  after startup.
+
+### Configuration load status
+
+`GlobalSettings.getLoadDiagnostics()` (`ConfigLoadDiagnostics`) and `GetGlobalConfig` report the outcome of the
+last attempts to load the global configuration (Berlioz theme 18, item 15). A configuration reload that fails keeps
+the last valid configuration, as in 0.14.5, but is no longer only logged. On the root: `load-status` (`pending`,
+`ready`, `startup-failed` when no load has succeeded and every option has its default value, `reload-failed` when
+the last valid properties are kept and listed), `loaded` (last successful load) and `failed` (last failed attempt,
+only while it has failed), ISO 8601. After a failure, `load-failure` follows the properties, kept until the next
+successful load: `source` (the name of the file that failed, such as `config-dev.xml`) and a generic message; when
+`berlioz.errors.detail` is not `minimal`, `line` and the parser's description of the error, with the paths of
+`WEB-INF` and the application data folder replaced by `[WEB-INF]` and `[app-data]` and redacted with
+`Redaction.redactValue`. JSON uses `loadStatus` and `loadFailure`. The ETag changes with the load status and the
+time of a failure. Same shape as the service load diagnostics of `ListRuntimeServices`, without `retry-after`,
+since the configuration is only reloaded on request. `properties/@source` is unchanged: it names the mode file when
+there is one, even when that file is the one that failed.
+
+Once the overlay requires 0.14.6:
+
+- **Removes:** the guess in `GetApplicationSummary.configuration`: `empty` stood for an empty or failed
+  configuration, and a failed reload showed `loaded` with the last valid properties.
+- **Changes:** `status/@configuration` and the `global-config` view can use `load-status`, with an alert for
+  `reload-failed` and `startup-failed` like the one for services ("Berlioz keeps the last valid configuration"),
+  and `load-failure` for the file that failed. The `metadata-contract` fixtures for `global-config` need a new
+  capture, since `load-status` and `loaded` are now always present.
+
+## Diagnostics of Berlioz's own state
 
 ### Configuration and reload results
 
@@ -121,7 +168,6 @@ Already tracked in the [metadata contract](metadata-contract.md):
 
 - the effective value of each global property and its origin (file, deprecation alias, system
   property);
-- whether a configuration reload failed: Berlioz keeps the last valid configuration and only logs it;
 - the provenance of the effective cache control of a service;
 - a stable schema for `ListRuntimeServices`.
 
@@ -139,20 +185,6 @@ the request and the service, failing closed when it denies or fails.
   invocation goes through the same check.
 - **Efficient:** one check per request instead of one per generator.
 - **Removes:** the guard delegates, and the class names shown through them.
-
-### Redaction of values
-
-`Redaction` redacts by name (password, secret, key, token…). Values that hold credentials whatever
-their name are shown: a URL with user information (`https://user:password@host/`) in a system property
-or a global property, or a token in a query string. The Redirects view now redacts targets itself
-(`Targets.redact`; from Berlioz 0.14.6, the [filter snapshot](#redirect-and-relocation-filters) redacts
-them with the same rules), and the System page system properties (`SystemProperties.redact`: URL user
-information, parameters with sensitive names, the program arguments of `sun.java.command`). Berlioz could add value-based redaction, such as `Redaction.redactUrl`, used for
-properties and redirect targets alike, with the rules of the overlay's
-[system properties](metadata-contract.md#system-properties).
-
-- **Secure:** one policy in every generator that writes these values, for every output format.
-- **Removes:** the overlay's `GetSystemProperties`.
 
 ## Rejected
 
