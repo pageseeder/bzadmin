@@ -120,24 +120,31 @@ Adopted on the overlay's `dev` branch against 0.14.6-rc.1 (2026-11-12):
 
 `AppInitializer.loggingSnapshot()` and the `GetLoggingConfig` generator (content `logging-config`) report what
 `AppInitializer.configureLogger` did at startup (Berlioz theme 18, item 14): `initialised` (`false` when Berlioz
-was not started by `AppInitializer`), `framework` (`logback`, `log4j` or `none`), `mode`, `logger-factory` (the
-SLF4J factory class), `time`, `console-default` (no file could be loaded, logback logs to the console at INFO),
-and each candidate in the order considered: `framework`, `location` (`app-data` or `web-inf`), `path` relative
-to it, `outcome` (`absent`, `ignored` when SLF4J is not bound to logback, `loaded`, `loaded-with-errors`,
-`failed`), `in-use`, `problem-count`, and, when `berlioz.errors.detail` is not `minimal`, `failure` (the class and
-message of the exception) and at most 20 `problem` (`level`, `message`). Absolute paths are never reported:
-those of `WEB-INF` and the application data folder are replaced by `[WEB-INF]` and `[app-data]` in messages,
-which are redacted with `Redaction.redactValue`. XML and JSON; one snapshot per request for the content and the
-ETag. It reports the startup only, not a later reconfiguration.
+was not started by `AppInitializer`), `framework` (`logback`, `log4j` or `none`), `backend` (the SLF4J backend:
+`logback`, `log4j2`, `jul`, `simple`, `nop` or `unknown`), `configuration` (`file`, `console-default`, `native`
+with `berlioz.logging=native`, or `none`), `mode`, `logger-factory` (the SLF4J factory class), `time`,
+`console-default` (no file could be loaded, logback logs to the console at INFO), `native-setting` (a set
+`logback.configurationFile`, `log4j2.configurationFile` or `java.util.logging.config.file`, with its value, as a
+hint), and each candidate in the order considered, up to the one in use: `framework`, `location` (`appdata` or
+`webinf`), `path` relative to it, `outcome` (`absent`, `ignored` when SLF4J is not bound to logback, `loaded`,
+`loaded-with-errors`, `failed`), `in-use`, `problem-count`, and, when `berlioz.errors.detail` is not `minimal`,
+`failure` and at most 20 `problem` (`level`, `message`). Absolute paths are never reported: those of `WEB-INF`
+and the application data folder are replaced by `[webinf]` and `[appdata]` in messages and in the
+`native-setting` value, which are redacted. XML and JSON; one snapshot per request for the content and the ETag.
+It reports the startup only, not a later reconfiguration. Checked against 0.14.6-rc.1.
 
-Once the overlay requires 0.14.6:
+Adopted in the design of the [logging configuration](logging-configuration.md#startup), which is not
+implemented yet (2026-11-12):
 
-- **Removes:** the overlay's copy of the candidate order in the
-  [logging configuration](logging-configuration.md#configuration-files) (computed from `GlobalSettings`).
-- **Changes:** the candidates show what Berlioz tried and what loaded, not what it would try; the file in use
-  and the file that failed before it come from the snapshot. The `not-writing` and `problems` verdicts can refer
-  to it. The resets observed by the adapter and the scan watch list stay, since they cover reconfigurations
-  after startup.
+- **Removed from the design:** the overlay's copy of the candidate order, computed from `GlobalSettings`, with
+  absolute paths, and the 0.14.5 behavior it worked around (a failed file leaving root at DEBUG without an
+  appender, errors reported as OK).
+- **Changed:** the startup section shows what Berlioz tried and what loaded, relative to its folders, and the
+  verdict has `startup-file-failed`, `startup-file-with-errors` and `startup-console-default` issues while no
+  reset was observed since startup. An `unsupported` verdict keeps the startup, to show logback files that
+  Berlioz ignored. The resets observed by the adapter and the scan watch list stay, since they cover
+  reconfigurations after startup. The snapshot is read with `CapturedOutput`
+  ([proposal](#read-access-to-diagnostic-snapshots)).
 
 ### Configuration load status
 
@@ -189,6 +196,17 @@ It could still go into 0.14.6, since it adds API only.
 - **Correct:** the overlay reads the fields, not their serialization, which does not depend on how
   `writeTo` names arrays and items.
 - **Removes:** `CapturedOutput`, here and for the logging and other snapshots the overlay may read.
+
+### Consistent folder placeholders
+
+Two 0.14.6 diagnostics replace the same folders with different tokens: the configuration load failure uses
+`[WEB-INF]` and `[app-data]` (`GlobalSettings`), the logging snapshot `[webinf]` and `[appdata]`, and `appdata` or
+`webinf` as candidate `location` (`LoggingSetup`). Since both are new in 0.14.6, one spelling could still be chosen
+before the release, so that a client recognises a folder whatever the diagnostic.
+
+- **Correct:** one token per folder across Berlioz's diagnostics.
+- **Removes:** nothing in the overlay today; the view of the logging configuration would otherwise explain two
+  spellings.
 
 ## Security inside Berlioz
 
