@@ -105,8 +105,8 @@ The class of each turbo filter, when there are any: they can accept or deny even
 The WARN and ERROR statuses since the last reset observed by the adapter, or since logback started when it
 observed none, most recent first: time, level, origin (the class of the component that reported it), message, and
 the class and message of each cause, to a depth of 8. At most 50 statuses, 8192 characters per message, with the
-counts of ERROR, WARN and INFO statuses. Messages and causes go through the value-based redaction of system
-properties (`SystemProperties.redact`), since they can contain property values and URLs.
+counts of ERROR, WARN and INFO statuses. Messages and causes go through Berlioz's value-based redaction
+(`Redaction.redactValue`, since 0.14.6), since they can contain property values and URLs.
 
 ### Configuration files
 

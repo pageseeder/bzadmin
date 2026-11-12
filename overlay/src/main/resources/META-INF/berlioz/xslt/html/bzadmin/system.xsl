@@ -878,7 +878,7 @@
 <xsl:variable name="system-redacted" select="'[REDACTED]'"/>
 
 <!--
-  The JVM system properties, sorted by name (GetSystemProperties), with sensitive values or parts of
+  The JVM system properties, sorted by name (Berlioz's GetSystemProperties), with sensitive values or parts of
   values redacted: a value redacted in whole is shown as a tag, one redacted in part as is, followed by
   a tag.
 -->

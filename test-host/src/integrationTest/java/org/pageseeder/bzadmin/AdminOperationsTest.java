@@ -318,6 +318,10 @@ final class AdminOperationsTest {
     // By value: the password of the URL and of its parameter
     assertEquals("jdbc:postgresql://fixture:[REDACTED]@db/app?user=fixture&password=[REDACTED]",
         xpath(xml, "//property[@name='fixture.database.url']/@value"));
+    assertEquals("https://[REDACTED]@example.org/org/repo.git", xpath(xml, "//property[@name='fixture.repository']/@value"));
+    assertEquals("host=db password=[REDACTED] region=eu", xpath(xml, "//property[@name='fixture.options']/@value"));
+    // Berlioz's generator, behind the guard delegate
+    assertEquals("org.pageseeder.bzadmin.guard.berlioz.system.GetSystemProperties", xpath(xml, "//content[@name='sysproperties']/@generator"));
     // The program arguments of the test JVM, not its main class; paths are kept
     String command = System.getProperty("sun.java.command", "");
     String main = command.strip().split("\\s+", 2)[0];

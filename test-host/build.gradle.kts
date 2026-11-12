@@ -242,6 +242,9 @@ fun Test.runOnHost(war: Provider<RegularFile>) {
   systemProperty("bzadmin.test.logs", logs.path)
   systemProperty("fixture.database.password", "fixture-secret-system-property")
   systemProperty("fixture.database.url", "jdbc:postgresql://fixture:fixture-secret-url@db/app?user=fixture&password=fixture-secret-query")
+  // Redacted by value only: a token as user information, a parameter after whitespace (Berlioz 0.14.6)
+  systemProperty("fixture.repository", "https://fixture-secret-token@example.org/org/repo.git")
+  systemProperty("fixture.options", "host=db password=fixture-secret-option region=eu")
   dependsOn(testKeystore)
   systemProperty("bzadmin.test.keystore", testKeystore.get().outputs.files.singleFile.path)
 }
