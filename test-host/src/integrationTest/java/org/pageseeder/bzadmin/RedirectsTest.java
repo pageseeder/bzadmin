@@ -29,18 +29,18 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The Redirects view of the Config page ({@code docs/design/redirects.md}): the status of each
- * registration of Berlioz's {@code RedirectFilter} and {@code RelocationFilter}, the rules of their
- * files, redacted and bounded, read without changing the filters or writing to the log, with the
- * admin access policy.
+ * registration of Berlioz's {@code RedirectFilter} and {@code RelocationFilter} and the rules it
+ * loaded, from Berlioz's snapshot, redacted and bounded, read without changing the filters or writing
+ * to the log, with the admin access policy.
  *
  * <p>The host ({@code web-redirects.xml}) registers the filters once per case; the files are written
  * into the deployed {@code WEB-INF} before the first request, since the filters load them on first use.
- * A Berlioz version without the schema resource ({@code schema="unavailable"}) is covered by the
- * generator's unit tests.
+ * The filters load their rules before the tests: those mapped to {@code /*} on a request to the Config
+ * page, {@code RedirectsPartial} on a request to its path.
  */
 final class RedirectsTest {
 
-  /** The view's bounds: bytes per file (Berlioz's limit), rules listed, characters per value. */
+  /** The bounds: bytes per file and rules listed (Berlioz's limits), characters per value (the view's). */
   private static final int MAX_BYTES = 1_000_000;
   private static final int MAX_RULES = 2000;
   private static final int MAX_VALUE = 2048;
@@ -94,13 +94,15 @@ final class RedirectsTest {
           redirect("/fixture-redirect/temporary", "/fixture-redirect/other"),
           redirect("/fixture-redirect/token", "/fixture-redirect/target?token=fixture-secret-token&amp;q={q}&amp;flag#section"),
           redirect("/fixture-redirect/absolute", "https://fixture-user:fixture-secret-password@example.org/x?a=1"),
-          redirect("/fixture-redirect/{+path}.psml", "/html/{+path}")));
+          redirect("/fixture-redirect/{+path}.psml", "/html/{+path}"),
+          "  <redirect from=\"/fixture-redirect/see-other\" to=\"/fixture-redirect/target\" status=\"307\"/>",
+          "  <redirect from=\"/fixture-redirect/moved\" to=\"/fixture-redirect/target\" status=\"308\"/>"));
       Files.writeString(config.resolve("fixture-redirects-partial.xml"), redirects(
           redirect("/fixture-redirect/partial", "/fixture-redirect/partial-target")));
 
       // Outside WEB-INF: by a parent segment, and by a link
       Path outside = this.webInf.getParent().resolve("fixture-redirects-outside.xml");
-      Files.writeString(outside, redirects(redirect("/fixture-redirect/outside", "/fixture-secret-outside")));
+      Files.writeString(outside, redirects(redirect("/fixture-redirect/outside", "/fixture-outside-target")));
       Files.createSymbolicLink(config.resolve("fixture-redirects-link-out.xml"), outside);
 
       // A link that stays in WEB-INF
@@ -140,6 +142,10 @@ final class RedirectsTest {
           + "  <relocation from=\"/fixture-relocation/prefix\" to=\"/html/bzadmin/config\"/>\n"
           + "  <relocation from=\"/fixture-relocation/page\" to=\"/fixture-redirect/target\"/>\n"
           + "</relocation-mapping>\n");
+
+      // The filters load their rules: RedirectsPartial on its path, the others on any request
+      this.host.as(null).get("/fixture-redirect/partial");
+      config(this.host);
     }
 
     @AfterAll
@@ -148,38 +154,42 @@ final class RedirectsTest {
     }
 
     /**
-     * Each registration, sorted by type and name, with its status and reason.
+     * Each registration, sorted by type and name, with its status and whether its file exists. Berlioz
+     * resolves the {@code config} parameter without confining it to {@code WEB-INF}, so a file outside
+     * is loaded, as the filter applies it.
      */
     @ParameterizedTest
     @CsvSource({
-        "Redirects,              redirect,   active,     ''",
-        "RedirectsPartial,       redirect,   active,     ''",
-        "RedirectsNoConfig,      redirect,   no-config,  ''",
-        "RedirectsMissing,       redirect,   missing,    ''",
-        "RedirectsOutside,       redirect,   unreadable, outside-web-inf",
-        "RedirectsLinkOut,       redirect,   unreadable, outside-web-inf",
-        "RedirectsDirectory,     redirect,   unreadable, not-file",
-        "RedirectsTooLarge,      redirect,   unreadable, too-large",
-        "RedirectsLinkIn,        redirect,   active,     ''",
-        "RedirectsBerliozDoctype, redirect,  active,     ''",
-        "RedirectsDoctype,       redirect,   invalid,    ''",
-        "RedirectsPermanentTrue, redirect,   invalid,    ''",
-        "RedirectsMalformed,     redirect,   invalid,    ''",
-        "RedirectsMany,          redirect,   active,     ''",
-        "RedirectsLong,          redirect,   active,     ''",
-        "Relocations,            relocation, active,     ''"})
-    void reportsTheStatus(String name, String type, String status, String reason) throws Exception {
+        "Redirects,               redirect,   loaded,    true",
+        "RedirectsPartial,        redirect,   loaded,    true",
+        "RedirectsNoConfig,       redirect,   no-config, ''",
+        "RedirectsMissing,        redirect,   failed,    false",
+        "RedirectsOutside,        redirect,   loaded,    true",
+        "RedirectsLinkOut,        redirect,   loaded,    true",
+        "RedirectsDirectory,      redirect,   failed,    false",
+        "RedirectsTooLarge,       redirect,   failed,    true",
+        "RedirectsLinkIn,         redirect,   loaded,    true",
+        "RedirectsBerliozDoctype, redirect,   loaded,    true",
+        "RedirectsDoctype,        redirect,   failed,    true",
+        "RedirectsPermanentTrue,  redirect,   failed,    true",
+        "RedirectsMalformed,      redirect,   failed,    true",
+        "RedirectsMany,           redirect,   loaded,    true",
+        "RedirectsLong,           redirect,   loaded,    true",
+        "Relocations,             relocation, loaded,    true"})
+    void reportsTheStatus(String name, String type, String status, String exists) throws Exception {
       Document xml = config(this.host);
       assertEquals(type, xpath(xml, filter(name) + "/@type"), name);
       assertEquals(status, xpath(xml, filter(name) + "/@status"), name);
-      assertEquals(reason, xpath(xml, filter(name) + "/@reason"), name);
-      if ("invalid".equals(status)) assertFalse(xpath(xml, filter(name) + "/@message").isEmpty(), name);
+      assertEquals(exists, xpath(xml, filter(name) + "/@exists"), name);
+      boolean failed = "failed".equals(status);
+      assertEquals(failed, !xpath(xml, filter(name) + "/@failure").isEmpty(), name);
+      assertEquals(status.equals("loaded") || failed, !xpath(xml, filter(name) + "/@loaded").isEmpty(), name);
+      if (failed) assertEquals("0", xpath(xml, "count(" + filter(name) + "/rule)"), name);
     }
 
     @Test
     void listsEveryRegistrationInOrder() throws Exception {
       Document xml = config(this.host);
-      assertEquals("validated", xpath(xml, CONTENT + "/@schema"));
       int count = Integer.parseInt(xpath(xml, "count(" + CONTENT + "/filter)"));
       assertEquals(16, count);
       List<String> keys = new ArrayList<>();
@@ -202,6 +212,7 @@ final class RedirectsTest {
       assertEquals("/*", xpath(xml, filter("Redirects") + "/mapping/@url-pattern"));
       assertEquals("/fixture-redirect/*", xpath(xml, filter("RedirectsPartial") + "/mapping/@url-pattern"));
       assertEquals("../fixture-redirects-outside.xml", xpath(xml, filter("RedirectsOutside") + "/@config"));
+      assertEquals("/fixture-redirect/outside", xpath(xml, rule("RedirectsOutside", 1) + "/@from"));
       assertEquals("0", xpath(xml, "count(" + filter("RedirectsNoConfig") + "/@config)"));
       // No absolute path in the view, even through a link
       for (String path : new String[]{this.webInf.toString(), this.webInf.toRealPath().toString()}) {
@@ -210,13 +221,14 @@ final class RedirectsTest {
     }
 
     /**
-     * The rules in file order, with their effect and warnings.
+     * The rules in file order, loaded or ignored, with their effect and warnings.
      */
     @Test
     void listsTheRules() throws Exception {
       Document xml = config(this.host);
-      assertEquals("8", xpath(xml, filter("Redirects") + "/@rules"));
-      assertEquals("8", xpath(xml, filter("Redirects") + "/@listed"));
+      assertEquals("9", xpath(xml, filter("Redirects") + "/@rules"));
+      assertEquals("1", xpath(xml, filter("Redirects") + "/@ignored"));
+      assertEquals("10", xpath(xml, "count(" + filter("Redirects") + "/rule)"));
       assertEquals("/fixture-redirect/temporary", xpath(xml, rule("Redirects", 1) + "/@from"));
       assertEquals("/fixture-redirect/target", xpath(xml, rule("Redirects", 1) + "/@to"));
       assertEquals("302", xpath(xml, rule("Redirects", 1) + "/@effect"));
@@ -224,27 +236,32 @@ final class RedirectsTest {
       assertEquals("302", xpath(xml, rule("Redirects", 3) + "/@effect"));
       assertEquals("0", xpath(xml, "count(" + rule("Redirects", 1) + "/warning)"));
       assertEquals("ignored-rule", xpath(xml, rule("Redirects", 4) + "/warning/@code"));
+      assertEquals("invalid-from", xpath(xml, rule("Redirects", 4) + "/warning/@reason"));
+      assertEquals("/fixture-redirect/{!x}", xpath(xml, rule("Redirects", 4) + "/@from"));
+      assertEquals("", xpath(xml, rule("Redirects", 4) + "/@effect"));
       assertEquals("duplicate-from", xpath(xml, rule("Redirects", 5) + "/warning/@code"));
       assertEquals("1", xpath(xml, rule("Redirects", 5) + "/warning/@position"));
       assertEquals("/fixture-redirect/{+path}.psml", xpath(xml, rule("Redirects", 8) + "/@from"));
       assertEquals("/html/{+path}", xpath(xml, rule("Redirects", 8) + "/@to"));
+      assertEquals("307", xpath(xml, rule("Redirects", 9) + "/@effect"));
+      assertEquals("308", xpath(xml, rule("Redirects", 10) + "/@effect"));
       // Only the expected attributes
       assertEquals("4", xpath(xml, "count(" + rule("Redirects", 1) + "/@*)"));
     }
 
     /**
-     * The values of query parameters and the user information are redacted from targets, in every
-     * format; template expressions, names without values and fragments are kept.
+     * Berlioz redacts the values of query parameters and the password of the user information from
+     * targets, in every format; template expressions, names without values, user names and fragments
+     * are kept.
      */
     @Test
     void redactsTheTargets() throws Exception {
       Document xml = config(this.host);
-      assertEquals("/fixture-redirect/target?token=[redacted]&q={q}&flag#section", xpath(xml, rule("Redirects", 6) + "/@to"));
-      assertEquals("https://example.org/x?a=[redacted]", xpath(xml, rule("Redirects", 7) + "/@to"));
+      assertEquals("/fixture-redirect/target?token=[REDACTED]&q={q}&flag#section", xpath(xml, rule("Redirects", 6) + "/@to"));
+      assertEquals("https://fixture-user:[REDACTED]@example.org/x?a=[REDACTED]", xpath(xml, rule("Redirects", 7) + "/@to"));
       for (String format : new String[]{".src", ".xml", ".json", ".html"}) {
         String body = this.host.as("viewer").get("/bzadmin/config" + format + "?view=redirects").body();
         assertFalse(body.contains("fixture-secret"), format);
-        assertFalse(body.contains("fixture-user"), format);
       }
     }
 
@@ -269,39 +286,21 @@ final class RedirectsTest {
     }
 
     /**
-     * Only a registration whose URL patterns miss the reload operation is reported, whatever its
-     * status.
+     * Berlioz 0.14.6: a filter without a {@code config} parameter passes requests through, as it logs.
      */
     @Test
-    void reportsTheReloadCoverage() throws Exception {
-      Document xml = config(this.host);
-      assertEquals("reload-not-covered", xpath(xml, filter("RedirectsPartial") + "/warning/@code"));
-      assertEquals("reload-not-covered", xpath(xml, filter("RedirectsNoConfig") + "/warning/@code"));
-      assertEquals("2", xpath(xml, "count(" + CONTENT + "//warning[@code='reload-not-covered'])"));
+    void passesRequestsWithoutConfig() throws Exception {
+      assertEquals(404, this.host.as(null).get("/fixture-no-config/page").statusCode());
     }
 
     /**
-     * Berlioz 0.14.5: a filter without a {@code config} parameter fails every request through it,
-     * although it logs that it has no effect.
+     * The rules of files through links, and of a file whose Berlioz DOCTYPE Berlioz removes.
      */
     @Test
-    void failsRequestsWithoutConfig() throws Exception {
-      assertEquals(500, this.host.as(null).get("/fixture-no-config/page").statusCode());
-    }
-
-    /**
-     * A file that is well-formed but not valid still lists its rules; one that is not well-formed
-     * has none.
-     */
-    @Test
-    void listsTheRulesOfInvalidFiles() throws Exception {
+    void listsTheRulesOfLinkedFiles() throws Exception {
       Document xml = config(this.host);
-      assertEquals("1", xpath(xml, filter("RedirectsPermanentTrue") + "/@rules"));
-      assertEquals("/fixture-redirect/permanent-true", xpath(xml, rule("RedirectsPermanentTrue", 1) + "/@from"));
-      assertEquals("0", xpath(xml, "count(" + filter("RedirectsMalformed") + "/rule)"));
-      assertEquals("0", xpath(xml, "count(" + filter("RedirectsTooLarge") + "/rule)"));
-      assertEquals("0", xpath(xml, "count(" + filter("RedirectsOutside") + "/rule)"));
       assertEquals("/fixture-redirect/linked", xpath(xml, rule("RedirectsLinkIn", 1) + "/@from"));
+      assertEquals("/fixture-redirect/outside", xpath(xml, rule("RedirectsLinkOut", 1) + "/@from"));
       assertEquals("/fixture-redirect/berlioz-doctype", xpath(xml, rule("RedirectsBerliozDoctype", 1) + "/@from"));
     }
 
@@ -309,12 +308,12 @@ final class RedirectsTest {
     void boundsTheRulesAndValues() throws Exception {
       Document xml = config(this.host);
       assertEquals(String.valueOf(MAX_RULES + 1), xpath(xml, filter("RedirectsMany") + "/@rules"));
-      assertEquals(String.valueOf(MAX_RULES), xpath(xml, filter("RedirectsMany") + "/@listed"));
+      assertEquals(String.valueOf(MAX_RULES), xpath(xml, filter("RedirectsMany") + "/@limit"));
       assertEquals(String.valueOf(MAX_RULES), xpath(xml, "count(" + filter("RedirectsMany") + "/rule)"));
       String from = xpath(xml, rule("RedirectsLong", 1) + "/@from");
       assertEquals(MAX_VALUE + 1, from.length());
       assertTrue(from.endsWith("…"), from);
-      assertTrue(xpath(xml, filter("RedirectsDoctype") + "/@message").length() <= 512);
+      assertTrue(xpath(xml, filter("RedirectsDoctype") + "/@failure").length() <= 512);
     }
 
     /**
@@ -322,7 +321,7 @@ final class RedirectsTest {
      */
     @ParameterizedTest
     @CsvSource({"/fixture-redirect/temporary, 302", "/fixture-redirect/permanent, 301", "/fixture-redirect/no, 302",
-        "/fixture-redirect/berlioz-doctype, 302"})
+        "/fixture-redirect/see-other, 307", "/fixture-redirect/moved, 308", "/fixture-redirect/berlioz-doctype, 302"})
     void matchesTheFilters(String path, int status) throws Exception {
       HttpResponse<String> response = this.host.as(null).get(path);
       assertEquals(status, response.statusCode(), path);
@@ -330,12 +329,12 @@ final class RedirectsTest {
     }
 
     /**
-     * Opening the view shows the file, but neither reloads the filter's rules nor writes to the log.
+     * The view shows the loaded rules, not the file, and opening it neither reloads them nor writes to
+     * the log. A reload from the Config page reaches a filter that the reload request does not pass
+     * through: it loads its rules on its next request.
      */
     @Test
-    void doesNotChangeTheFilters() throws Exception {
-      HttpResponse<String> before = this.host.as(null).get("/fixture-redirect/partial");
-      assertTrue(before.headers().firstValue("Location").orElse("").endsWith("/fixture-redirect/partial-target"));
+    void showsTheLoadedRulesUntilReloaded() throws Exception {
       Files.writeString(this.webInf.resolve("config/fixture-redirects-partial.xml"), redirects(
           redirect("/fixture-redirect/partial", "/fixture-redirect/partial-changed")));
       Path log = Paths.get(System.getProperty("bzadmin.test.logs"), "fixture.log");
@@ -343,7 +342,8 @@ final class RedirectsTest {
 
       Document xml = config(this.host);
       config(this.host);
-      assertEquals("/fixture-redirect/partial-changed", xpath(xml, rule("RedirectsPartial", 1) + "/@to"));
+      assertEquals("/fixture-redirect/partial-target", xpath(xml, rule("RedirectsPartial", 1) + "/@to"));
+      assertEquals("", xpath(xml, filter("RedirectsPartial") + "/@reload-pending"));
 
       // Other tests can truncate the shared log: then all of it is new
       byte[] all = Files.readAllBytes(log);
@@ -353,8 +353,21 @@ final class RedirectsTest {
         String lower = line.toLowerCase(Locale.ROOT);
         assertFalse(lower.contains("redirect") || lower.contains("relocation") || lower.contains("pattern"), line);
       }
+      HttpResponse<String> before = this.host.as(null).get("/fixture-redirect/partial");
+      assertTrue(before.headers().firstValue("Location").orElse("").endsWith("/fixture-redirect/partial-target"), "Rules not reloaded");
+
+      HttpResponse<String> reload = this.host.as("operator").post("/bzadmin/api/config/reload.json", "berlioz-reload=true");
+      assertEquals(200, reload.statusCode(), reload.body());
+      assertTrue(reload.headers().firstValue("X-Berlioz-Reload").orElse("").contains("redirects"), reload.headers().toString());
+      xml = config(this.host);
+      assertEquals("true", xpath(xml, filter("RedirectsPartial") + "/@reload-pending"));
+      assertEquals("/fixture-redirect/partial-target", xpath(xml, rule("RedirectsPartial", 1) + "/@to"));
+
       HttpResponse<String> after = this.host.as(null).get("/fixture-redirect/partial");
-      assertTrue(after.headers().firstValue("Location").orElse("").endsWith("/fixture-redirect/partial-target"), "Rules not reloaded");
+      assertTrue(after.headers().firstValue("Location").orElse("").endsWith("/fixture-redirect/partial-changed"), "Rules reloaded");
+      xml = config(this.host);
+      assertEquals("", xpath(xml, filter("RedirectsPartial") + "/@reload-pending"));
+      assertEquals("/fixture-redirect/partial-changed", xpath(xml, rule("RedirectsPartial", 1) + "/@to"));
     }
 
     @Test
@@ -366,7 +379,6 @@ final class RedirectsTest {
         assertTrue(response.headers().firstValue("ETag").isEmpty(), format);
       }
       String json = compact(this.host.as("viewer").get("/bzadmin/config.json?view=redirects").body());
-      assertTrue(json.contains("\"schema\":\"validated\""), json);
       assertTrue(json.contains("\"filters\":["), json);
       assertTrue(json.contains("\"effect\":\"301\""), json);
       assertTrue(json.contains("\"code\":\"forwards-to-admin\""), json);
@@ -380,7 +392,7 @@ final class RedirectsTest {
       assertTrue(this.host.as("viewer").get("/bzadmin/config.html").body().contains("?view=redirects"));
       String html = this.host.as("viewer").get("/bzadmin/config.html?view=redirects").body();
       assertTrue(html.contains("config/fixture-redirects.xml"), html);
-      assertTrue(html.contains("/fixture-redirect/target?token=[redacted]"), html);
+      assertTrue(html.contains("/fixture-redirect/target?token=[REDACTED]"), html);
       assertFalse(html.contains("href=\"/fixture-redirect"), html);
       assertFalse(html.contains("href=\"https://example.org"), html);
     }

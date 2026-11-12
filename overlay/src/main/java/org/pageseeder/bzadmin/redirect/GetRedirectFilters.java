@@ -1,5 +1,10 @@
 package org.pageseeder.bzadmin.redirect;
 
+import static org.pageseeder.bzadmin.berlioz.CapturedOutput.flag;
+import static org.pageseeder.bzadmin.berlioz.CapturedOutput.number;
+import static org.pageseeder.bzadmin.berlioz.CapturedOutput.objects;
+import static org.pageseeder.bzadmin.berlioz.CapturedOutput.text;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,28 +16,33 @@ import org.jspecify.annotations.Nullable;
 import org.pageseeder.berlioz.content.Generator;
 import org.pageseeder.berlioz.content.Request;
 import org.pageseeder.berlioz.content.Response;
-import org.pageseeder.berlioz.furi.URIPattern;
 import org.pageseeder.berlioz.output.OutputWriter;
 import org.pageseeder.berlioz.output.OutputWriter.ContextOption;
+import org.pageseeder.berlioz.servlet.RedirectFilter;
 import org.pageseeder.bzadmin.access.AdminGuard;
 import org.pageseeder.bzadmin.access.AdminPermission;
+import org.pageseeder.bzadmin.berlioz.CapturedOutput;
 import org.pageseeder.bzadmin.redirect.FilterRegistrations.Registration;
-import org.pageseeder.bzadmin.redirect.MappingParser.Rule;
 
 /**
  * The registrations of Berlioz's {@code RedirectFilter} and {@code RelocationFilter}, with the
- * status, warnings and rules of their configuration files ({@code docs/design/redirects.md}).
+ * status and the rules that each filter instance loaded, from Berlioz's diagnostic snapshot
+ * ({@code docs/design/redirects.md}).
  *
- * <p>It reads the files, which can differ from the rules the filters loaded, and changes nothing:
- * it neither loads nor reloads the filters' rules, and writes nothing to the log. Not cacheable, so
- * the Config page has no ETag.
+ * <p>The snapshot gives what Berlioz loaded; the Servlet API gives the mappings. Reading the
+ * snapshot neither loads nor reloads the filters' rules, and writes nothing to the log. Not
+ * cacheable, so the Config page has no ETag.
  *
  * <pre>{@code
- * <redirect-filters schema="validated">
- *   <filter type="redirect" name="Redirects" config="config/redirect.xml" status="active" rules="2" listed="2">
+ * <redirect-filters>
+ *   <filter type="redirect" name="Redirects" config="config/redirect.xml" status="loaded" exists="true"
+ *           loaded="2026-11-12T10:00:00Z" rules="2" ignored="1">
  *     <mapping url-pattern="/*"/>
  *     <rule position="1" from="/" to="/html/home" effect="302"/>
- *     <rule position="2" from="/" to="/new?token=[redacted]" effect="302">
+ *     <rule position="2" from="/{!x}">
+ *       <warning code="ignored-rule" reason="invalid-from"/>
+ *     </rule>
+ *     <rule position="3" from="/" to="/new?token=[REDACTED]" effect="302">
  *       <warning code="duplicate-from" position="1"/>
  *     </rule>
  *   </filter>
@@ -40,20 +50,19 @@ import org.pageseeder.bzadmin.redirect.MappingParser.Rule;
  * </redirect-filters>
  * }</pre>
  *
- * <p>In JSON: {@code {"schema": "validated", "filters": [{..., "mappings": [...], "warnings": [...],
- * "rules": [{..., "warnings": [...]}]}]}}. Without the servlet context of the request (a direct
- * invocation), only {@code context="unavailable"}.
+ * <p>In JSON: {@code {"filters": [{..., "mappings": [...], "rules": [{..., "warnings": [...]}]}]}}.
+ * Without the servlet context of the request (a direct invocation), only {@code context="unavailable"}.
  *
  * @author Christophe Lauret
  * @version 0.14.1
  */
 public final class GetRedirectFilters implements Generator {
 
-  private static final String WARNING = "warning";
-
   private static final String WARNINGS = "warnings";
 
   private static final String STATUS = "status";
+
+  private static final String POSITION = "position";
 
   @Override
   public Response generate(Request req, OutputWriter out) {
@@ -65,20 +74,16 @@ public final class GetRedirectFilters implements Generator {
       out.endObject();
       return Response.ok();
     }
-    boolean schemas = true;
-    for (FilterType type : FilterType.values()) schemas &= MappingParser.schema(type) != null;
-    out.field("schema", schemas ? "validated" : "unavailable");
+    Map<String, Map<String, Object>> loaded = snapshot();
     List<Registration> registrations = FilterRegistrations.of(context);
-    List<String> reloadPaths = FilterRegistrations.reloadPaths(context);
     List<String> adminPaths = FilterRegistrations.adminPaths(context);
-    @Nullable String root = context.getRealPath("/");
     out.startArray("filters", ContextOption.JSON_ONLY);
     for (FilterType type : FilterType.values()) {
       boolean mapped = false;
       for (Registration registration : registrations) {
         if (registration.type != type) continue;
         mapped = true;
-        filter(out, registration, root, FilterRegistrations.coversReload(registration, context, reloadPaths), adminPaths);
+        filter(out, registration, loaded.get(key(type.id(), registration.name)), adminPaths);
       }
       if (!mapped) {
         out.startObject("filter");
@@ -92,52 +97,52 @@ public final class GetRedirectFilters implements Generator {
     return Response.ok();
   }
 
-  private static void filter(OutputWriter out, Registration registration, @Nullable String root,
-      boolean reloadCovered, List<String> adminPaths) {
+  /**
+   * @return the entries of Berlioz's snapshot by type and filter name.
+   */
+  private static Map<String, Map<String, Object>> snapshot() {
+    Map<String, Object> root = CapturedOutput.capture(RedirectFilter.diagnosticSnapshot()::writeTo);
+    Map<String, Map<String, Object>> entries = new HashMap<>();
+    Map<String, Object> config = CapturedOutput.object(root, "redirect-config");
+    if (config == null) return entries;
+    for (Map<String, Object> entry : objects(config, "filters")) {
+      String type = text(entry, "type");
+      String name = text(entry, "name");
+      if (type != null && name != null) entries.put(key(type, name), entry);
+    }
+    return entries;
+  }
+
+  private static String key(String type, String name) {
+    return type + ' ' + name;
+  }
+
+  private static void filter(OutputWriter out, Registration registration, @Nullable Map<String, Object> entry,
+      List<String> adminPaths) {
     out.startObject("filter");
     out.field("type", registration.type.id());
     out.field("name", registration.name);
     out.optionalField("config", registration.config);
-    MappingParser.@Nullable Result result = config(out, registration, root);
+    // A registration that the container has not initialized, e.g. one whose init failed
+    String status = entry != null ? text(entry, STATUS) : null;
+    out.field(STATUS, status != null ? status : "not-initialized");
+    if (entry != null) status(out, entry);
     mappings(out, registration);
-    out.startArray(WARNINGS, ContextOption.JSON_ONLY);
-    if (!reloadCovered) warning(out, "reload-not-covered", 0);
-    out.endArray();
-    if (result != null) rules(out, registration.type, result.rules, adminPaths);
+    if (entry != null && "loaded".equals(status)) rules(out, registration.type, entry, adminPaths);
     out.endObject();
   }
 
-  /**
-   * Writes the status of the configuration file of the filter.
-   *
-   * @return the result of parsing the file if its rules can be listed, or {@code null}.
-   */
-  private static MappingParser.@Nullable Result config(OutputWriter out, Registration registration, @Nullable String root) {
-    @Nullable String config = registration.config;
-    if (config == null) {
-      out.field(STATUS, "no-config");
-      return null;
-    }
-    MappingFile file = MappingFile.read(root, config);
-    if (file.status == MappingFile.Status.MISSING) {
-      out.field(STATUS, "missing");
-      return null;
-    }
-    if (file.status != MappingFile.Status.READ || file.bytes == null) {
-      unreadable(out, file.status.id, file.message);
-      return null;
-    }
-    MappingParser.Result result = MappingParser.parse(file.bytes, registration.type, MappingParser.schema(registration.type));
-    if (result.tooLarge) {
-      unreadable(out, MappingFile.Status.TOO_LARGE.id, null);
-      return null;
-    }
-    out.field(STATUS, result.valid ? "active" : "invalid");
-    out.optionalField("message", result.message);
-    if (!result.parsed) return null;
-    out.field("rules", result.total);
-    out.field("listed", result.rules.size());
-    return result;
+  /** Writes the fields of the last load of the filter. */
+  private static void status(OutputWriter out, Map<String, Object> entry) {
+    if (entry.containsKey("exists")) out.field("exists", flag(entry, "exists"));
+    out.optionalField("loaded", text(entry, "loaded"));
+    if (flag(entry, "reload-pending")) out.field("reload-pending", true);
+    @Nullable String failure = text(entry, "failure");
+    if (failure != null) out.field("failure", Targets.bound(failure, Targets.MAX_VALUE));
+    if (entry.containsKey("rule-count")) out.field("rules", number(entry, "rule-count", 0));
+    long ignored = number(entry, "ignored-count", 0);
+    if (ignored > 0) out.field("ignored", ignored);
+    if (entry.containsKey("limit")) out.field("limit", number(entry, "limit", 0));
   }
 
   private static void mappings(OutputWriter out, Registration registration) {
@@ -155,92 +160,80 @@ public final class GetRedirectFilters implements Generator {
     out.endArray();
   }
 
-  private static void unreadable(OutputWriter out, String reason, @Nullable String message) {
-    out.field(STATUS, "unreadable");
-    out.field("reason", reason);
-    out.optionalField("message", message);
-  }
-
-  private static void rules(OutputWriter out, FilterType type, List<Rule> rules, List<String> adminPaths) {
+  /**
+   * Writes the loaded and ignored rules in file order. The loaded rules are in file order and the
+   * ignored ones have their position, so the loaded rules take the positions in between. When the
+   * list of ignored rules is truncated, the positions of the loaded rules after it are unknown.
+   */
+  private static void rules(OutputWriter out, FilterType type, Map<String, Object> entry, List<String> adminPaths) {
+    List<Map<String, Object>> rules = objects(entry, "rules");
+    List<Map<String, Object>> ignored = objects(entry, "ignored-rules");
+    boolean ignoredComplete = ignored.size() >= number(entry, "ignored-count", 0);
+    long lastIgnored = ignored.isEmpty() ? 0 : number(ignored.get(ignored.size() - 1), POSITION, 0);
     // The first position of each pattern, as Berlioz detects patterns mapped twice
-    Map<String, Integer> positions = new HashMap<>();
+    Map<String, Long> positions = new HashMap<>();
     out.startArray("rules", ContextOption.JSON_ONLY);
-    for (int i = 0; i < rules.size(); i++) {
-      Rule rule = rules.get(i);
-      int position = i + 1;
-      List<Warning> warnings = warnings(type, rule, position, positions, adminPaths);
-      out.startObject("rule");
-      out.field("position", position);
-      out.field("from", Targets.bound(rule.from != null ? rule.from : "", Targets.MAX_VALUE));
-      out.field("to", Targets.bound(rule.to != null ? Targets.redact(rule.to) : "", Targets.MAX_VALUE));
-      out.field("effect", effect(type, rule));
-      out.startArray(WARNINGS, ContextOption.JSON_ONLY);
-      for (Warning warning : warnings) warning(out, warning.code, warning.position);
-      out.endArray();
-      out.endObject();
+    int next = 0;
+    long position = 1;
+    for (Map<String, Object> rule : rules) {
+      while (next < ignored.size() && number(ignored.get(next), POSITION, 0) == position) {
+        ignored(out, ignored.get(next++), position++);
+      }
+      boolean known = ignoredComplete || position < lastIgnored;
+      loaded(out, type, rule, known ? position : 0, positions, adminPaths);
+      position++;
+    }
+    while (next < ignored.size()) {
+      Map<String, Object> rule = ignored.get(next++);
+      ignored(out, rule, number(rule, POSITION, 0));
     }
     out.endArray();
   }
 
-  /**
-   * @return the warnings of the rule at the position, recording its pattern in the positions.
-   */
-  private static List<Warning> warnings(FilterType type, Rule rule, int position, Map<String, Integer> positions,
-      List<String> adminPaths) {
-    List<Warning> warnings = new ArrayList<>();
-    @Nullable String key = rule.from != null && rule.to != null && parses(rule.to) ? key(rule.from) : null;
-    if (key == null) {
-      warnings.add(new Warning("ignored-rule", 0));
-    } else {
-      Integer first = positions.putIfAbsent(key, position);
-      if (first != null) warnings.add(new Warning("duplicate-from", first));
+  private static void loaded(OutputWriter out, FilterType type, Map<String, Object> rule, long position,
+      Map<String, Long> positions, List<String> adminPaths) {
+    String from = value(rule, "from");
+    String to = value(rule, "to");
+    out.startObject("rule");
+    if (position > 0) out.field(POSITION, position);
+    out.field("from", Targets.bound(from, Targets.MAX_VALUE));
+    out.field("to", Targets.bound(to, Targets.MAX_VALUE));
+    out.field("effect", type == FilterType.RELOCATION ? "forward" : Long.toString(number(rule, STATUS, 302)));
+    out.startArray(WARNINGS, ContextOption.JSON_ONLY);
+    // Berlioz gives the pattern as it compares patterns mapped twice
+    Long first = position > 0 ? positions.putIfAbsent(from, position) : positions.get(from);
+    if (first != null) warning(out, "duplicate-from", first, null);
+    if (type == FilterType.RELOCATION && Targets.forwardsToAdmin(to, adminPaths)) {
+      warning(out, "forwards-to-admin", 0, null);
     }
-    if (type == FilterType.RELOCATION && rule.to != null && Targets.forwardsToAdmin(rule.to, adminPaths)) {
-      warnings.add(new Warning("forwards-to-admin", 0));
-    }
-    return warnings;
-  }
-
-  private static String effect(FilterType type, Rule rule) {
-    if (type == FilterType.RELOCATION) return "forward";
-    // As RedirectConfig: only "yes" is permanent
-    return "yes".equals(rule.permanent) ? "301" : "302";
-  }
-
-  /** A warning of a rule, with the position of another rule, or 0. */
-  private static final class Warning {
-
-    final String code;
-
-    final int position;
-
-    Warning(String code, int position) {
-      this.code = code;
-      this.position = position;
-    }
-
-  }
-
-  private static void warning(OutputWriter out, String code, int position) {
-    out.startObject(WARNING);
-    out.field("code", code);
-    if (position > 0) out.field("position", position);
+    out.endArray();
     out.endObject();
   }
 
-  /**
-   * @return the pattern as Berlioz compares patterns mapped twice, or {@code null} if it does not parse.
-   */
-  private static @Nullable String key(String pattern) {
-    try {
-      return new URIPattern(pattern).toString();
-    } catch (IllegalArgumentException ex) {
-      return null;
-    }
+  private static void ignored(OutputWriter out, Map<String, Object> rule, long position) {
+    out.startObject("rule");
+    if (position > 0) out.field(POSITION, position);
+    @Nullable String from = text(rule, "from");
+    @Nullable String to = text(rule, "to");
+    if (from != null) out.field("from", Targets.bound(from, Targets.MAX_VALUE));
+    if (to != null) out.field("to", Targets.bound(to, Targets.MAX_VALUE));
+    out.startArray(WARNINGS, ContextOption.JSON_ONLY);
+    warning(out, "ignored-rule", 0, text(rule, "reason"));
+    out.endArray();
+    out.endObject();
   }
 
-  private static boolean parses(String pattern) {
-    return key(pattern) != null;
+  private static String value(Map<String, Object> rule, String name) {
+    @Nullable String value = text(rule, name);
+    return value != null ? value : "";
+  }
+
+  private static void warning(OutputWriter out, String code, long position, @Nullable String reason) {
+    out.startObject("warning");
+    out.field("code", code);
+    if (position > 0) out.field(POSITION, position);
+    out.optionalField("reason", reason);
+    out.endObject();
   }
 
 }

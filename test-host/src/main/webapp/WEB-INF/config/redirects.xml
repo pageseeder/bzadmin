@@ -4,14 +4,15 @@
   tab of the Config page. They include the cases the tab reports: a pattern mapped twice, a pattern
   that Berlioz ignores, and a target whose query values are redacted.
 
-  Berlioz loads these rules on the first request, and again on "Reload everything". Its redirects
+  Berlioz loads these rules on the first request, and again on the next request after "Reload
+  everything"; the tab shows the rules loaded. Its redirects
   are sent with 'Cache-Control: max-age=86400': a browser keeps following a changed rule's old target
   for a day, so test changes with a private window or curl.
 -->
 <redirect-mapping>
 
-  <!-- Permanent (301): only 'yes' is permanent; 'true' would make the whole file invalid -->
-  <redirect from="/index.html" to="/home.html" permanent="yes"/>
+  <!-- Permanent (301); the status is 301, 302 (the default), 307 or 308 -->
+  <redirect from="/index.html" to="/home.html" status="301"/>
 
   <!-- Temporary (302), with a variable -->
   <redirect from="/docs/{+path}" to="/home.html"/>
@@ -19,7 +20,7 @@
   <!-- To the admin pages -->
   <redirect from="/admin" to="/bzadmin/config.html?view=redirects"/>
 
-  <!-- The query values of a target are redacted on the tab, unless only a variable -->
+  <!-- Berlioz redacts the query values of a target on the tab, unless only a variable -->
   <redirect from="/share/{id}" to="/home.html?ref=newsletter&amp;token=dev-not-a-secret&amp;id={id}"/>
 
   <!-- Mapped twice: never applies, since the first rule for /index.html matches first -->

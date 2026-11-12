@@ -8,26 +8,23 @@ package org.pageseeder.bzadmin.redirect;
  */
 enum FilterType {
 
-  /** {@code RedirectFilter}: redirects (301 or 302). */
-  REDIRECT("redirect", "org.pageseeder.berlioz.servlet.RedirectFilter", "redirect-mapping"),
+  /** {@code RedirectFilter}: redirects (301, 302, 307 or 308). */
+  REDIRECT("redirect", "org.pageseeder.berlioz.servlet.RedirectFilter"),
 
   /** {@code RelocationFilter}: forwards, called relocations in Berlioz. */
-  RELOCATION("relocation", "org.pageseeder.berlioz.servlet.RelocationFilter", "relocation-mapping");
+  RELOCATION("relocation", "org.pageseeder.berlioz.servlet.RelocationFilter");
 
   private final String id;
 
   private final String className;
 
-  private final String root;
-
-  FilterType(String id, String className, String root) {
+  FilterType(String id, String className) {
     this.id = id;
     this.className = className;
-    this.root = root;
   }
 
   /**
-   * @return the type in the output, also the name of the rule elements: {@code redirect} or {@code relocation}.
+   * @return the type in the output, as in Berlioz's snapshot: {@code redirect} or {@code relocation}.
    */
   String id() {
     return this.id;
@@ -38,20 +35,6 @@ enum FilterType {
    */
   String className() {
     return this.className;
-  }
-
-  /**
-   * @return the name of the root element of its configuration file.
-   */
-  String root() {
-    return this.root;
-  }
-
-  /**
-   * @return the path of the schema in the Berlioz JAR, which is not a public API.
-   */
-  String schemaResource() {
-    return "/schema/" + this.root + "-1.0.xsd";
   }
 
 }

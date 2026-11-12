@@ -48,17 +48,15 @@ cacheable). The [redirects contract](redirects.md) specifies the output; in summ
 
 | Field | Source | UI |
 | --- | --- | --- |
-| `redirect-filters/@schema` | `validated`, or `unavailable` when the schemas of the Berlioz JAR cannot be loaded | Warning callout when unavailable |
 | `filter/@type`, `@name`, `@config` | `ServletContext.getFilterRegistrations()`, by class name; the `config` init parameter as given | Panel per registration |
-| `filter/@status`, `@reason`, `@message` | `not-mapped`, `no-config`, `missing`, `unreadable` (`no-real-path`, `outside-web-inf`, `not-file`, `too-large`, `io-error`), `invalid`, `active` | Status tag and its meaning |
-| `filter/@rules`, `@listed` | Rules in the file and rules listed (at most 2000), when it was parsed | Rule count |
+| `filter/@status` | `not-mapped`, `not-initialized` (no snapshot entry), or the snapshot's `no-config`, `not-loaded`, `loaded`, `failed` | Status tag and its meaning |
+| `filter/@exists`, `@loaded`, `@reload-pending`, `@failure` | `RedirectFilter.diagnosticSnapshot()`, matched by type and filter name; `failure` is generic when `berlioz.errors.detail` is `minimal` | Meaning, "Loaded" row |
+| `filter/@rules`, `@ignored`, `@limit` | The snapshot's `rule-count`, `ignored-count` and `limit` (2000 listed) | Rule count |
 | `filter/mapping/@url-pattern`, `@servlet-name` | The registration's mappings | "Mapped to" |
-| `filter/warning/@code` | `reload-not-covered` | Warning callout |
-| `rule/@position`, `@from`, `@to` (redacted), `@effect` (`301`, `302`, `forward`) | The file, in order; values cut at 2048 characters | Rules table, as text |
-| `rule/warning/@code`, `@position` | `ignored-rule`, `duplicate-from` (with the earlier rule), `forwards-to-admin` | Tags |
+| `rule/@position`, `@from`, `@to` (redacted by Berlioz), `@effect` (`301`, `302`, `307`, `308`, `forward`) | The snapshot's loaded and ignored rules, merged in file order; values cut at 2048 characters | Rules table, as text |
+| `rule/warning/@code`, `@position`, `@reason` | `ignored-rule` (with Berlioz's reason), `duplicate-from` (with the earlier rule), `forwards-to-admin` | Tags |
 
-Unavailable: the rules Berlioz has loaded, and whether it loaded them: the view reads the files. The
-dispatcher types and order of the filters, which the Servlet API does not expose.
+Unavailable: the dispatcher types and order of the filters, which the Servlet API does not expose.
 
 ## Services page (`bzadmin-services`)
 
@@ -162,14 +160,10 @@ Berlioz 0.14.5 is the reference and minimum version. Recheck these contracts bef
 - **Captured output:** the metadata fixtures `fixtures/config.xml`, `services.xml` and `services-reload-failed.xml` are copied from the 0.14.5 captures of `:test-host:hostTest` (`test-host/build/test-fixtures/root/`, written by `BerliozHost`: `bzadmin_config.xml`, `bzadmin_services.xml`, `bzadmin_services_view_reload-failed.xml`). `services-lookup.xml` (0.14.4) and `config-global-only.xml` are older: the host tests capture no successful lookup of `/bzadmin/config`, and `GetGlobalConfig` output is unchanged.
 - **Deprecated generators:** none used. `GetLiveServices` (alias of `ListRuntimeServices`) and `GetCPUTime` (replaced by `GetCpuSample`) are deprecated for removal in 1.0, as are the control parameters `reload-services`, `clear-xsl-cache` and `reset-etags`, which `AdminFilter` rejects.
 - **`@Beta` generators in use:** `ListRuntimeServices`, `GetMatchingService`, `GetRuntimeInfo`, `GetFileSystemInfo`, `ListLibraries`, `GetCpuSample`; their schemas may change before 1.0.
-- **Berlioz internals relied on, not APIs:** the Redirects view repeats `ConfigLoader`'s handling of
-  mapping files (removal of a DOCTYPE containing `-//Berlioz` or `//Weborganic`, the 1,000,000-byte
-  limit) and validates with the schemas of the Berlioz JAR (`schema/redirect-mapping-1.0.xsd`,
-  `schema/relocation-mapping-1.0.xsd`), without failing when they are missing. It parses patterns with
-  `org.pageseeder.berlioz.furi.URIPattern`, which is public. Recheck these with each Berlioz version; Berlioz 0.14.6 reports the loaded rules instead ([proposals](berlioz-proposals.md#redirect-and-relocation-filters)).
+- **APIs of 0.14.6 in use:** `RedirectFilter.diagnosticSnapshot()` (the Redirects view), read through its documented output (`ConfigurationSnapshot.writeTo`), which the overlay captures (`CapturedOutput`), since the snapshot has no accessors.
 - **Thread diagnostics:** Berlioz's `ListThreads` and `GetThreadInfo` report the contention details since 0.14.5, but the overlay keeps its own (`ListThreads`, `GetThreadInfo`, `ThreadDetails`) for the origin and activity of each thread; Berlioz's `Threads` and `OptionalMetrics` helpers are package-private, so the overlay keeps its own `OptionalMetrics` (making them public was [rejected](berlioz-proposals.md#rejected)).
 
-Missing upstream (to propose for Berlioz 1.0, as tracked in the roadmap): provenance of effective values; a stable `ListRuntimeServices` schema. The rules loaded by the redirect filters, and reloads that reach every filter, are implemented for Berlioz 0.14.6 (`GetRedirectConfig`), and so is whether a configuration reload failed (`GetGlobalConfig/@load-status`). These and other proposals are explained in the [proposals for Berlioz](berlioz-proposals.md).
+Missing upstream (to propose for Berlioz 1.0, as tracked in the roadmap): provenance of effective values; a stable `ListRuntimeServices` schema. The rules loaded by the redirect filters, and reloads that reach every filter, are used since Berlioz 0.14.6; whether a configuration reload failed (`GetGlobalConfig/@load-status`) is implemented for 0.14.6 as well. These and other proposals are explained in the [proposals for Berlioz](berlioz-proposals.md).
 
 ## Legacy WAR overlay
 

@@ -25,34 +25,32 @@ The read-only repository uses `bastille.psml.root` (the property name is retaine
 ## Redirects and forwards
 
 The Redirects tab of the Config page (`/bzadmin/config.html?view=redirects`) shows each registration of
-Berlioz's `RedirectFilter` (redirects) and `RelocationFilter` (forwards) in `web.xml`, and the rules of
-the file named by its `config` parameter, relative to `WEB-INF`. It needs no configuration and only
-`VIEW` permission; it reads the files and changes nothing.
+Berlioz's `RedirectFilter` (redirects) and `RelocationFilter` (forwards) in `web.xml`, and the rules it
+loaded from the file named by its `config` parameter, relative to `WEB-INF`. It needs no configuration
+and only `VIEW` permission; it changes nothing.
 
-The tab shows the files, not the rules Berlioz has loaded: Berlioz loads them on the first request
-through the filter and again on **Reload everything**. After editing a file, the tab shows the change at
-once, and the filter applies it after a reload. Patterns match the request path including the context
-path, and the first rule that matches wins. Query parameter values in targets are redacted.
+The tab shows the rules Berlioz loaded, as Berlioz reports them. A filter loads its rules on its first
+request, and again on its next request after **Reload everything**, whatever its mapping. After editing
+a file, reload: the tab shows `reload pending` until the filter's next request, then the new rules.
+Patterns match the request path including the context path, and the first rule that matches wins.
+Passwords and query parameter values in targets are redacted.
 
 | Status | Meaning | Fix |
 | --- | --- | --- |
-| `active` | Berlioz loads these rules. | — |
-| `no-config` | The filter has no `config` parameter. In Berlioz 0.14.5, every request through it fails (500), although the log says it has no effect. | Add the parameter, or remove the filter. |
-| `missing` | The file does not exist: the filter has no effect. | Check the path, relative to `WEB-INF`. |
-| `invalid` | Berlioz loads no rule from the file, which is not well-formed, has another DOCTYPE than Berlioz's, or does not match its schema. The message says why. | Fix the file, then reload. For redirects, `permanent` must be `yes` or `no`, not `true`. |
-| `unreadable` | The file is outside `WEB-INF`, is not a file, is larger than 1,000,000 bytes (Berlioz loads no rule from it either), or cannot be read. | Move the file under `WEB-INF`, or split it. |
+| `loaded` | Berlioz applies these rules. | — |
+| `not-loaded` | The filter has had no request yet. | — |
+| `no-config` | The filter has no `config` parameter: it has no effect. | Add the parameter, or remove the filter. |
+| `failed` | Berlioz could not load the file: the filter has no effect. The file does not exist or is not a file, is larger than 1,000,000 bytes, is not well-formed, has another DOCTYPE than Berlioz's, or does not match its schema. With `berlioz.errors.detail` other than `minimal`, the message says why. | Fix the file, then reload. For redirects, use `status` (`301`, `302`, `307` or `308`); the deprecated `permanent` must be `yes` or `no`, not `true`. |
+| `not-initialized` | The container did not initialize the filter. | See the startup log. |
 
 Warnings:
 
-- **ignored:** a pattern does not parse, and Berlioz ignores the rule.
+- **ignored:** a pattern is missing or does not parse, and Berlioz ignores the rule.
 - **same as #n:** the pattern of an earlier rule is the same, so this rule never applies.
 - **forwards to admin:** a forward to an admin URL. Container security constraints do not apply to
   forwards, and `AdminFilter` is mapped to direct requests by default, so the forwarded request is
   denied (403). Link or redirect to the admin URL instead; or, with a host authentication filter, map it
   and `AdminFilter` with `FORWARD` as well, as [mapping the filter](../access.md#1-map-the-filter) explains.
-- **reload not covered:** the mapping of the filter does not include the Config page's reload
-  operation, so **Reload everything** does not reload its rules. Map the filter to `/*`, or restart the
-  application after editing the file.
 
 Berlioz sends its redirects with `Cache-Control: max-age=86400`, so browsers keep following the old
 target of a changed rule for a day. See the [redirects contract](../design/redirects.md).

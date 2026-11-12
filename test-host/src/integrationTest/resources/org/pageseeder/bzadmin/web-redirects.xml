@@ -20,22 +20,22 @@
     <filter-class>org.pageseeder.bzadmin.SecurityHeadersFilter</filter-class>
   </filter>
 
-  <!-- Redirects: active, covering the reload operation -->
+  <!-- Redirects: loaded on any request -->
   <filter>
     <filter-name>Redirects</filter-name>
     <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
     <init-param><param-name>config</param-name><param-value>config/fixture-redirects.xml</param-value></init-param>
   </filter>
 
-  <!-- Active, but not covering the reload operation -->
+  <!-- Loaded on a request to its path only: a reload reaches it all the same -->
   <filter>
     <filter-name>RedirectsPartial</filter-name>
     <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
     <init-param><param-name>config</param-name><param-value>config/fixture-redirects-partial.xml</param-value></init-param>
   </filter>
 
-  <!-- No config parameter: Berlioz 0.14.5 fails every request through it (NullPointerException), so it
-       is mapped to its own path only -->
+  <!-- No config parameter: the filter passes requests through (Berlioz 0.14.5 failed them with a
+       NullPointerException), mapped to its own path -->
   <filter>
     <filter-name>RedirectsNoConfig</filter-name>
     <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
@@ -48,7 +48,8 @@
     <init-param><param-name>config</param-name><param-value>config/fixture-redirects-missing.xml</param-value></init-param>
   </filter>
 
-  <!-- Unreadable: outside WEB-INF by parent segment, by a link out of WEB-INF, a directory, too large -->
+  <!-- Outside WEB-INF by parent segment and by a link out of WEB-INF (Berlioz loads them), a directory
+       and a file too large (failed) -->
   <filter>
     <filter-name>RedirectsOutside</filter-name>
     <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
@@ -70,20 +71,20 @@
     <init-param><param-name>config</param-name><param-value>config/fixture-redirects-large.xml</param-value></init-param>
   </filter>
 
-  <!-- Active through a link that stays in WEB-INF -->
+  <!-- Loaded through a link that stays in WEB-INF -->
   <filter>
     <filter-name>RedirectsLinkIn</filter-name>
     <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
     <init-param><param-name>config</param-name><param-value>config/fixture-redirects-link-in.xml</param-value></init-param>
   </filter>
 
-  <!-- Invalid: another DOCTYPE, permanent="true" (the DTD's value, not the schema's), not well-formed -->
-  <!-- Active: a DOCTYPE with a Berlioz public identifier, which Berlioz removes -->
+  <!-- Loaded: a DOCTYPE with a Berlioz public identifier, which Berlioz removes -->
   <filter>
     <filter-name>RedirectsBerliozDoctype</filter-name>
     <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
     <init-param><param-name>config</param-name><param-value>config/fixture-redirects-berlioz-doctype.xml</param-value></init-param>
   </filter>
+  <!-- Failed: another DOCTYPE, permanent="true" (invalid), not well-formed -->
   <filter>
     <filter-name>RedirectsDoctype</filter-name>
     <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
@@ -112,7 +113,7 @@
     <init-param><param-name>config</param-name><param-value>config/fixture-redirects-long.xml</param-value></init-param>
   </filter>
 
-  <!-- Relocations: active, with targets in and out of the admin services -->
+  <!-- Relocations: loaded, with targets in and out of the admin services -->
   <filter>
     <filter-name>Relocations</filter-name>
     <filter-class>org.pageseeder.berlioz.servlet.RelocationFilter</filter-class>
