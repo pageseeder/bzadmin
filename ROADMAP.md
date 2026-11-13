@@ -26,7 +26,7 @@ Keep the class names that hosts already use in `web.xml` and in their access cod
 
 ## Framework integration
 
-Adopt released Berlioz APIs where they can replace overlay-specific diagnostics, stylesheet resolution and control handling. A future framework authorization hook could simplify generator guards. Keep existing protections until replacements are released, adopted and tested. The [proposals for Berlioz](docs/design/berlioz-proposals.md) list the defects found and what Berlioz could expose: the rules its redirect filters loaded, reloads that reach every component, an authorization hook for services, control parameters on declared services only, and value-based redaction.
+Adopt released Berlioz APIs where they can replace overlay-specific diagnostics, stylesheet resolution and control handling. Keep existing protections until replacements are released, adopted and tested. From 0.14.1, the overlay uses what Berlioz 0.14.6 exposes: the rules its redirect filters loaded, reloads that reach every filter, value-based redaction, the logging startup and the configuration load status. The [proposals for Berlioz](docs/design/berlioz-proposals.md) list what remains: an authorization hook for services, which could simplify generator guards, and diagnostics of Berlioz's own configuration and reload results.
 
 The [shared access module](#shared-access-module) could move into Berlioz if Berlioz provides more specific direction for security.
 

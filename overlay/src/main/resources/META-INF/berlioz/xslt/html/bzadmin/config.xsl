@@ -17,7 +17,7 @@
 
 <!--
   What the Berlioz options do, from the documentation of `org.pageseeder.berlioz.BerliozOption`
-  in Berlioz 0.14.5, as HTML phrasing content shown in a popover by the 'config-info' template.
+  in Berlioz 0.14.6, as HTML phrasing content shown in a popover by the 'config-info' template.
   An option without an explanation here shows the plain text description that Berlioz gives
   ('berlioz-options', since 0.14.5).
 -->
