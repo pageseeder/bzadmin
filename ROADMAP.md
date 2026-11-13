@@ -8,7 +8,7 @@ Version `0.14.0` is the first public release, at `org.pageseeder.berlioz:pso-bza
 
 [0.14.1](docs/release/0.14.1.md) is in preparation, with the Redirects tab, redaction of system property values and fixes for some known limitations of 0.14.0.
 
-- Address the remaining [known limitations](docs/release/0.14.1.md#known-limitations) where they can be fixed within the overlay. Berlioz 0.14.6 keeps the container's challenge for every method and the status of errors sent on Tomcat, so the [error page for 401](docs/access.md#error-page-for-401) is no longer needed.
+- Address the remaining [known limitations](docs/release/0.14.1.md#known-limitations) where they can be fixed within the overlay. 0.14.1 requires Berlioz 0.14.6, which keeps the container's challenge for every method and the status of errors sent on Tomcat, so the [error page for 401](docs/access.md#error-page-for-401) is no longer needed.
 - Java 11 and Jetty 10 remain the reference environment; from 0.14.1, the overlay and packaged-host tests also run on Java 17, 21 and 25, and the packaged-host tests on Tomcat 9.
 - Keep refining keyboard navigation, dialogs, errors, refresh behavior and accessibility based on feedback.
 

@@ -1,6 +1,6 @@
 # Getting started
 
-Berlioz Admin runs inside an existing Berlioz application. Start with Java 11, Berlioz 0.14.5 and a Servlet 4 (`javax.servlet`) container. Jetty 10 and Saxon-HE 12 are the reference environment. See the [compatibility contract](design/build-contract.md) for qualified providers and limitations.
+Berlioz Admin runs inside an existing Berlioz application. Start with Java 11, Berlioz 0.14.6 and a Servlet 4 (`javax.servlet`) container. Jetty 10 and Saxon-HE 12 are the reference environment. See the [compatibility contract](design/build-contract.md) for qualified providers and limitations.
 
 ## Add the overlay
 
@@ -12,7 +12,7 @@ Gradle:
 repositories { mavenCentral() }
 dependencies {
   implementation("org.pageseeder.berlioz:pso-bzadmin:0.14.0")
-  implementation("org.pageseeder.berlioz:pso-berlioz-kickstart:0.14.5")
+  implementation("org.pageseeder.berlioz:pso-berlioz-kickstart:0.14.6")
   runtimeOnly("net.sf.saxon:Saxon-HE:12.10")
   runtimeOnly("org.glassfish:javax.json:1.1.4")
 }
@@ -30,7 +30,7 @@ Maven (Central is the default repository):
   <dependency>
     <groupId>org.pageseeder.berlioz</groupId>
     <artifactId>pso-berlioz-kickstart</artifactId>
-    <version>0.14.5</version>
+    <version>0.14.6</version>
   </dependency>
   <dependency>
     <groupId>net.sf.saxon</groupId>

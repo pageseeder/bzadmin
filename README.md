@@ -11,7 +11,7 @@ Version `0.14.0` is the first public release, available from Maven Central as `o
 ## Requirements
 
 - Java 11 or later; Java 11 is the reference test runtime, and the tests also run on Java 17, 21 and 25.
-- Berlioz 0.14.5 or later in the 0.14 line.
+- Berlioz 0.14.6 or later in the 0.14 line.
 - A `javax.servlet` Servlet 4 container. Jetty 10 is the reference container; the tests also run on Tomcat 9. Jakarta Servlet containers are not supported.
 - A host-provided XSLT 2.0 processor; Saxon-HE 12 is the reference.
 

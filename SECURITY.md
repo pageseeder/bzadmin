@@ -6,7 +6,7 @@ Supported versions
 
 | Version | Berlioz | Support |
 | --- | --- | --- |
-| 0.14.0 and later (JAR overlay) | 0.14.5+ | Fixes on the latest stable release |
+| 0.14.0 and later (JAR overlay) | 0.14.5+ (0.14.6+ from 0.14.1) | Fixes on the latest stable release |
 | Earlier than 0.14.0, including 0.14.0-beta.N candidates | Any | None: upgrade to 0.14.0 or later |
 
 Only 0.14.0 and later are supported. Fixes go in a new version; earlier releases and beta candidates are not patched. The runtime contract (Java 11+, `javax.servlet`

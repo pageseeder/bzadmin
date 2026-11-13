@@ -8,7 +8,7 @@
    - `WEB-INF/xslt/html/bzadmin.xsl` and `WEB-INF/xslt/html/bzadmin/` (unless the host deliberately overrides
      the stylesheet: then import `classpath:META-INF/berlioz/xslt/html/bzadmin.xsl`, see the [customization guide](configuration.md))
    - `js/bzadmin-*.js`, `js/bzadmin/`, `css/bzadmin-*.css`, `css/bzadmin/` at the root of the webapp
-2. Upgrade Berlioz to 0.14.5 (`pso-berlioz` and `pso-berlioz-kickstart`).
+2. Upgrade Berlioz to 0.14.6 (`pso-berlioz` and `pso-berlioz-kickstart`).
 3. Add the dependencies in the [installation guide](../getting-started.md). Remove Cobble, and Bastille, if they were only there for bzadmin.
 4. Map `AdminFilter` and grant access using the [access guide](../access.md). Remove any container constraint or host rule
    that was the only protection of `/bzadmin/*` only if the new access replaces it.

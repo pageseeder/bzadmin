@@ -7,7 +7,7 @@ reconstructing them in an overlay. Each lists what the overlay would then remove
 its current code until a replacement is released, adopted and tested
 ([architecture](../architecture.md)).
 
-Berlioz 0.14.5 is the reference; fixes made since are marked with the release that will include them.
+Berlioz 0.14.6 is the reference and the minimum since bzadmin 0.14.1; fixes are marked with the release that includes them.
 Items are grouped by kind, most valuable first.
 
 ## Principle
@@ -30,10 +30,10 @@ None open. Defects to fix in the next Berlioz release are listed here, each with
 
 ### Fixed in Berlioz 0.14.6
 
-Fixed on the Berlioz `dev` branch, not released yet. The overlay keeps its workaround until it requires
-0.14.6, then removes or simplifies it as below.
+Released on 2026-11-12. The overlay requires 0.14.6 since 0.14.1, and removed or simplified its
+workarounds as below.
 
-| Defect | Fix in Berlioz | Once the overlay requires 0.14.6 |
+| Defect | Fix in Berlioz | Since the overlay requires 0.14.6 |
 | --- | --- | --- |
 | `RedirectFilter` or `RelocationFilter` without a `config` parameter failed every request with a `NullPointerException` (500) | The filter passes requests through, as its startup warning says. A configuration file without rules is now logged as a warning, and every log message of both filters names the filter instance | The `no-config` report stays useful as information, but no longer warns of failing requests |
 | An error dispatch was matched by method | When rendering an error (`javax.servlet.error.status_code` set), `BerliozServlet` looks the service up as GET (HEAD stays HEAD), so the error page and its message are kept for POST, PUT, DELETE, PATCH and QUERY. `ErrorHandlerServlet` handles every method (no more 405 for PUT and DELETE, 501 for PATCH). Resetting an error response keeps `WWW-Authenticate`, `Proxy-Authenticate`, `Allow` and `Retry-After`, which also restores the `Allow` header of a 405 with `berlioz.errors.handle=true` | Adopted (2026-11-12): the [error page for 401](../access.md#error-page-for-401) is documented as needed for 0.14.5 only, and the known-defect test became `challengesEveryMethodWithoutErrorPage`, on Jetty and Tomcat |
@@ -47,8 +47,8 @@ Fixed on the Berlioz `dev` branch, not released yet. The overlay keeps its worka
 
 ## Implemented in Berlioz 0.14.6
 
-Implemented on the Berlioz `dev` branch, not released yet (Berlioz theme 18, items 11 to 15). The overlay
-keeps its code until it requires 0.14.6.
+Released on 2026-11-12 (Berlioz theme 18, items 11 to 15), and adopted by the overlay, which requires 0.14.6
+since 0.14.1. Each item was adopted against a release candidate; 0.14.6 is identical to 0.14.6-rc.3.
 
 ### Redirect and relocation filters
 

@@ -3,7 +3,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 /*
  * The Berlioz Admin overlay.
  *
- * A JAR overlay (Berlioz 0.14.5+):
+ * A JAR overlay (Berlioz 0.14.6+):
  *   META-INF/berlioz/services.xml   services, discovered on the classpath
  *   META-INF/berlioz/xslt/html/     stylesheets
  *   META-INF/resources/             static files, served from the context root

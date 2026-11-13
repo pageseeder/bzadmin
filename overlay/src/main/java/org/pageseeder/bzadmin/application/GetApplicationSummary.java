@@ -34,7 +34,7 @@ import org.pageseeder.bzadmin.log.LoggingBackends;
  * <pre>{@code
  * <application-summary mode="test">
  *   <component name="bzadmin" version="0.14.0"/>
- *   <component name="berlioz" version="0.14.5"/>
+ *   <component name="berlioz" version="0.14.6"/>
  *   <component name="java" product="OpenJDK 64-Bit Server VM" vendor="Eclipse Adoptium" version="11.0.32+1"/>
  *   <component name="xslt" product="SAXON" version="HE 12.10" vendor="Saxonica" xslt-version="3.0" factory="net.sf.saxon.TransformerFactoryImpl"/>
  *   <component name="container" product="jetty/10.0.26" servlet-api="4.0"/>
