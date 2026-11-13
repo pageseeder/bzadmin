@@ -56,7 +56,7 @@ cacheable). The [redirects contract](redirects.md) specifies the output; in summ
 | `filter/@rules`, `@ignored`, `@limit` | The snapshot's `rule-count`, `ignored-count` and `limit` (2000 listed) | Rule count |
 | `filter/mapping/@url-pattern`, `@servlet-name` | The registration's mappings | "Mapped to" |
 | `rule/@position`, `@from`, `@to` (redacted by Berlioz), `@effect` (`301`, `302`, `307`, `308`, `forward`) | The snapshot's loaded and ignored rules, merged in file order; values cut at 2048 characters | Rules table, as text |
-| `rule/warning/@code`, `@position`, `@reason` | `ignored-rule` (with Berlioz's reason), `duplicate-from` (with the earlier rule), `forwards-to-admin` | Tags |
+| `rule/warning/@code`, `@position`, `@reason` | `ignored-rule` (with Berlioz's reason), `duplicate-from` (with the earlier rule), `redirect-chain` and `redirect-loop` (with the rule the target matches first), `forwards-to-admin` | Tags |
 
 Unavailable: the dispatcher types and order of the filters, which the Servlet API does not expose.
 

@@ -113,6 +113,13 @@
     <init-param><param-name>config</param-name><param-value>config/fixture-redirects-long.xml</param-value></init-param>
   </filter>
 
+  <!-- Chains and loops, mapped to its own path so that a target outside it is not followed -->
+  <filter>
+    <filter-name>RedirectsChains</filter-name>
+    <filter-class>org.pageseeder.berlioz.servlet.RedirectFilter</filter-class>
+    <init-param><param-name>config</param-name><param-value>config/fixture-redirects-chains.xml</param-value></init-param>
+  </filter>
+
   <!-- Relocations: loaded, with targets in and out of the admin services -->
   <filter>
     <filter-name>Relocations</filter-name>
@@ -150,6 +157,7 @@
   <filter-mapping><filter-name>RedirectsMalformed</filter-name><url-pattern>/*</url-pattern></filter-mapping>
   <filter-mapping><filter-name>RedirectsMany</filter-name><url-pattern>/*</url-pattern></filter-mapping>
   <filter-mapping><filter-name>RedirectsLong</filter-name><url-pattern>/*</url-pattern></filter-mapping>
+  <filter-mapping><filter-name>RedirectsChains</filter-name><url-pattern>/fixture-chain/*</url-pattern></filter-mapping>
   <filter-mapping><filter-name>Relocations</filter-name><url-pattern>/*</url-pattern></filter-mapping>
 
   <filter-mapping>

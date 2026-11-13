@@ -133,6 +133,17 @@ final class RedirectsTest {
       Files.writeString(config.resolve("fixture-redirects-long.xml"), redirects(
           redirect("/fixture-redirect/" + "x".repeat(3000), "/fixture-redirect/target")));
 
+      Files.writeString(config.resolve("fixture-redirects-chains.xml"), redirects(
+          redirect("/fixture-chain/a", "/fixture-chain/b"),
+          redirect("/fixture-chain/b", "/fixture-chain/end?from=b"),
+          redirect("/fixture-chain/self", "/fixture-chain/self"),
+          redirect("/fixture-chain/ping", "/fixture-chain/pong"),
+          redirect("/fixture-chain/pong", "/fixture-chain/ping#top"),
+          redirect("/fixture-chain/into", "/fixture-chain/ping"),
+          redirect("/fixture-chain/{+path}.psml", "/fixture-chain/{+path}"),
+          redirect("/fixture-chain/absolute", "https://example.org/fixture-chain/a"),
+          redirect("/fixture-chain/outside", "/fixture-elsewhere/a"),
+          redirect("/fixture-elsewhere/{x}", "/fixture-chain/a")));
       Files.writeString(config.resolve("fixture-relocations.xml"), "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<relocation-mapping>\n"
           + "  <relocation from=\"/fixture-relocation/system\" to=\"/bzadmin/system.html\"/>\n"
           + "  <relocation from=\"/fixture-relocation/root\" to=\"/bzadmin.html\"/>\n"
@@ -143,8 +154,9 @@ final class RedirectsTest {
           + "  <relocation from=\"/fixture-relocation/page\" to=\"/fixture-redirect/target\"/>\n"
           + "</relocation-mapping>\n");
 
-      // The filters load their rules: RedirectsPartial on its path, the others on any request
+      // The filters load their rules: RedirectsPartial and RedirectsChains on their path, the others on any request
       this.host.as(null).get("/fixture-redirect/partial");
+      this.host.as(null).get("/fixture-chain/end");
       config(this.host);
     }
 
@@ -175,6 +187,7 @@ final class RedirectsTest {
         "RedirectsMalformed,      redirect,   failed,    true",
         "RedirectsMany,           redirect,   loaded,    true",
         "RedirectsLong,           redirect,   loaded,    true",
+        "RedirectsChains,         redirect,   loaded,    true",
         "Relocations,             relocation, loaded,    true"})
     void reportsTheStatus(String name, String type, String status, String exists) throws Exception {
       Document xml = config(this.host);
@@ -191,7 +204,7 @@ final class RedirectsTest {
     void listsEveryRegistrationInOrder() throws Exception {
       Document xml = config(this.host);
       int count = Integer.parseInt(xpath(xml, "count(" + CONTENT + "/filter)"));
-      assertEquals(16, count);
+      assertEquals(17, count);
       List<String> keys = new ArrayList<>();
       for (int i = 1; i <= count; i++) {
         keys.add(xpath(xml, CONTENT + "/filter[" + i + "]/@type") + " " + xpath(xml, CONTENT + "/filter[" + i + "]/@name"));
@@ -283,6 +296,52 @@ final class RedirectsTest {
       assertEquals(to, xpath(xml, rule("Relocations", position) + "/@to"));
       assertEquals("forward", xpath(xml, rule("Relocations", position) + "/@effect"));
       assertEquals(reported ? "1" : "0", xpath(xml, "count(" + rule("Relocations", position) + "/warning[@code='forwards-to-admin'])"), to);
+    }
+
+    /**
+     * Redirects whose fixed target the same filter redirects again, with the rule that the target
+     * matches first; targets with an expression in the path, absolute, or outside the filter's URL
+     * patterns are not followed.
+     */
+    @ParameterizedTest
+    @CsvSource({
+        "1,  redirect-chain, 2",
+        "2,  '',             ''",
+        "3,  redirect-loop,  3",
+        "4,  redirect-loop,  5",
+        "5,  redirect-loop,  4",
+        "6,  redirect-loop,  4",
+        "7,  '',             ''",
+        "8,  '',             ''",
+        "9,  '',             ''",
+        "10, redirect-chain, 1"})
+    void reportsChainsAndLoops(int position, String code, String to) throws Exception {
+      Document xml = config(this.host);
+      String warnings = rule("RedirectsChains", position) + "/warning[starts-with(@code, 'redirect-')]";
+      assertEquals(code.isEmpty() ? "0" : "1", xpath(xml, "count(" + warnings + ")"), "Rule " + position);
+      assertEquals(code, xpath(xml, warnings + "/@code"), "Rule " + position);
+      assertEquals(to, xpath(xml, warnings + "/@position"), "Rule " + position);
+    }
+
+    /**
+     * The filter does what the warnings say: a chain ends, a loop comes back.
+     */
+    @Test
+    void redirectsAsTheChainsSay() throws Exception {
+      assertTrue(location("/fixture-chain/a").endsWith("/fixture-chain/b"));
+      assertTrue(location("/fixture-chain/b").endsWith("/fixture-chain/end?from=b"));
+      assertTrue(location("/fixture-chain/ping").endsWith("/fixture-chain/pong"));
+      assertTrue(location("/fixture-chain/pong").endsWith("/fixture-chain/ping#top"));
+      assertTrue(location("/fixture-chain/self").endsWith("/fixture-chain/self"));
+      String html = this.host.as("viewer").get("/bzadmin/config.html?view=redirects").body();
+      assertTrue(html.contains("redirected again by #2"), html);
+      assertTrue(html.contains("redirect loop via #5"), html);
+    }
+
+    private String location(String path) throws Exception {
+      HttpResponse<String> response = this.host.as(null).get(path);
+      assertEquals(302, response.statusCode(), path);
+      return response.headers().firstValue("Location").orElse("");
     }
 
     /**

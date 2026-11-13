@@ -609,6 +609,8 @@
     <xsl:choose>
       <xsl:when test="@code = 'ignored-rule'"><xsl:attribute name="title" select="concat(if (starts-with(@reason, 'missing')) then 'A pattern is missing' else 'A pattern does not parse', ': Berlioz ignores this rule')"/>ignored</xsl:when>
       <xsl:when test="@code = 'duplicate-from'"><xsl:attribute name="title">Rule <xsl:value-of select="@position"/> has the same pattern and applies first</xsl:attribute>same as #<xsl:value-of select="@position"/></xsl:when>
+      <xsl:when test="@code = 'redirect-chain'"><xsl:attribute name="title" select="concat('The filter redirects the target again', if (@position) then concat(', with rule ', @position) else '', ': the browser makes one more request')"/><xsl:value-of select="if (@position) then concat('redirected again by #', @position) else 'redirected again'"/></xsl:when>
+      <xsl:when test="@code = 'redirect-loop'"><xsl:attribute name="title" select="concat('Following the redirects', if (@position) then concat(' from rule ', @position) else '', ' comes back to a rule already followed: the browser stops with a too many redirects error, and keeps following them for a day after a fix')"/><xsl:value-of select="if (@position) then concat('redirect loop via #', @position) else 'redirect loop'"/></xsl:when>
       <xsl:when test="@code = 'forwards-to-admin'"><xsl:attribute name="title">Container security constraints do not apply to forwards, and AdminFilter checks them only when mapped with FORWARD: the admin page is denied</xsl:attribute>forwards to admin</xsl:when>
       <xsl:otherwise><xsl:value-of select="@code"/></xsl:otherwise>
     </xsl:choose>

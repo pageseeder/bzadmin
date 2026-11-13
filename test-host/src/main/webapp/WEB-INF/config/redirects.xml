@@ -2,7 +2,8 @@
 <!--
   Redirects of the dev host (RedirectFilter, config 'config/redirects.xml'), shown on the Redirects
   tab of the Config page. They include the cases the tab reports: a pattern mapped twice, a pattern
-  that Berlioz ignores, and a target whose query values are redacted.
+  that Berlioz ignores, a target that the filter redirects again, and a target whose query values are
+  redacted.
 
   Berlioz loads these rules on the first request, and again on the next request after "Reload
   everything"; the tab shows the rules loaded. Its redirects
@@ -28,5 +29,9 @@
 
   <!-- Not a valid pattern ('!' is not a variable name): Berlioz ignores this rule -->
   <redirect from="/legacy/{!page}" to="/home.html"/>
+
+  <!-- Redirected again: /index.html redirects to /home.html, so the browser makes one more request.
+       The tab also reports loops, which are not shown here since browsers keep them for a day -->
+  <redirect from="/start.html" to="/index.html"/>
 
 </redirect-mapping>

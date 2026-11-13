@@ -5,6 +5,7 @@ import static org.pageseeder.bzadmin.berlioz.SnapshotFields.number;
 import static org.pageseeder.bzadmin.berlioz.SnapshotFields.objects;
 import static org.pageseeder.bzadmin.berlioz.SnapshotFields.text;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,9 @@ import org.pageseeder.bzadmin.redirect.FilterRegistrations.Registration;
  *     </rule>
  *     <rule position="3" from="/" to="/new?token=[REDACTED]" effect="302">
  *       <warning code="duplicate-from" position="1"/>
+ *     </rule>
+ *     <rule position="4" from="/home" to="/" effect="301">
+ *       <warning code="redirect-chain" position="1"/>
  *     </rule>
  *   </filter>
  *   <filter type="relocation" status="not-mapped"/>
@@ -81,7 +85,7 @@ public final class GetRedirectFilters implements Generator {
       for (Registration registration : registrations) {
         if (registration.type != type) continue;
         mapped = true;
-        filter(out, registration, loaded.get(key(type.id(), registration.name)), adminPaths);
+        filter(out, registration, loaded.get(key(type.id(), registration.name)), adminPaths, context.getContextPath());
       }
       if (!mapped) {
         out.startObject("filter");
@@ -113,7 +117,7 @@ public final class GetRedirectFilters implements Generator {
   }
 
   private static void filter(OutputWriter out, Registration registration, @Nullable Map<String, Object> entry,
-      List<String> adminPaths) {
+      List<String> adminPaths, String contextPath) {
     out.startObject("filter");
     out.field("type", registration.type.id());
     out.field("name", registration.name);
@@ -123,7 +127,7 @@ public final class GetRedirectFilters implements Generator {
     out.field(STATUS, status != null ? status : "not-initialized");
     if (entry != null) status(out, entry);
     mappings(out, registration);
-    if (entry != null && "loaded".equals(status)) rules(out, registration.type, entry, adminPaths);
+    if (entry != null && "loaded".equals(status)) rules(out, registration, entry, adminPaths, contextPath);
     out.endObject();
   }
 
@@ -160,23 +164,27 @@ public final class GetRedirectFilters implements Generator {
    * ignored ones have their position, so the loaded rules take the positions in between. When the
    * list of ignored rules is truncated, the positions of the loaded rules after it are unknown.
    */
-  private static void rules(OutputWriter out, FilterType type, Map<String, Object> entry, List<String> adminPaths) {
+  private static void rules(OutputWriter out, Registration registration, Map<String, Object> entry,
+      List<String> adminPaths, String contextPath) {
+    FilterType type = registration.type;
     List<Map<String, Object>> rules = objects(entry, "rules");
     List<Map<String, Object>> ignored = objects(entry, "ignored-rules");
-    boolean ignoredComplete = ignored.size() >= number(entry, "ignored-count", 0);
-    long lastIgnored = ignored.isEmpty() ? 0 : number(ignored.get(ignored.size() - 1), POSITION, 0);
+    long[] positions = positions(rules.size(), ignored, number(entry, "ignored-count", 0));
+    @Nullable Chains chains = type == FilterType.REDIRECT ? chains(rules, registration, contextPath) : null;
     // The first position of each pattern, as Berlioz detects patterns mapped twice
-    Map<String, Long> positions = new HashMap<>();
+    Map<String, Long> firsts = new HashMap<>();
     out.startArray("rules", ContextOption.JSON_ONLY);
     int next = 0;
-    long position = 1;
-    for (Map<String, Object> rule : rules) {
-      while (next < ignored.size() && number(ignored.get(next), POSITION, 0) == position) {
-        ignored(out, ignored.get(next++), position++);
+    for (int i = 0; i < rules.size(); i++) {
+      // The ignored rules before this one; all those listed when its position is unknown
+      while (next < ignored.size() && (positions[i] == 0 || number(ignored.get(next), POSITION, 0) < positions[i])) {
+        Map<String, Object> rule = ignored.get(next++);
+        ignored(out, rule, number(rule, POSITION, 0));
       }
-      boolean known = ignoredComplete || position < lastIgnored;
-      loaded(out, type, rule, known ? position : 0, positions, adminPaths);
-      position++;
+      loaded(out, type, rules.get(i), positions[i], firsts, adminPaths);
+      if (chains != null) chain(out, chains, i, positions);
+      out.endArray();
+      out.endObject();
     }
     while (next < ignored.size()) {
       Map<String, Object> rule = ignored.get(next++);
@@ -185,6 +193,45 @@ public final class GetRedirectFilters implements Generator {
     out.endArray();
   }
 
+  /**
+   * @return the position of each loaded rule, or 0 when unknown: after the last ignored rule listed,
+   *   when the list of ignored rules is truncated.
+   */
+  private static long[] positions(int count, List<Map<String, Object>> ignored, long ignoredCount) {
+    boolean complete = ignored.size() >= ignoredCount;
+    long lastIgnored = ignored.isEmpty() ? 0 : number(ignored.get(ignored.size() - 1), POSITION, 0);
+    long[] positions = new long[count];
+    int next = 0;
+    long position = 1;
+    for (int i = 0; i < count; i++) {
+      while (next < ignored.size() && number(ignored.get(next), POSITION, 0) == position) {
+        next++;
+        position++;
+      }
+      positions[i] = complete || position < lastIgnored ? position : 0;
+      position++;
+    }
+    return positions;
+  }
+
+  private static Chains chains(List<Map<String, Object>> rules, Registration registration, String contextPath) {
+    List<String> from = new ArrayList<>(rules.size());
+    List<String> to = new ArrayList<>(rules.size());
+    for (Map<String, Object> rule : rules) {
+      from.add(value(rule, "from"));
+      to.add(value(rule, "to"));
+    }
+    return Chains.of(from, to, contextPath, registration.urlPatterns);
+  }
+
+  /** Writes {@code redirect-loop} or {@code redirect-chain} when the target of the rule is redirected again. */
+  private static void chain(OutputWriter out, Chains chains, int index, long[] positions) {
+    int next = chains.next(index);
+    if (next == Chains.NONE) return;
+    warning(out, chains.loops(index) ? "redirect-loop" : "redirect-chain", positions[next], null);
+  }
+
+  /** Writes a loaded rule and its warnings, leaving the rule and its warnings open for more. */
   private static void loaded(OutputWriter out, FilterType type, Map<String, Object> rule, long position,
       Map<String, Long> positions, List<String> adminPaths) {
     String from = value(rule, "from");
@@ -201,8 +248,6 @@ public final class GetRedirectFilters implements Generator {
     if (type == FilterType.RELOCATION && Targets.forwardsToAdmin(to, adminPaths)) {
       warning(out, "forwards-to-admin", 0, null);
     }
-    out.endArray();
-    out.endObject();
   }
 
   private static void ignored(OutputWriter out, Map<String, Object> rule, long position) {

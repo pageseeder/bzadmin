@@ -66,6 +66,12 @@ again on its next request. Its rules can have warnings:
   template expression, is `/bzadmin` followed by `/`, `.` or the end, or the same under `/html/` or
   `/xml/` when Berlioz is mapped by prefix. A target that starts with an expression, such as `/{+path}`,
   is not reported, since its destination depends on the request.
+- `redirect-chain`: a redirect whose target the same filter redirects again, so the browser makes one
+  more request; `position` is the rule the target matches first. `redirect-loop`: following the
+  redirects from this rule comes back to a rule already followed, so the browser never arrives and
+  stops with a "too many redirects" error; `position` is the rule the target matches first, the rule
+  itself when it redirects to itself. Since Berlioz sends `Cache-Control: max-age=86400`, browsers keep
+  following a loop for a day after it is fixed. See [chains and loops](#chains-and-loops).
 
 The view says that it shows the loaded rules, and that patterns include the context path.
 
@@ -81,7 +87,7 @@ have no position.
 | `from` | Pattern, as text | Pattern, as text |
 | `to` | Target pattern, as text, redacted | Target pattern, as text, redacted |
 | Effect | `301`, `302`, `307` or `308` | Forward |
-| Warnings | `ignored-rule`, `duplicate-from` | The same, and `forwards-to-admin` |
+| Warnings | `ignored-rule`, `duplicate-from`, `redirect-chain`, `redirect-loop` | `ignored-rule`, `duplicate-from`, `forwards-to-admin` |
 
 An ignored rule has no effect, and `from` or `to` only when present.
 
@@ -89,6 +95,35 @@ An ignored rule has no effect, and `from` or `to` only when present.
 parameter, except a value that is only a URI template expression such as `{q}`, and the password of the
 user information, are replaced by `[REDACTED]`; the user name and the fragment are kept. Patterns are
 never shown as links.
+
+## Chains and loops
+
+A redirect sends the browser back to the server, so its target passes through the filter again when the
+filter's URL patterns cover it. Berlioz matches the request URI, without the query, against the rules
+in file order. The overlay does the same with each target it can know exactly, using Berlioz's
+`URIPattern` on the loaded `from` patterns:
+
+- **Fixed targets only.** The path of the target, before `?` or `#`, has no template expression, and
+  starts with `/` but not `//`. A target such as `/html/{+path}` depends on the request; deciding
+  whether some request could reach another rule would mean guessing values, so it is not followed and
+  not reported. Query values, which Berlioz redacts in the snapshot, do not take part in the match.
+- **Same filter, when its URL patterns cover the target.** The target must start with the context path,
+  and the rest must match one of the filter's URL patterns as the container matches them: exact,
+  `/prefix/*`, `*.extension`, or `/*`. A filter mapped by servlet name only is not followed, since the
+  overlay cannot tell which servlet serves the target. A target that another filter redirects is not
+  followed either.
+- **Rules listed.** Only the rules in the snapshot (at most 2000) are matched; a target that matches a
+  rule beyond the limit is not reported.
+- **Follow.** Each rule with a fixed target leads to the first rule it matches, or to none. A rule
+  leads to `redirect-loop` when following these links comes back to a rule already followed, and to
+  `redirect-chain` otherwise. Every rule that leads into a loop is reported as a loop, since the
+  browser never arrives. A chain ends at a rule whose target is not fixed or not covered, without
+  saying where the browser ends.
+- **Relocations** are not followed. A forward reaches a filter again only when it is mapped with the
+  `FORWARD` dispatcher, which the Servlet API does not expose, and the documented mappings have none.
+
+Absolute targets (`https://host/...`) are not followed: the overlay cannot tell whether the host is
+this application.
 
 ## Safe reading
 
@@ -135,7 +170,8 @@ runs in the `bzadmin-config` service, like the other Config views, and outputs X
   `loaded` and `failed`; `reload-pending="true"` only when pending. `rules` (loaded rules), `ignored`
   (only when there are some) and `limit` (when a list is truncated) for `loaded`.
 - **Rules.** Only for `loaded`. `effect` is `301`, `302`, `307`, `308` or `forward`, absent for an
-  ignored rule. `duplicate-from` gives the `position` of the earlier rule. A value cut at the bound ends
+  ignored rule. `duplicate-from` gives the `position` of the earlier rule; `redirect-chain` and
+  `redirect-loop` the `position` of the rule the target matches first. A value cut at the bound ends
   with `…`.
 - **JSON.** The same names in camel case, with arrays for repeated elements:
   `{"filters": [{"type": "redirect", "status": "loaded", "mappings": [...], "rules": [{"position": 1,
@@ -160,6 +196,8 @@ horizontally on narrow screens.
 - Testing which rule matches a URL. `URIPattern` would allow it later, as a lookup like
   `/bzadmin/services/lookup`.
 - Redirects or forwards made by the host's own code or by the container.
+- Chains through targets with template expressions, from one filter to another, or through forwards
+  (see [chains and loops](#chains-and-loops)).
 - Warning when a rule's `from` matches admin URLs, so that it would redirect or forward admin requests
   away from the overlay. Deferred: it would test every rule against the admin routes in each format and
   mapping, and a rule that catches the Config page also hides the warning. A later version may add it as
@@ -171,7 +209,9 @@ A test-host descriptor maps both filters, with fixture files for each status and
 missing, outside `WEB-INF` (`../` and a link, both loaded), a link in `WEB-INF`, a directory, larger than
 the limit, a Berlioz DOCTYPE (removed) and another one, `permanent="true"`, not well-formed, an
 unparseable pattern, a duplicate `from`, a query token and a password, statuses 307 and 308, more rules
-than listed, a value longer than the bound, relocations to `/bzadmin/`, `/bzadmin.html` and `/{+path}`
+than listed, a value longer than the bound, a chain, a loop through two rules, a rule that redirects
+to itself, a rule that leads into a loop, targets that are not followed (a template expression in the
+path, an absolute URL, outside the filter's URL patterns), relocations to `/bzadmin/`, `/bzadmin.html` and `/{+path}`
 (not reported), and a filter mapped to its own path only. Another host maps neither. Tests check the
 status and warnings, the redaction in every format, the bounds, that opening the view writes nothing to
 the log and does not reload the filters, that a reload reaches a filter the reload request does not pass
@@ -182,18 +222,20 @@ the verdict, `no-store`.
 
 - The view shows the loaded rules from Berlioz's snapshot, not the files (0.14.6). It no longer parses
   the files, confines them to `WEB-INF` or validates them with the schemas of the Berlioz JAR.
-- The overlay captures the snapshot's output rather than depending on Berlioz internals, since
-  `ConfigurationSnapshot` exposes only `writeTo` and `etag`.
+- The overlay reads the snapshot with `ConfigurationSnapshot.entries()` (0.14.6) rather than depending on
+  Berlioz internals.
+- `redirect-chain` and `redirect-loop` ship in 0.14.1, for fixed targets in the same filter only (see
+  [chains and loops](#chains-and-loops)). Both are warnings, like the others: the view has no severity.
 - `forwards-to-admin` ships in 0.14.1; the `admin-url` warning is deferred (see [non-goals](#non-goals)).
 
 ## Implementation
 
 Java: `overlay/src/main/java/org/pageseeder/bzadmin/redirect/` (`GetRedirectFilters`, with
-`FilterRegistrations` and `Targets`) and `org.pageseeder.bzadmin.berlioz.SnapshotFields`; the servlet
+`FilterRegistrations`, `Targets` and `Chains`) and `org.pageseeder.bzadmin.berlioz.SnapshotFields`; the servlet
 context reaches the generator through the verdict of `AdminFilter` (`AdminGuard.context`). Presentation:
 the Redirects view of `overlay/src/main/resources/META-INF/berlioz/xslt/html/bzadmin/config.xsl`. Tests:
 `RedirectsTest` on the test host `web-redirects.xml`, with fixtures written at test time;
-`SnapshotFieldsTest` and `TargetsTest`. The dev host maps both filters with example rules
+`SnapshotFieldsTest`, `TargetsTest` and `ChainsTest`. The dev host maps both filters with example rules
 (`test-host/src/main/webapp/WEB-INF/config/redirects.xml`, `relocations.xml`).
 
 ## Upstream

@@ -49,6 +49,15 @@ Warnings:
 
 - **ignored:** a pattern is missing or does not parse, and Berlioz ignores the rule.
 - **same as #n:** the pattern of an earlier rule is the same, so this rule never applies.
+- **redirected again by #n:** the same filter redirects the target again with rule n, so the browser
+  makes one more request. Redirect to the final target instead.
+- **redirect loop via #n:** following the redirects comes back to a rule already followed, so the
+  browser stops with a "too many redirects" error. Change one of the targets, then tell users to clear
+  their cache for those URLs, since browsers keep the redirects for a day.
+
+The view follows only targets whose path has no template expression, such as `/home.html` but not
+`/html/{+path}`, within the same filter and its URL patterns. Forwards, absolute URLs and chains from one
+filter to another are not followed: see [chains and loops](../design/redirects.md#chains-and-loops).
 - **forwards to admin:** a forward to an admin URL. Container security constraints do not apply to
   forwards, and `AdminFilter` is mapped to direct requests by default, so the forwarded request is
   denied (403). Link or redirect to the admin URL instead; or, with a host authentication filter, map it
