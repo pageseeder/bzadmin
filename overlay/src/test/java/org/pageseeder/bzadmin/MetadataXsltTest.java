@@ -288,6 +288,8 @@ final class MetadataXsltTest {
     String guarded = render(services.replace("org.pageseeder.berlioz.generator.ListRuntimeServices", "org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices"));
     assertTrue(guarded.contains("<span class=\"generator-origin\">[berlioz]</span>.ListRuntimeServices"), guarded);
     assertFalse(guarded.contains("org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices"), guarded);
+    String bzindex = render(services.replace("org.pageseeder.berlioz.generator.ListRuntimeServices", "org.pageseeder.bzindex.generator.ListIndexes"));
+    assertTrue(bzindex.contains("<span class=\"generator-origin origin-bzindex\">[bzindex]</span>.ListIndexes"), bzindex);
     String grouped = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"group-by\">generator</parameter></http-parameters>"));
     assertTrue(grouped.contains("<h2 class=\"generator-title\"><span>ListRuntimeServices "), grouped);
     assertTrue(grouped.contains("org.pageseeder.berlioz.generator</span>"), grouped);

@@ -224,11 +224,13 @@ final class LogsXsltTest {
         + "<event level='INFO' logger='org.pageseeder.bzadmin.guard.Check' thread='main' timestamp='1792710123001' datetime='2026-10-22T23:02:03Z' message='b'/>"
         + "<event level='INFO' logger='org.hibernate.Version' thread='main' timestamp='1792710123002' datetime='2026-10-22T23:02:03Z' message='c'/>"
         + "<event level='INFO' logger='com.allette.Service' thread='main' timestamp='1792710123003' datetime='2026-10-22T23:02:03Z' message='d'/>"
+        + "<event level='INFO' logger='org.pageseeder.bzindex.Indexer' thread='main' timestamp='1792710123004' datetime='2026-10-22T23:02:03Z' message='e'/>"
         + "</recent-logs>");
     assertTrue(html.contains("<abbr title=\"org.pageseeder.berlioz\">[berlioz]</abbr>.Init</td>"), html);
     assertTrue(html.contains("<abbr title=\"org.pageseeder.bzadmin\">[bzadmin]</abbr>.guard.Check</td>"), "Loggers are not normalized like generators: " + html);
     assertTrue(html.contains("<abbr title=\"org.hibernate\">[hibernate]</abbr>.Version</td>"), html);
     assertTrue(html.contains("(main)\">com.allette.Service</td>"), "Other packages in full: " + html);
+    assertTrue(html.contains("<abbr title=\"org.pageseeder.bzindex\" class=\"origin-bzindex\">[bzindex]</abbr>.Indexer</td>"), "Bzindex in its own colour: " + html);
   }
 
   @Test

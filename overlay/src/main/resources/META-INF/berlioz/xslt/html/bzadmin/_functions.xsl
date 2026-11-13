@@ -72,7 +72,7 @@
 -->
 <xsl:function name="f:known-package" as="xs:string">
   <xsl:param name="class" as="xs:string?"/>
-  <xsl:variable name="packages" select="('org.pageseeder.berlioz', 'org.pageseeder.bzadmin', 'org.pageseeder.bastille',
+  <xsl:variable name="packages" select="('org.pageseeder.berlioz', 'org.pageseeder.bzadmin', 'org.pageseeder.bzindex', 'org.pageseeder.bastille',
     'org.pageseeder.flint', 'org.pageseeder.bridge', 'net.sf.ehcache', 'org.hibernate')"/>
   <xsl:sequence select="string($packages[starts-with($class, concat(., '.'))][1])"/>
 </xsl:function>
@@ -80,6 +80,17 @@
 <xsl:function name="f:generator-origin" as="xs:string">
   <xsl:param name="class" as="xs:string?"/>
   <xsl:sequence select="string(tokenize(f:known-package(f:generator-class($class)), '\.')[last()])"/>
+</xsl:function>
+
+<!--
+  The class of the label of a known package: 'generator-origin', plus a modifier for the
+  packages shown in their own colour.
+
+  @param origin the label of the package (its last segment)
+-->
+<xsl:function name="f:origin-class" as="xs:string">
+  <xsl:param name="origin" as="xs:string?"/>
+  <xsl:sequence select="if ($origin = 'bzindex') then 'generator-origin origin-bzindex' else 'generator-origin'"/>
 </xsl:function>
 
 <xsl:function name="f:generator-label" as="xs:string">
@@ -98,7 +109,7 @@
   <xsl:choose>
     <xsl:when test="$origin != ''">
       <div class="generator-name">
-        <button type="button" class="info-button link-button generator-name-button" popovertarget="{$id}" aria-label="{concat(f:generator-label($normalized), ': full class name')}"><span class="generator-origin">[<xsl:value-of select="$origin"/>]</span><xsl:text>.</xsl:text><xsl:value-of select="tokenize($normalized, '\.')[last()]"/></button>
+        <button type="button" class="info-button link-button generator-name-button" popovertarget="{$id}" aria-label="{concat(f:generator-label($normalized), ': full class name')}"><span class="{f:origin-class($origin)}">[<xsl:value-of select="$origin"/>]</span><xsl:text>.</xsl:text><xsl:value-of select="tokenize($normalized, '\.')[last()]"/></button>
         <div id="{$id}" class="info-popover generator-name-popover" popover="" role="group" aria-label="Full class name">
           <code class="generator-full-name"><xsl:value-of select="$normalized"/></code>
           <button type="button" class="link-button" popovertarget="{$id}" popovertargetaction="hide">Close</button>
@@ -117,7 +128,7 @@
   <xsl:param name="classname"/>
   <xsl:variable name="package" select="f:known-package($classname)"/>
   <xsl:choose>
-    <xsl:when test="$package != ''"><abbr title="{$package}">[<xsl:value-of select="tokenize($package, '\.')[last()]"/>]</abbr><xsl:value-of select="substring($classname, string-length($package) + 1)"/></xsl:when>
+    <xsl:when test="$package != ''"><xsl:variable name="origin" select="tokenize($package, '\.')[last()]"/><abbr title="{$package}"><xsl:if test="$origin = 'bzindex'"><xsl:attribute name="class" select="'origin-bzindex'"/></xsl:if>[<xsl:value-of select="$origin"/>]</abbr><xsl:value-of select="substring($classname, string-length($package) + 1)"/></xsl:when>
     <xsl:otherwise><xsl:value-of select="$classname"/></xsl:otherwise>
   </xsl:choose>
 </xsl:function>

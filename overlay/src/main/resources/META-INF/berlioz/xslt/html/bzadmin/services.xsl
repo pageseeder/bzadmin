@@ -392,7 +392,7 @@
         <span class="count muted" title="{count($services)} services">(<xsl:value-of select="count($services)"/>)</span>
       </span>
       <span class="generator-package">
-        <xsl:if test="f:generator-origin(current-grouping-key()) != ''"><span class="generator-origin">[<xsl:value-of select="f:generator-origin(current-grouping-key())"/>]</span><xsl:text> · </xsl:text></xsl:if>
+        <xsl:if test="f:generator-origin(current-grouping-key()) != ''"><span class="{f:origin-class(f:generator-origin(current-grouping-key()))}">[<xsl:value-of select="f:generator-origin(current-grouping-key())"/>]</span><xsl:text> · </xsl:text></xsl:if>
         <xsl:value-of select="replace(current-grouping-key(), '\.[^.]+$', '')"/>
       </span>
     </h2>

@@ -553,6 +553,11 @@ line-chart {
   color: var(--accent);
 }
 
+/* Bzindex classes stand apart from the Berlioz and admin generators. */
+.origin-bzindex {
+  color: var(--success-text);
+}
+
 .generator-full-name {
   overflow-wrap: anywhere;
 }
