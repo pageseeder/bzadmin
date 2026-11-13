@@ -1,5 +1,6 @@
-import { flash, on } from '../lib/dom.js';
-import { postControl, reloadFragment } from '../lib/http.js';
+import { adminConfig } from '../lib/admin-login.js';
+import { clearFlash, flash, on } from '../lib/dom.js';
+import { fetchDocument, postControl, reloadFragment } from '../lib/http.js';
 
 const page = document.querySelector('.page-bzadmin-config');
 if (page) {
@@ -42,6 +43,48 @@ if (page) {
     }
   });
 
+  // When making a password hash (Login view): the fields are cleared once it is made
+  on(page, 'submit', '#password-hash', async (event, form) => {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"]');
+    const { password, confirm: again } = form.elements;
+    if (password.value !== again.value) {
+      flash(button, 'The passwords differ', { type: 'error' });
+      again.focus();
+      return;
+    }
+    button.disabled = true;
+    try {
+      const doc = await fetchDocument(form.action, 'application/xml', {
+        method: 'POST',
+        body: new URLSearchParams(new FormData(form))
+      });
+      const hash = doc.querySelector('password-hash')?.getAttribute('hash');
+      if (!hash) throw new Error('no hash in the response');
+      form.reset();
+      clearFlash(button);
+      const result = page.querySelector('#password-hash-result');
+      result.querySelector('#password-hash-config').textContent = adminConfig(form.dataset.username, hash);
+      result.hidden = false;
+    } catch (error) {
+      flash(button, hashError(error), { type: 'error' });
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  on(page, 'click', '#password-hash-copy', async (event, button) => {
+    const config = page.querySelector('#password-hash-config');
+    try {
+      await navigator.clipboard.writeText(config.textContent);
+      flash(button, 'Copied');
+    } catch {
+      // Select it instead, to copy by hand
+      getSelection().selectAllChildren(config);
+      flash(button, 'Unable to copy: selected instead', { type: 'error' });
+    }
+  });
+
   // When switching between the global properties and the deployment
   on(page, 'click', '.secondary-nav a', async (event, link) => {
     event.preventDefault();
@@ -57,4 +100,21 @@ if (page) {
     }
     history.replaceState(null, '', link.href);
   });
+}
+
+/**
+ * @param {Error & {status?: number}} error
+ * @returns {string} why no hash was made
+ */
+function hashError(error) {
+  switch (error.status) {
+    case 400:
+      return 'Not hashed: the password is empty, longer than 1024 characters, or typed differently';
+    case 403:
+      return 'Not hashed: requires the permission to operate';
+    case 429:
+      return 'Not hashed: the server is making another hash, try again';
+    default:
+      return `Unable to make the hash: ${error.message}`;
+  }
 }

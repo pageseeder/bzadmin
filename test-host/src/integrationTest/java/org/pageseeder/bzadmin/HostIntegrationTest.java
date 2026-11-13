@@ -18,6 +18,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Document;
 import org.junit.jupiter.api.TestInstance;
 
 import org.jspecify.annotations.Nullable;
@@ -84,6 +85,22 @@ final class HostIntegrationTest {
       // The scheme is case-insensitive
       String lowerCase = "basic " + basic("operator", "fixture-secret-password-operator").substring(6);
       assertEquals(200, this.host.as(null).get("/bzadmin/config.src", "Authorization", lowerCase).statusCode());
+    }
+
+    /**
+     * The Config page tells that the password is a hash, never showing it.
+     */
+    @Test
+    void reportsThePasswordHash() throws Exception {
+      HttpResponse<String> response = this.host.get("/bzadmin/config.src?view=login");
+      assertEquals(200, response.statusCode());
+      Document xml = PackagedHostTest.parse(response.body());
+      assertEquals("hash", PackagedHostTest.xpath(xml, "//admin-login/@password"));
+      assertEquals("operator", PackagedHostTest.xpath(xml, "//admin-login/@username"));
+      assertFalse(response.body().contains("$pbkdf2-sha256$"), "No hash");
+      String html = this.host.get("/bzadmin/config.html?view=login").body();
+      assertTrue(html.contains("The fallback login of <b>operator</b> has a password hash."), html);
+      assertFalse(html.contains("$pbkdf2-sha256$"), "No hash");
     }
 
     /**

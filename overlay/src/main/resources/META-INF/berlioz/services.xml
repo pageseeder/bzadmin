@@ -20,6 +20,8 @@
     <generator class="org.pageseeder.bzadmin.guard.berlioz.generator.GetErrorHandlerConfig"  name="error-handler-config" target="main"/>
     <!-- The Redirects view: Berlioz's redirect filters and the rules of their files (not cacheable) -->
     <generator class="org.pageseeder.bzadmin.redirect.GetRedirectFilters"     name="redirect-filters"     target="main"/>
+    <!-- The Login view: whether the password of the fallback login is a hash (never the password or the hash) -->
+    <generator class="org.pageseeder.bzadmin.access.GetAdminLogin"            name="admin-login"          target="main"/>
     <generator class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"        name="berlioz-control"      target="main"/>
   </service>
 
@@ -240,6 +242,12 @@
   </service>
 
   <!-- Other operations -->
+
+  <!-- A hash of the password posted twice, for the fallback login: changes nothing, but costs a PBKDF2 computation -->
+  <service id="bzadmin-api-config-password-hash" method="post">
+    <url pattern="/bzadmin/api/config/password/hash" />
+    <handler class="org.pageseeder.bzadmin.access.HashAdminPassword"/>
+  </service>
 
   <!-- The capture threshold of the recent events, not the levels of the application's loggers -->
   <service id="bzadmin-api-logs-recent-threshold" method="post">

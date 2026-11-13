@@ -273,6 +273,45 @@ final class AdminOperationsTest {
   }
 
   /**
+   * The hash of the Login view of the Config page: a valid PBKDF2 hash of the password posted,
+   * spaces included, which neither the response nor the log contains.
+   */
+  @Test
+  void makesAPasswordHash() throws Exception {
+    String password = " fixture-secret-password é ";
+    String form = "password=" + URLEncoder.encode(password, StandardCharsets.UTF_8) + "&confirm=" + URLEncoder.encode(password, StandardCharsets.UTF_8);
+    HttpResponse<String> response = host.post("/bzadmin/api/config/password/hash.xml", form);
+    assertEquals(200, response.statusCode(), response.body());
+    assertEquals("no-store", response.headers().firstValue("Cache-Control").orElse(""));
+    Document xml = parse(response.body());
+    assertEquals("600000", xpath(xml, "/password-hash/@iterations"));
+    String hash = xpath(xml, "/password-hash/@hash");
+    assertTrue(pbkdf2Matches(password, hash), hash);
+    assertFalse(pbkdf2Matches(password.trim(), hash), "Spaces are part of the password");
+    assertNotEquals(hash, xpath(parse(host.post("/bzadmin/api/config/password/hash.xml", form).body()), "/password-hash/@hash"), "A random salt");
+    assertFalse(response.body().contains("fixture-secret"), response.body());
+    assertJson(host.post("/bzadmin/api/config/password/hash.json", form).body(), "\"iterations\":600000,\"hash\":\"$pbkdf2-sha256$i=600000$");
+
+    HttpResponse<String> mismatch = host.post("/bzadmin/api/config/password/hash.xml", "password=fixture-secret-a&confirm=fixture-secret-b");
+    assertEquals(400, mismatch.statusCode());
+    assertEquals("mismatch", xpath(parse(mismatch.body()), "/no-password-hash/@problem"));
+    assertEquals("missing", xpath(parse(host.post("/bzadmin/api/config/password/hash.xml", "password=&confirm=").body()), "/no-password-hash/@problem"));
+    String longest = "x".repeat(1025);
+    assertEquals("too-long", xpath(parse(host.post("/bzadmin/api/config/password/hash.xml", "password=" + longest + "&confirm=" + longest).body()), "/no-password-hash/@problem"));
+    assertFalse(Files.readString(Paths.get(System.getProperty("bzadmin.test.logs"), "fixture.log")).contains("fixture-secret-password"), "Not logged");
+  }
+
+  private static boolean pbkdf2Matches(String password, String hash) throws Exception {
+    String[] parts = hash.split("\\$");
+    if (parts.length != 5 || !"pbkdf2-sha256".equals(parts[1]) || !parts[2].startsWith("i=")) return false;
+    java.util.Base64.Decoder base64 = java.util.Base64.getDecoder();
+    byte[] salt = base64.decode(parts[3]);
+    javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(password.toCharArray(), salt, Integer.parseInt(parts[2].substring(2)), 256);
+    byte[] computed = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).getEncoded();
+    return salt.length == 16 && java.security.MessageDigest.isEqual(computed, base64.decode(parts[4]));
+  }
+
+  /**
    * The recent events of the logback adapter: the audit of the threshold operation is captured
    * (logged once the response is sent, so it may take a moment).
    */
@@ -406,7 +445,8 @@ final class AdminOperationsTest {
       "/bzadmin/api/cache/clear", "/bzadmin/api/cache/entries/remove?key=x", "/bzadmin/api/cache/statistics?enable=true",
       "/bzadmin/api/cache/statistics/reset",
       "/bzadmin/api/logs/recent/threshold?threshold=WARN", "/bzadmin/api/application/statistics/reset",
-      "/bzadmin/api/config/reload", "/bzadmin/api/services/reload", "/bzadmin/api/xslt/cache/clear"})
+      "/bzadmin/api/config/reload", "/bzadmin/api/services/reload", "/bzadmin/api/xslt/cache/clear",
+      "/bzadmin/api/config/password/hash?password=x&confirm=x"})
   void rejectsGetForOperations(String path) throws Exception {
     int query = path.indexOf('?');
     String target = query < 0 ? path + ".src" : path.substring(0, query) + ".src" + path.substring(query);
@@ -435,7 +475,7 @@ final class AdminOperationsTest {
   @ValueSource(strings = {
       "/bzadmin/cache/clear", "/bzadmin/cache/entries/remove", "/bzadmin/cache/statistics",
       "/bzadmin/cache/statistics/reset", "/bzadmin/logs/recent/threshold", "/bzadmin/application/statistics/reset",
-      "/bzadmin/config/reload", "/bzadmin/services/reload", "/bzadmin/xslt/cache/clear"})
+      "/bzadmin/config/reload", "/bzadmin/services/reload", "/bzadmin/xslt/cache/clear", "/bzadmin/config/password/hash"})
   void hasNoOperationOutsideTheApi(String path) throws Exception {
     assertEquals(404, host.post(path + ".src", "").statusCode(), path);
   }

@@ -53,7 +53,7 @@ npm run lint         # ESLint on .js files
 npm run lint:fix     # ESLint with auto-fix
 npm run format       # Prettier: rewrite files in src/
 npm run format:check # Prettier: report unformatted files
-npm test             # Node's test runner on src/js/**/*.test.js (the poller, the rates, the CPU usage, the thread deltas, the Berlioz path, the XML tokens, the reload scopes)
+npm test             # Node's test runner on src/js/**/*.test.js (the poller, the rates, the CPU usage, the thread deltas, the Berlioz path, the XML tokens, the reload scopes, the fallback login configuration line)
 ```
 
 `npm run build` empties `js/` and `css/` under `META-INF/resources` first, and the CSS references its fonts and images relatively, so they work under any context path. `:overlay:processResources` depends on `checkFrontendBundles`, which fails unless those folders hold exactly the bundles of `version.txt` (named without any `-SNAPSHOT` suffix). Clean build: `npm ci && npm run build`, then Gradle.

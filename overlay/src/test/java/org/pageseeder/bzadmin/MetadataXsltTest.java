@@ -356,6 +356,63 @@ final class MetadataXsltTest {
   // Helpers -------------------------------------------------------------------------------------
 
   /** The configuration XML requested for the deployment tab. */
+  // Login ---------------------------------------------------------------------------------------
+
+  /**
+   * A notice above the other views when the password of the fallback login is not a hash.
+   */
+  @Test
+  void noticesAPasswordThatIsNotHashed() throws Exception {
+    String plain = render(login(fixture("config.xml"), "password=\"plain\" username=\"admin\""));
+    assertTrue(plain.contains("<div class=\"warning callout config-login-notice\">"), plain);
+    assertTrue(plain.contains("<a href=\"/bzadmin/config.src?view=login\">Make a password hash</a>"), plain);
+    assertTrue(render(deployment(login(fixture("config.xml"), "password=\"plain\" username=\"admin\""))).contains("config-login-notice"));
+    String invalid = render(login(fixture("config.xml"), "password=\"invalid\" username=\"admin\""));
+    assertTrue(invalid.contains("<div class=\"alert callout config-login-notice\" role=\"alert\">"), invalid);
+    for (String status : new String[]{"hash", "none", "incomplete"}) {
+      assertFalse(render(login(fixture("config.xml"), "password=\"" + status + "\"")).contains("config-login-notice"), status);
+    }
+    assertFalse(render(fixture("config.xml")).contains("config-login-notice"), "Without the generator");
+  }
+
+  /**
+   * The Login view: the status of the fallback login and the form to make a hash, which needs the
+   * permission to operate.
+   */
+  @Test
+  void rendersTheLoginView() throws Exception {
+    String html = render(view(login(fixture("config.xml"), "password=\"plain\" username=\"fixture&amp;admin\""), "login"));
+    assertFalse(html.contains("config-login-notice"), "Not repeated in the view");
+    assertTrue(html.contains("has the password itself, not a hash"), html);
+    assertTrue(html.contains("<form id=\"password-hash\" class=\"password-hash-form\" method=\"post\" action=\"/bzadmin/api/config/password/hash.xml\""
+        + " data-username=\"fixture&amp;admin\" autocomplete=\"off\">"), html);
+    assertTrue(html.contains("<input id=\"password-hash-password\" class=\"password-hash-field\" type=\"password\" name=\"password\""), html);
+    assertTrue(html.contains("name=\"confirm\" required maxlength=\"1024\" autocomplete=\"new-password\""), html);
+    assertTrue(html.contains("<button type=\"submit\" class=\"button\">Make the hash</button>"), html);
+    assertTrue(html.contains("in <code>config-test.xml</code>"), "The file of the mode");
+    assertTrue(html.contains("aria-current=\"page\">Login</a>"), html);
+
+    String hashed = render(view(login(fixture("config.xml"), "password=\"hash\" username=\"admin\""), "login"));
+    assertTrue(hashed.contains("The fallback login of <b>admin</b> has a password hash."), hashed);
+    String none = render(view(login(fixture("config.xml"), "password=\"none\""), "login"));
+    assertTrue(none.contains("No fallback login is configured"), none);
+    assertTrue(none.contains("data-username=\"admin\""), "The default user name");
+
+    String viewer = render(view(login(fixture("config.xml"), "password=\"none\"")
+        .replace("<berlioz-control authorized=\"true\"", "<berlioz-control authorized=\"false\""), "login"));
+    assertTrue(viewer.contains("<button type=\"submit\" class=\"button hollow\" disabled aria-describedby=\"password-hash-disabled\">Make the hash</button>"), viewer);
+  }
+
+  private static String login(String xml, String attributes) {
+    return xml.replace("<content generator=\"org.pageseeder.bzadmin.berlioz.GetBerliozControl\"",
+        "<content generator=\"org.pageseeder.bzadmin.access.GetAdminLogin\" name=\"admin-login\" target=\"main\" status=\"ok\">"
+        + "<admin-login " + attributes + "/></content><content generator=\"org.pageseeder.bzadmin.berlioz.GetBerliozControl\"");
+  }
+
+  private static String view(String xml, String view) {
+    return xml.replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">" + view + "</parameter></http-parameters>");
+  }
+
   private static String deployment(String xml) {
     return xml.replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">deployment</parameter></http-parameters>");
   }

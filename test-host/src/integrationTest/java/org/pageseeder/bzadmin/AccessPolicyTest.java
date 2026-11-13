@@ -83,6 +83,7 @@ final class AccessPolicyTest {
         Arguments.of("POST", "/bzadmin/api/cache/entries/remove", CACHE + "&key=x"),
         Arguments.of("POST", "/bzadmin/api/logs/recent/threshold", "level=WARN"),
         Arguments.of("POST", "/bzadmin/api/application/statistics/reset", ""),
+        Arguments.of("POST", "/bzadmin/api/config/password/hash", "password=fixture-secret-hash&confirm=fixture-secret-hash"),
         Arguments.of("POST", "/bzadmin/api/cache/statistics", CACHE + "&enable=true"),
         Arguments.of("POST", "/bzadmin/api/cache/statistics/reset", CACHE));
     Stream<Arguments> handlers = HANDLERS.stream().map(path -> path.split("\\?", 2))
@@ -708,6 +709,7 @@ final class AccessPolicyTest {
           {"POST", "/bzadmin/api/cache/entries/remove", CACHE + "&key=x"},
           {"POST", "/bzadmin/api/logs/recent/threshold", "level=WARN"},
           {"POST", "/bzadmin/api/application/statistics/reset", ""},
+          {"POST", "/bzadmin/api/config/password/hash", "password=fixture-secret-hash&confirm=fixture-secret-hash"},
           {"POST", "/bzadmin/api/cache/statistics", CACHE + "&enable=true"},
           {"POST", "/bzadmin/api/cache/statistics/reset", CACHE},
           {"POST", "/bzadmin/api/config/reload", "berlioz-reload=true"},

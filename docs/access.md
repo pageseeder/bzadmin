@@ -149,7 +149,9 @@ password itself:
 </berlioz>
 ```
 
-Anywhere else, a hash (PBKDF2-HMAC-SHA256, 600,000 iterations) made by typing the password twice:
+Anywhere else, a hash (PBKDF2-HMAC-SHA256, 600,000 iterations), made by typing the password twice in the
+**Login** view of the Config page (`/bzadmin/config.html?view=login`, with the permission to operate), or in
+a terminal, without a running application:
 
 ```bash
 java -cp pso-bzadmin-<version>.jar org.pageseeder.bzadmin.access.AdminPassword
@@ -165,7 +167,13 @@ A value that starts like a hash (`$<scheme>$`) is always taken as a hash: if it 
 access is denied and a warning is logged, rather than the value becoming the password. Any other value is the
 password, and a warning that it is not hashed is logged once.
 
-The Config page hides the password. Requests without valid credentials get a 401 BASIC challenge. The
+The Login view shows the configuration line with the hash, ready to copy: the password is posted to the
+server, which computes the hash, one at a time (429 with `Retry-After` when busy), and logs neither. Make the
+hash on a development host, signed in with the plain password, before deploying. The Config page never shows
+the password or its hash: it tells whether the password is a hash, with a notice above the other views when
+it is not.
+
+Requests without valid credentials get a 401 BASIC challenge. The
 fallback login is not used when the host sets `AdminAccess`. Tested with `web-fallback.xml` behind a
 TLS-terminating proxy.
 

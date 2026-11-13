@@ -9,6 +9,7 @@
   - 'error-handler-config'  GetErrorHandlerConfig: Berlioz error handler servlets
   - 'berlioz-control'       GetBerliozControl: whether the "Reload everything" button (berlioz-reload) works
   - 'redirect-filters'      GetRedirectFilters: Berlioz's redirect filters and the rules they loaded (docs/design/redirects.md)
+  - 'admin-login'           GetAdminLogin: whether the password of the fallback login is a hash (docs/access.md)
 -->
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                               xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -68,7 +69,7 @@
   <xsl:call-template name="bzadmin-secondary-link">
     <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=')"/>
     <xsl:with-param name="label"  select="'Global properties'"/>
-    <xsl:with-param name="active" select="not($view = ('deployment', 'redirects'))"/>
+    <xsl:with-param name="active" select="not($view = ('deployment', 'redirects', 'login'))"/>
   </xsl:call-template>
   <xsl:call-template name="bzadmin-secondary-link">
     <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=deployment')"/>
@@ -79,6 +80,11 @@
     <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=redirects')"/>
     <xsl:with-param name="label"  select="'Redirects'"/>
     <xsl:with-param name="active" select="$view = 'redirects'"/>
+  </xsl:call-template>
+  <xsl:call-template name="bzadmin-secondary-link">
+    <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=login')"/>
+    <xsl:with-param name="label"  select="'Login'"/>
+    <xsl:with-param name="active" select="$view = 'login'"/>
   </xsl:call-template>
 </xsl:template>
 
@@ -102,6 +108,9 @@
     </xsl:call-template>
   </section>
   <section id="config-details">
+    <xsl:if test="$view != 'login'">
+      <xsl:apply-templates select="../content[@name='admin-login']/admin-login" mode="config-login-notice"/>
+    </xsl:if>
     <xsl:choose>
       <xsl:when test="$view = 'deployment'">
         <xsl:apply-templates select="//content[@name='berlioz-config']" mode="bzadmin-config"/>
@@ -109,6 +118,9 @@
       </xsl:when>
       <xsl:when test="$view = 'redirects'">
         <xsl:apply-templates select="//content[@name='redirect-filters']" mode="bzadmin-config"/>
+      </xsl:when>
+      <xsl:when test="$view = 'login'">
+        <xsl:apply-templates select="//content[@name='admin-login']" mode="bzadmin-config"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:apply-templates select="." mode="bzadmin-config"/>
@@ -300,7 +312,7 @@
 </xsl:template>
 
 <!-- Displayed by the global properties and the deployment tabs -->
-<xsl:template match="content[@name=('berlioz-options', 'berlioz-config', 'error-handler-config', 'redirect-filters')]" mode="bzadmin-content"/>
+<xsl:template match="content[@name=('berlioz-options', 'berlioz-config', 'error-handler-config', 'redirect-filters', 'admin-login')]" mode="bzadmin-content"/>
 
 <!--
   Display the Berlioz servlets
@@ -452,6 +464,95 @@
   </table>
   </sortable-table></div>
   </section>
+</xsl:template>
+
+<!--
+  A notice above the other views when the password of the fallback login is not a valid hash
+-->
+<xsl:template match="admin-login[@password = 'plain']" mode="config-login-notice">
+  <div class="warning callout config-login-notice">
+    <p><svg-icon name="warning"/> The password of the fallback login (<code>berlioz.admin.password</code>) is not hashed: use a hash outside local development.
+      <a href="{/root/header/location/@path}?view=login">Make a password hash</a></p>
+  </div>
+</xsl:template>
+<xsl:template match="admin-login[@password = 'invalid']" mode="config-login-notice">
+  <div class="alert callout config-login-notice" role="alert">
+    <p><svg-icon name="warning"/> The password of the fallback login (<code>berlioz.admin.password</code>) is not a valid PBKDF2 hash: the fallback login denies access.
+      <a href="{/root/header/location/@path}?view=login">Make a password hash</a></p>
+  </div>
+</xsl:template>
+<xsl:template match="admin-login" mode="config-login-notice"/>
+
+<!--
+  The Login view: how the fallback login is configured, and a form to make a password hash for it
+  (bzadmin-config.js posts it to the internal API). The page never shows the password or its hash.
+-->
+<xsl:template match="content[@name='admin-login']" mode="bzadmin-config">
+  <xsl:variable name="login" select="admin-login"/>
+  <xsl:variable name="mode" select="string(/root/header/berlioz/@mode)"/>
+  <xsl:variable name="file" select="if ($mode != '') then concat('config-', $mode, '.xml') else 'config-&lt;mode&gt;.xml'"/>
+  <xsl:variable name="authorized" select="../content[@name='berlioz-control']/berlioz-control/@authorized = 'true'"/>
+  <div class="panel">
+    <h2>Fallback login</h2>
+    <xsl:choose>
+      <xsl:when test="$login/@password = 'hash'">
+        <p><svg-icon name="ok"/> The fallback login of <b><xsl:value-of select="$login/@username"/></b> has a password hash.</p>
+      </xsl:when>
+      <xsl:when test="$login/@password = 'plain'">
+        <div class="warning callout">
+          <p><svg-icon name="warning"/> The fallback login of <b><xsl:value-of select="$login/@username"/></b> has the password itself, not a hash. Use it for local development only: anywhere else, replace it with a hash.</p>
+        </div>
+      </xsl:when>
+      <xsl:when test="$login/@password = 'invalid'">
+        <div class="alert callout" role="alert">
+          <p><svg-icon name="warning"/> The password of the fallback login looks like a hash, but is not a valid PBKDF2 hash: the fallback login denies access. Replace it with a new hash.</p>
+        </div>
+      </xsl:when>
+      <xsl:when test="$login/@password = 'incomplete'">
+        <div class="alert callout" role="alert">
+          <p><svg-icon name="warning"/> The fallback login is not used: it needs a user name without <code>:</code> (<code>berlioz.admin.username</code>) and a password (<code>berlioz.admin.password</code>).</p>
+        </div>
+      </xsl:when>
+      <xsl:otherwise>
+        <p>No fallback login is configured: the application grants access to Berlioz administration itself.
+          A fallback login, with a BASIC challenge, needs a user name and a password in the global configuration.</p>
+      </xsl:otherwise>
+    </xsl:choose>
+    <p class="muted">The fallback login is accepted over HTTPS, or over plain HTTP from this machine only. The page never shows the password or its hash.</p>
+  </div>
+  <div class="panel">
+    <h2>Make a password hash</h2>
+    <p>Type the password twice to get its hash (PBKDF2-HMAC-SHA256, 600,000 iterations), and put the hash in place of the password in <code><xsl:value-of select="$file"/></code>.
+      The server computes the hash and keeps neither the password nor the hash.</p>
+    <form id="password-hash" class="password-hash-form" method="post" action="{f:xml-url('/bzadmin/api/config/password/hash')}"
+          data-username="{($login/@username, 'admin')[1]}" autocomplete="off">
+      <label for="password-hash-password">Password</label>
+      <input id="password-hash-password" class="password-hash-field" type="password" name="password" required="required"
+             maxlength="1024" autocomplete="new-password" spellcheck="false"/>
+      <label for="password-hash-confirm">Password again</label>
+      <input id="password-hash-confirm" class="password-hash-field" type="password" name="confirm" required="required"
+             maxlength="1024" autocomplete="new-password" spellcheck="false"/>
+      <p>
+        <xsl:choose>
+          <xsl:when test="$authorized">
+            <button type="submit" class="button">Make the hash</button>
+          </xsl:when>
+          <xsl:otherwise>
+            <button type="submit" class="button hollow" disabled="disabled" aria-describedby="password-hash-disabled">Make the hash</button>
+            <br/><small id="password-hash-disabled">Requires the permission to operate Berlioz administration</small>
+          </xsl:otherwise>
+        </xsl:choose>
+      </p>
+    </form>
+    <div id="password-hash-result" class="password-hash-result" hidden="hidden">
+      <p>In <code><xsl:value-of select="$file"/></code>:</p>
+      <pre><code id="password-hash-config"></code></pre>
+      <p><button type="button" id="password-hash-copy" class="button hollow">Copy</button>
+        <xsl:text> </xsl:text><span class="muted">Each hash has a random salt, so the same password never gives the same hash.</span></p>
+    </div>
+    <p class="muted">Or, without a running application, in a terminal:
+      <code>java -cp pso-bzadmin-&lt;version&gt;.jar org.pageseeder.bzadmin.access.AdminPassword</code></p>
+  </div>
 </xsl:template>
 
 <!--
