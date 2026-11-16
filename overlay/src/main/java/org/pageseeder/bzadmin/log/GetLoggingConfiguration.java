@@ -52,6 +52,7 @@ import org.pageseeder.bzadmin.log.LoggingConfiguration.Verdict;
 public final class GetLoggingConfiguration implements Generator {
 
   private static final String ITEMS = "items";
+  private static final String CLASS = "class";
 
   @Override
   public Response generate(Request req, OutputWriter out) {
@@ -121,7 +122,7 @@ public final class GetLoggingConfiguration implements Generator {
       out.startObject("appender");
       out.field("id", a.id);
       out.optionalField("name", a.name);
-      out.field("class", a.className);
+      out.field(CLASS, a.className);
       out.field("started", a.started);
       out.field("writes", a.writes);
       if (a.capture) out.field("capture", true);
@@ -151,7 +152,7 @@ public final class GetLoggingConfiguration implements Generator {
     out.startArray("turbo-filters", ContextOption.JSON_ONLY);
     for (String filter : c.turboFilters) {
       out.startObject("turbo-filter");
-      out.field("class", filter);
+      out.field(CLASS, filter);
       out.endObject();
     }
     out.endArray();
@@ -176,7 +177,7 @@ public final class GetLoggingConfiguration implements Generator {
       out.startArray("causes", ContextOption.JSON_ONLY);
       for (LoggingConfiguration.Cause cause : s.causes) {
         out.startObject("cause");
-        out.field("class", cause.className);
+        out.field(CLASS, cause.className);
         out.optionalField("message", cause.message);
         out.endObject();
       }

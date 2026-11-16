@@ -66,6 +66,14 @@ public final class GetRedirectFilters implements Generator {
 
   private static final String POSITION = "position";
 
+  private static final String EXISTS = "exists";
+
+  private static final String LIMIT = "limit";
+
+  private static final String LOADED = "loaded";
+
+  private static final String RULES = "rules";
+
   @Override
   public Response generate(Request req, OutputWriter out) {
     if (!AdminGuard.allows(req, AdminPermission.VIEW)) return AdminGuard.denied(out);
@@ -127,21 +135,21 @@ public final class GetRedirectFilters implements Generator {
     out.field(STATUS, status != null ? status : "not-initialized");
     if (entry != null) status(out, entry);
     mappings(out, registration);
-    if (entry != null && "loaded".equals(status)) rules(out, registration, entry, adminPaths, contextPath);
+    if (entry != null && LOADED.equals(status)) rules(out, registration, entry, adminPaths, contextPath);
     out.endObject();
   }
 
   /** Writes the fields of the last load of the filter. */
   private static void status(OutputWriter out, Map<String, Object> entry) {
-    if (entry.containsKey("exists")) out.field("exists", flag(entry, "exists"));
-    out.optionalField("loaded", text(entry, "loaded"));
+    if (entry.containsKey(EXISTS)) out.field(EXISTS, flag(entry, EXISTS));
+    out.optionalField(LOADED, text(entry, LOADED));
     if (flag(entry, "reload-pending")) out.field("reload-pending", true);
     @Nullable String failure = text(entry, "failure");
     if (failure != null) out.field("failure", Targets.bound(failure, Targets.MAX_VALUE));
-    if (entry.containsKey("rule-count")) out.field("rules", number(entry, "rule-count", 0));
+    if (entry.containsKey("rule-count")) out.field(RULES, number(entry, "rule-count", 0));
     long ignored = number(entry, "ignored-count", 0);
     if (ignored > 0) out.field("ignored", ignored);
-    if (entry.containsKey("limit")) out.field("limit", number(entry, "limit", 0));
+    if (entry.containsKey(LIMIT)) out.field(LIMIT, number(entry, LIMIT, 0));
   }
 
   private static void mappings(OutputWriter out, Registration registration) {
@@ -167,13 +175,13 @@ public final class GetRedirectFilters implements Generator {
   private static void rules(OutputWriter out, Registration registration, Map<String, Object> entry,
       List<String> adminPaths, String contextPath) {
     FilterType type = registration.type;
-    List<Map<String, Object>> rules = objects(entry, "rules");
+    List<Map<String, Object>> rules = objects(entry, RULES);
     List<Map<String, Object>> ignored = objects(entry, "ignored-rules");
     long[] positions = positions(rules.size(), ignored, number(entry, "ignored-count", 0));
     @Nullable Chains chains = type == FilterType.REDIRECT ? chains(rules, registration, contextPath) : null;
     // The first position of each pattern, as Berlioz detects patterns mapped twice
     Map<String, Long> firsts = new HashMap<>();
-    out.startArray("rules", ContextOption.JSON_ONLY);
+    out.startArray(RULES, ContextOption.JSON_ONLY);
     int next = 0;
     for (int i = 0; i < rules.size(); i++) {
       // The ignored rules before this one; all those listed when its position is unknown
