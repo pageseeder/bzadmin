@@ -244,7 +244,6 @@
   <xsl:param name="options" as="element(option)*"/>
   <xsl:variable name="configured" select="$options[@property = $properties/@name]"/>
   <xsl:variable name="deprecated" select="$configured[@deprecated]"/>
-  <xsl:variable name="defaults" select="$configured[for $option in . return f:config-is-default($option, string(($properties[@name = $option/@property])[1]/@value))]"/>
   <xsl:variable name="others" select="$properties[not(@name = $options/@property)]"/>
   <dl class="key-metrics">
     <xsl:call-template name="bzadmin-key-metric">
@@ -262,16 +261,6 @@
       <xsl:with-param name="value" select="string(count($deprecated))"/>
       <xsl:with-param name="detail" select="if ($deprecated) then string-join($deprecated/@property, ', ') else 'None configured'"/>
       <xsl:with-param name="warning" select="exists($deprecated)"/>
-    </xsl:call-template>
-    <xsl:call-template name="bzadmin-key-metric">
-      <xsl:with-param name="label" select="'Set to default'"/>
-      <xsl:with-param name="value" select="string(count($defaults))"/>
-      <xsl:with-param name="detail" as="xs:string">
-        <xsl:choose>
-          <xsl:when test="$defaults"><xsl:value-of separator=", "><xsl:perform-sort select="$defaults/@property/string()"><xsl:sort/></xsl:perform-sort></xsl:value-of></xsl:when>
-          <xsl:otherwise>No option configured with its default</xsl:otherwise>
-        </xsl:choose>
-      </xsl:with-param>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Other properties'"/>

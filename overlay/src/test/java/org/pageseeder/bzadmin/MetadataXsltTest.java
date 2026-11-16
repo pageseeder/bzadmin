@@ -69,8 +69,7 @@ final class MetadataXsltTest {
     assertTrue(html.contains("<div class=\"key-metric warning\"><dt>Deprecated options</dt><dd class=\"key-metric-value\">1</dd>"
         + "<dd class=\"key-metric-detail\">berlioz.xml.header.version</dd>"), html);
     assertTrue(html.contains("<span class=\"tag warning\" title=\"Deprecated since Berlioz 0.14.0: removed in Berlioz 1.0\">deprecated</span>"), html);
-    assertTrue(html.contains("<dt>Set to default</dt><dd class=\"key-metric-value\">1</dd>"
-        + "<dd class=\"key-metric-detail\">berlioz.xml.header.version</dd>"), html);
+    assertFalse(html.contains("Set to default"), html);
     assertTrue(html.contains("<dt>Other properties</dt><dd class=\"key-metric-value\">4</dd></div>"), "fixture.* and berlioz.admin.role.*: " + html);
     assertFalse(render(deployment(fixture("config.xml"))).contains("key-metrics"), "Only for the global properties");
   }
@@ -93,15 +92,6 @@ final class MetadataXsltTest {
     assertFalse(valueCell(html, "berlioz.profile").contains("same as default"), "Only true or false are compared");
     assertTrue(valueCell(html, "berlioz.redirect.allowed-hosts").endsWith("<code></code>" + sameAsDefault), "Empty default");
     assertFalse(valueCell(html, "berlioz.errors.detail").contains("same as default"), "Strings are compared exactly");
-    assertTrue(html.contains("<dt>Set to default</dt><dd class=\"key-metric-value\">3</dd><dd class=\"key-metric-detail\">"
-        + "berlioz.http.compression, berlioz.redirect.allowed-hosts, berlioz.xml.header.version</dd>"), html);
-  }
-
-  @Test
-  void countsNoOptionSetToDefault() throws Exception {
-    String html = render(fixture("config.xml").replace("<property name=\"berlioz.xml.header.version\" value=\"1.0\"/>", ""));
-    assertTrue(html.contains("<dt>Set to default</dt><dd class=\"key-metric-value muted\">0</dd>"
-        + "<dd class=\"key-metric-detail\">No option configured with its default</dd>"), html);
   }
 
   @Test
