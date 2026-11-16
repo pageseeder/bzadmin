@@ -2,6 +2,7 @@ package org.pageseeder.bzadmin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.pageseeder.bzadmin.PackagedHostTest.parse;
 import static org.pageseeder.bzadmin.PackagedHostTest.xpath;
@@ -18,8 +19,8 @@ import org.w3c.dom.Document;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Reloading everything ({@code berlioz-reload}) from the Config page, in its own host because it
- * breaks the configuration.
+ * Reloading ({@code berlioz-reload}) and resetting the ETags from the Config page, in its own host
+ * because it breaks the configuration.
  */
 final class ConfigReloadTest {
 
@@ -50,16 +51,16 @@ final class ConfigReloadTest {
     Files.writeString(config, Files.readString(config).replace("colour=\"blue\"", "colour=\"green\""));
 
     // Viewers cannot reload, even with the control key
-    assertEquals(403, host.as("viewer").post(RELOAD, "berlioz-reload=true", CONTROL).statusCode());
+    assertEquals(403, host.as("viewer").post(RELOAD, "berlioz-reload=config", CONTROL).statusCode());
     assertEquals("blue", colour());
 
     // The form of the page uses the XML mapping of the host
     assertTrue(host.get("/bzadmin/config.html").body().contains("action=\"" + RELOAD + "\""));
 
     // The admin filter authorises the reload for operators: no control key needed
-    HttpResponse<String> response = host.post(RELOAD, "berlioz-reload=true");
-    // What the Config page reports: the scopes the Berlioz servlet applied (redirects are applied by filters, not mapped here)
-    assertEquals("config, services, xslt, etags", response.headers().firstValue("X-Berlioz-Reload").orElse(""));
+    HttpResponse<String> response = host.post(RELOAD, "berlioz-reload=config");
+    // What the Config page reports: the scopes the Berlioz servlet applied
+    assertEquals("config", response.headers().firstValue("X-Berlioz-Reload").orElse(""));
     // A direct service of the internal API: the output of its generator only
     Document reload = parse(response.body());
     assertEquals("berlioz-control", reload.getDocumentElement().getNodeName(), response.body());
@@ -70,7 +71,7 @@ final class ConfigReloadTest {
 
     // A configuration that fails to load keeps the last valid properties, and says so (Berlioz 0.14.6)
     Files.writeString(config, "<global><berlioz>");
-    Document broken = parse(host.post(RELOAD, "berlioz-reload=true").body());
+    Document broken = parse(host.post(RELOAD, "berlioz-reload=config").body());
     assertEquals("true", xpath(broken, "/berlioz-control/@authorized"));
     assertEquals("reload-failed", xpath(broken, "/berlioz-control/@configuration"));
     assertEquals("green", colour());
@@ -84,7 +85,7 @@ final class ConfigReloadTest {
 
     // Fixed: the status is ready again
     Files.writeString(config, original);
-    assertEquals("ready", xpath(parse(host.post(RELOAD, "berlioz-reload=true").body()), "/berlioz-control/@configuration"));
+    assertEquals("ready", xpath(parse(host.post(RELOAD, "berlioz-reload=config").body()), "/berlioz-control/@configuration"));
     assertEquals("", xpath(parse(host.get("/bzadmin/config.src").body()), "//properties/load-failure/@source"));
     assertEquals("blue", colour());
   }
@@ -102,7 +103,7 @@ final class ConfigReloadTest {
     long captured = Long.parseLong(xpath(before, "//recent-logs/@captured"));
 
     Files.writeString(config, capacity("1000"));
-    assertEquals(200, host.post(RELOAD, "berlioz-reload=true").statusCode());
+    assertEquals(200, host.post(RELOAD, "berlioz-reload=config").statusCode());
     Document resized = recent();
     assertEquals("1000", xpath(resized, "//recent-logs/@capacity"));
     assertTrue(Long.parseLong(xpath(resized, "//recent-logs/@captured")) >= captured, "The count continues");
@@ -110,12 +111,59 @@ final class ConfigReloadTest {
     assertTrue(host.get("/bzadmin/logs.html").body().contains("at most 1000, set by the global property"));
 
     Files.writeString(config, capacity("99999"));
-    host.post(RELOAD, "berlioz-reload=true");
+    host.post(RELOAD, "berlioz-reload=config");
     assertEquals("4096", xpath(recent(), "//recent-logs/@capacity"), "At most 4096");
 
     Files.writeString(config, original);
-    host.post(RELOAD, "berlioz-reload=true");
+    host.post(RELOAD, "berlioz-reload=config");
     assertEquals("256", xpath(recent(), "//recent-logs/@capacity"), "The default when not set");
+  }
+
+  /**
+   * Reload all keeps the ETags; Reset ETags (Services page) gives every response a new one and saves
+   * the seed, and the page says when.
+   */
+  @Test
+  void resetsTheETagsOnlyWhenAsked() throws Exception {
+    // Its generator's ETag does not change with a reload (that of a service lookup changes with the services)
+    String cacheable = "/fixture/error-handler-config.xml";
+    Path seed = host.webInf().resolve("berlioz.etag");
+    String etag = etag(cacheable);
+    assertFalse(Files.exists(seed), "Never reset in this host");
+    assertTrue(host.get("/bzadmin/services.html").body().contains("Never reset"));
+
+    // Reload all: never the ETags (no redirect filter is mapped here)
+    String all = "/bzadmin/api/reload.xml";
+    assertTrue(host.get("/bzadmin/config.html").body().contains("action=\"" + all + "\""));
+    HttpResponse<String> reload = host.post(all, "berlioz-reload=config,services,xslt,redirects");
+    assertEquals(200, reload.statusCode(), reload.body());
+    assertEquals("config, services, xslt", reload.headers().firstValue("X-Berlioz-Reload").orElse(""));
+    assertEquals(etag, etag(cacheable), "The reload keeps the ETags");
+    assertFalse(Files.exists(seed));
+
+    // The form of the page uses the XML mapping of the host
+    String reset = "/bzadmin/api/etags/reset.xml";
+    assertTrue(host.get("/bzadmin/services.html").body().contains("action=\"" + reset + "\""));
+    assertEquals(403, host.as("viewer").post(reset, "berlioz-reload=etags", CONTROL).statusCode());
+    assertEquals(etag, etag(cacheable));
+
+    HttpResponse<String> response = host.post(reset, "berlioz-reload=etags");
+    assertEquals(200, response.statusCode(), response.body());
+    assertEquals("etags", response.headers().firstValue("X-Berlioz-Reload").orElse(""));
+    assertNotEquals(etag, etag(cacheable), "A new ETag");
+    assertTrue(Files.isRegularFile(seed), "The seed is saved");
+    Document control = parse(response.body());
+    assertEquals("true", xpath(control, "/berlioz-control/@etags-saved"));
+    assertFalse(xpath(control, "/berlioz-control/@etags-reset").isEmpty());
+    String html = host.get("/bzadmin/services.html").body();
+    assertTrue(html.contains("Last reset <time "), html);
+    assertFalse(html.contains(Files.readString(seed).trim()), "The seed is never shown");
+  }
+
+  private static String etag(String path) throws Exception {
+    HttpResponse<String> response = host.get(path);
+    assertEquals(200, response.statusCode(), response.body());
+    return response.headers().firstValue("ETag").orElseThrow();
   }
 
   /** The original configuration with this number of recent events. */

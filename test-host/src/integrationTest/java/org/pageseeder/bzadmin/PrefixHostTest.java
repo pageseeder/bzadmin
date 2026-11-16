@@ -79,7 +79,9 @@ final class PrefixHostTest {
    */
   @ParameterizedTest
   @CsvSource({
-      "/html/bzadmin/config,   /xml/bzadmin/api/config/reload,     true,     'config, services, xslt, etags'",
+      "/html/bzadmin/config,   /xml/bzadmin/api/config/reload,     config,   config",
+      "/html/bzadmin/config,   /xml/bzadmin/api/reload,            'config,services,xslt,redirects', 'config, services, xslt'",
+      "/html/bzadmin/services, /xml/bzadmin/api/etags/reset,       etags,    etags",
       "/html/bzadmin/services, /xml/bzadmin/api/services/reload,   services, services",
       "/html/bzadmin/xslt,     /xml/bzadmin/api/xslt/cache/clear,  xslt,     xslt"})
   void reloadsThroughTheRenderedUrls(String page, String action, String scope, String applied) throws Exception {
@@ -121,8 +123,8 @@ final class PrefixHostTest {
   @Test
   void acceptsOperationsOnlyFromOperatorsAndTheAdminPages() throws Exception {
     String reload = "/xml/bzadmin/api/config/reload";
-    assertEquals(403, host.as("viewer").post(reload, "berlioz-reload=true").statusCode());
-    assertEquals(403, host.send("POST", reload, "berlioz-reload=true").statusCode());
+    assertEquals(403, host.as("viewer").post(reload, "berlioz-reload=config").statusCode());
+    assertEquals(403, host.send("POST", reload, "berlioz-reload=config").statusCode());
   }
 
 }

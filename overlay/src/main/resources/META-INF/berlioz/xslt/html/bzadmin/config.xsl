@@ -7,7 +7,7 @@
   - 'berlioz-options'       ListBerliozOptions: options of this Berlioz version with their defaults
   - 'berlioz-config'        GetBerliozConfig: Berlioz servlets (the XSLT processor and servlet container are on the Application page)
   - 'error-handler-config'  GetErrorHandlerConfig: Berlioz error handler servlets
-  - 'berlioz-control'       GetBerliozControl: whether the "Reload everything" button (berlioz-reload) works
+  - 'berlioz-control'       GetBerliozControl: whether the "Reload configuration", "Reload rules" and "Reload all" buttons (berlioz-reload) work
   - 'redirect-filters'      GetRedirectFilters: Berlioz's redirect filters and the rules they loaded (docs/design/redirects.md)
   - 'admin-login'           GetAdminLogin: whether the password of the fallback login is a hash (docs/access.md)
 -->
@@ -94,17 +94,49 @@
 -->
 <xsl:template match="content[@name='global-config']" mode="bzadmin-content">
   <xsl:variable name="view" select="string(/root/header/http-parameters/parameter[@name = 'view'][1])"/>
-  <section>
+  <xsl:variable name="control" select="../content[@name='berlioz-control']/berlioz-control"/>
+  <xsl:variable name="disabled" as="node()*">
+    <xsl:apply-templates select="$control" mode="bzadmin-control-disabled"/>
+  </xsl:variable>
+  <!-- Swapped with the view: the Redirects view reloads the rules instead of the configuration -->
+  <section id="config-controls" class="control-forms">
+    <xsl:choose>
+      <xsl:when test="$view = 'redirects'">
+        <xsl:call-template name="bzadmin-control-form">
+          <xsl:with-param name="id"       select="'reload-redirects'"/>
+          <xsl:with-param name="path"     select="'/bzadmin/api/redirects/reload'"/>
+          <xsl:with-param name="scope"    select="'redirects'"/>
+          <xsl:with-param name="label"    select="'Reload rules'"/>
+          <xsl:with-param name="icon"     select="'refresh'"/>
+          <xsl:with-param name="disabled" as="node()*">
+            <xsl:sequence select="$disabled"/>
+            <xsl:if test="empty($disabled) and not(../content[@name='redirect-filters']/redirect-filters/filter[@status = ('not-loaded', 'failed', 'loaded')])">No filter with a <code>config</code> file to reload</xsl:if>
+          </xsl:with-param>
+          <xsl:with-param name="description" as="node()*">Reloads the rules of every redirect and relocation filter, on the next request through each, without reloading the configuration or the services.</xsl:with-param>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="bzadmin-control-form">
+          <xsl:with-param name="id"       select="'reload-configuration'"/>
+          <xsl:with-param name="path"     select="'/bzadmin/api/config/reload'"/>
+          <xsl:with-param name="scope"    select="'config'"/>
+          <xsl:with-param name="label"    select="'Reload configuration'"/>
+          <xsl:with-param name="icon"     select="'refresh'"/>
+          <xsl:with-param name="disabled" select="$disabled"/>
+          <xsl:with-param name="description" as="node()*">Reloads the global configuration only. Berlioz keeps the last valid configuration if the file fails to load.</xsl:with-param>
+        </xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:call-template name="bzadmin-control-form">
-      <xsl:with-param name="id"       select="'berlioz-reload'"/>
-      <xsl:with-param name="path"     select="'/bzadmin/api/config/reload'"/>
-      <xsl:with-param name="scope"    select="'true'"/>
-      <xsl:with-param name="label"    select="'Reload everything'"/>
+      <xsl:with-param name="id"       select="'reload-all'"/>
+      <xsl:with-param name="path"     select="'/bzadmin/api/reload'"/>
+      <xsl:with-param name="scope"    select="'config,services,xslt,redirects'"/>
+      <xsl:with-param name="label"    select="'Reload all'"/>
       <xsl:with-param name="icon"     select="'refresh'"/>
-      <xsl:with-param name="disabled" as="node()*">
-        <xsl:apply-templates select="../content[@name='berlioz-control']/berlioz-control" mode="bzadmin-control-disabled"/>
-      </xsl:with-param>
-      <xsl:with-param name="description" as="node()*">Reloads the configuration and the services, clears the XSLT cache, resets the ETags and reloads the redirect rules, so that they stay consistent.</xsl:with-param>
+      <xsl:with-param name="class"    select="'button alert'"/>
+      <xsl:with-param name="disabled" select="$disabled"/>
+      <xsl:with-param name="description" as="node()*">Reloads the configuration and the services, clears the XSLT cache and reloads the redirect rules, so that they stay consistent.
+        The ETags are kept: a response whose content changed with the configuration or the services, but not the ETags of its generators, can still be revalidated by clients until the ETags are reset from the Services page.</xsl:with-param>
     </xsl:call-template>
   </section>
   <section id="config-details">
@@ -580,7 +612,7 @@
 -->
 <xsl:template match="content[@name='redirect-filters']" mode="bzadmin-config">
   <xsl:variable name="filters" select="redirect-filters"/>
-  <p>The rules shown are those each filter loaded, in the order of its file. A filter loads its rules on its first request, and again on its next request after <b>Reload everything</b>. Patterns match the request path, including the context path. Passwords and query parameter values in targets are redacted.</p>
+  <p>The rules shown are those each filter loaded, in the order of its file. A filter loads its rules on its first request, and again on its next request after <b>Reload rules</b> or <b>Reload all</b>. Patterns match the request path, including the context path. Passwords and query parameter values in targets are redacted.</p>
   <xsl:choose>
     <xsl:when test="$filters/@context = 'unavailable'">
       <p><i>The filters of the application are not available for this request.</i></p>

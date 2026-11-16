@@ -445,7 +445,8 @@ final class AdminOperationsTest {
       "/bzadmin/api/cache/clear", "/bzadmin/api/cache/entries/remove?key=x", "/bzadmin/api/cache/statistics?enable=true",
       "/bzadmin/api/cache/statistics/reset",
       "/bzadmin/api/logs/recent/threshold?threshold=WARN", "/bzadmin/api/application/statistics/reset",
-      "/bzadmin/api/config/reload", "/bzadmin/api/services/reload", "/bzadmin/api/xslt/cache/clear",
+      "/bzadmin/api/reload", "/bzadmin/api/config/reload", "/bzadmin/api/services/reload", "/bzadmin/api/xslt/cache/clear",
+      "/bzadmin/api/redirects/reload", "/bzadmin/api/etags/reset",
       "/bzadmin/api/config/password/hash?password=x&confirm=x"})
   void rejectsGetForOperations(String path) throws Exception {
     int query = path.indexOf('?');

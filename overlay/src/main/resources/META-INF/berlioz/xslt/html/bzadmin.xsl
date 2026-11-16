@@ -276,13 +276,14 @@
 
   @param id       The id of the form
   @param path     The path of the service, e.g. '/bzadmin/api/xslt/cache/clear'
-  @param scope    The scopes of 'berlioz-reload' (see AdminFilter.CONTROL_SERVICES), e.g. 'xslt', or 'true' for all
+  @param scope    The scopes of 'berlioz-reload', exactly those of the service (see AdminFilter.CONTROL_SERVICES), e.g. 'xslt'
   @param label    The label of the button
   @param icon     The name of the icon
   @param class    The classes of an enabled button
   @param disabled Why the button is disabled; empty when it is enabled
   @param disabled-description-id Existing explanation to reference instead of repeating the disabled reason; optional
   @param description What the button does, in a popover opened by an info button; optional
+  @param note     A short line under an enabled button, e.g. when it was last used; optional
 -->
 <xsl:template name="bzadmin-control-form">
   <xsl:param name="id"       as="xs:string"/>
@@ -294,7 +295,8 @@
   <xsl:param name="disabled" as="node()*"/>
   <xsl:param name="disabled-description-id" as="xs:string" select="''"/>
   <xsl:param name="description" as="node()*"/>
-  <xsl:variable name="described-by" select="string-join((if (exists($disabled)) then (if ($disabled-description-id != '') then $disabled-description-id else concat($id, '-disabled')) else (), if (exists($description)) then concat($id, '-description') else ()), ' ')"/>
+  <xsl:param name="note" as="node()*"/>
+  <xsl:variable name="described-by" select="string-join((if (exists($disabled)) then (if ($disabled-description-id != '') then $disabled-description-id else concat($id, '-disabled')) else (), if (exists($description)) then concat($id, '-description') else (), if (empty($disabled) and exists($note)) then concat($id, '-note') else ()), ' ')"/>
   <form id="{$id}" class="control-form" method="post" action="{f:xml-url($path)}">
     <input type="hidden" name="berlioz-reload" value="{$scope}"/>
     <p>
@@ -314,6 +316,9 @@
       <xsl:if test="exists($description)">
         <xsl:text> </xsl:text>
         <button type="button" class="info-button link-button" popovertarget="{$id}-description" aria-label="About {$label}"><svg-icon name="info-circle"/></button>
+      </xsl:if>
+      <xsl:if test="empty($disabled) and exists($note)">
+        <br/><small id="{$id}-note"><xsl:sequence select="$note"/></small>
       </xsl:if>
     </p>
     <xsl:if test="exists($description)">

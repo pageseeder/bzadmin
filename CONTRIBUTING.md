@@ -35,7 +35,7 @@ npm run build
 ./gradlew dependencyUpdates
 ```
 
-The local dev server runs with `-Dberlioz.mode=local`, which disables XSLT caching (`config-local.xml`). Admin pages are served at `/bzadmin/<section>.html`. The dev host maps Berlioz's `RedirectFilter` and `RelocationFilter` with example rules for the Redirects tab of the Config page (`WEB-INF/config/redirects.xml`, `relocations.xml`): edited rules apply after **Reload everything**, filters added to `web.xml` after a restart.
+The local dev server runs with `-Dberlioz.mode=local`, which disables XSLT caching (`config-local.xml`). Admin pages are served at `/bzadmin/<section>.html`. The dev host maps Berlioz's `RedirectFilter` and `RelocationFilter` with example rules for the Redirects tab of the Config page (`WEB-INF/config/redirects.xml`, `relocations.xml`): edited rules apply after **Reload rules** on that tab (or **Reload all**), filters added to `web.xml` after a restart.
 
 Run in the background (no stdin), `appRun` stops straight after starting; keep stdin open with `tail -f /dev/null | ./gradlew :test-host:appRun`.
 

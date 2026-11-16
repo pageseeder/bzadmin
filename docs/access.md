@@ -56,7 +56,8 @@ The filter also:
   `X-Requested-With`, and on `Sec-Fetch-Site` or, for browsers that do not send it, `Origin`);
 - rejects Berlioz control parameters (`berlioz-reload`, `berlioz-profile` and the deprecated aliases
   `reload-services`, `clear-xsl-cache` and `reset-etags`) on admin URLs, except `berlioz-reload` with the
-  scope of an admin reload button (`true`, `services` or `xslt`), which then needs no control key;
+  scopes of an admin control button on its own service (`config,services,xslt,redirects`, `config`,
+  `services`, `xslt`, `redirects` or `etags`, never `true`), which then needs no control key;
 - redirects `/bzadmin` and `/bzadmin/` (`/html/bzadmin` and `/html/bzadmin/` by prefix) to the Application
   page, only once access is granted: without access, they are denied like any admin URL;
 - sends `Cache-Control: no-store` and adds its own content security policy to the host's.

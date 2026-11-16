@@ -257,7 +257,7 @@ final class HostIntegrationTest {
     private void configure(String password, String authorization) throws Exception {
       Path config = this.host.webInf().resolve("config/" + HostExample.FALLBACK.config());
       Files.writeString(config, Files.readString(config).replaceAll("password=\"[^\"]*\"", "password=\"" + password.replace("$", "\\$") + "\""));
-      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/api/config/reload.src", "berlioz-reload=true", "Authorization", authorization);
+      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/api/config/reload.src", "berlioz-reload=config", "Authorization", authorization);
       assertEquals(200, reload.statusCode(), reload.body());
     }
 
@@ -319,7 +319,7 @@ final class HostIntegrationTest {
     private void configure(UnaryOperator<String> change, String authorization) throws Exception {
       Path config = this.host.webInf().resolve("config/" + HostExample.FALLBACK.config());
       Files.writeString(config, change.apply(Files.readString(config)));
-      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/api/config/reload.src", "berlioz-reload=true", "Authorization", authorization);
+      HttpResponse<String> reload = this.host.as(null).post("/bzadmin/api/config/reload.src", "berlioz-reload=config", "Authorization", authorization);
       assertEquals(200, reload.statusCode(), reload.body());
     }
 

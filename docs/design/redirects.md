@@ -191,8 +191,9 @@ the table scrolls horizontally on narrow screens.
 
 ## Non-goals
 
-- Editing rules, or a reload button of its own: the Config page's reload requests the `redirects`
-  scope, which reaches every filter.
+- Editing rules. In this view, the Config page's **Reload configuration** button is **Reload rules**
+  (`berlioz-reload=redirects` on `/bzadmin/api/redirects/reload`, disabled when no filter has a `config`
+  file), and **Reload all** also requests the `redirects` scope; either reaches every filter.
 - Showing the file when it differs from the loaded rules, or before the first request: the view shows
   what the filter applies.
 - Testing which rule matches a URL. `URIPattern` would allow it later, as a lookup like

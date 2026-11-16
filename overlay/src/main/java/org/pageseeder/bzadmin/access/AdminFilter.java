@@ -148,13 +148,18 @@ public final class AdminFilter implements Filter {
       + "base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
 
   /**
-   * The scopes of {@code berlioz-reload} that each admin service using it applies, by Berlioz path;
-   * {@code berlioz-reload=true} is every scope.
+   * The scopes of {@code berlioz-reload} that each admin service using it applies, by Berlioz path.
+   * Reloading everything leaves the ETag seed alone: resetting it is an action of its own, since it
+   * makes every client and proxy download every response again, and lasts across restarts. So no
+   * service accepts {@code berlioz-reload=true}.
    */
   static final Map<String, Set<ReloadScope>> CONTROL_SERVICES = Map.of(
-      "/bzadmin/api/config/reload", EnumSet.allOf(ReloadScope.class),
+      "/bzadmin/api/reload", EnumSet.of(ReloadScope.CONFIG, ReloadScope.SERVICES, ReloadScope.XSLT, ReloadScope.REDIRECTS),
+      "/bzadmin/api/config/reload", EnumSet.of(ReloadScope.CONFIG),
       "/bzadmin/api/services/reload", EnumSet.of(ReloadScope.SERVICES),
-      "/bzadmin/api/xslt/cache/clear", EnumSet.of(ReloadScope.XSLT));
+      "/bzadmin/api/xslt/cache/clear", EnumSet.of(ReloadScope.XSLT),
+      "/bzadmin/api/redirects/reload", EnumSet.of(ReloadScope.REDIRECTS),
+      "/bzadmin/api/etags/reset", EnumSet.of(ReloadScope.ETAGS));
 
   /**
    * The first admin page, by root of the admin services: Berlioz mapped by extension, or by the

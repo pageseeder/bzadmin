@@ -32,8 +32,8 @@ loaded from the file named by its `config` parameter, relative to `WEB-INF`. It 
 and only `VIEW` permission; it changes nothing.
 
 The tab shows the rules Berlioz loaded, as Berlioz reports them. A filter loads its rules on its first
-request, and again on its next request after **Reload everything**, whatever its mapping. After editing
-a file, reload: the tab shows `reload pending` until the filter's next request, then the new rules.
+request, and again on its next request after **Reload rules** on the tab, or **Reload all**, whatever its
+mapping. After editing a file, reload: the tab shows `reload pending` until the filter's next request, then the new rules.
 Patterns match the request path including the context path, and the first rule that matches wins.
 Passwords and query parameter values in targets are redacted.
 

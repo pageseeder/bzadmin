@@ -415,9 +415,13 @@ final class RedirectsTest {
       HttpResponse<String> before = this.host.as(null).get("/fixture-redirect/partial");
       assertTrue(before.headers().firstValue("Location").orElse("").endsWith("/fixture-redirect/partial-target"), "Rules not reloaded");
 
-      HttpResponse<String> reload = this.host.as("operator").post("/bzadmin/api/config/reload.json", "berlioz-reload=true");
+      // The reload of the Redirects view: the rules only
+      HttpResponse<String> reload = this.host.as("operator").post("/bzadmin/api/redirects/reload.json", "berlioz-reload=redirects");
       assertEquals(200, reload.statusCode(), reload.body());
-      assertTrue(reload.headers().firstValue("X-Berlioz-Reload").orElse("").contains("redirects"), reload.headers().toString());
+      assertEquals("redirects", reload.headers().firstValue("X-Berlioz-Reload").orElse(""), reload.headers().toString());
+      // Reload all reloads them too
+      HttpResponse<String> reloadAll = this.host.as("operator").post("/bzadmin/api/reload.xml", "berlioz-reload=config,services,xslt,redirects");
+      assertEquals("config, services, xslt, redirects", reloadAll.headers().firstValue("X-Berlioz-Reload").orElse(""));
       xml = config(this.host);
       assertEquals("true", xpath(xml, filter("RedirectsPartial") + "/@reload-pending"));
       assertEquals("/fixture-redirect/partial-target", xpath(xml, rule("RedirectsPartial", 1) + "/@to"));
@@ -455,6 +459,13 @@ final class RedirectsTest {
       assertTrue(html.contains("/html/<span class=\"redirect-token\">{+path}</span>"), html);
       assertFalse(html.contains("href=\"/fixture-redirect"), html);
       assertFalse(html.contains("href=\"https://example.org"), html);
+      assertTrue(html.contains("aria-describedby=\"reload-redirects-disabled reload-redirects-description\""), "Viewers cannot reload");
+
+      // Operators can reload the rules alone
+      String operator = this.host.get("/bzadmin/config.html?view=redirects").body();
+      assertTrue(operator.contains("action=\"/bzadmin/api/redirects/reload.xml\""), operator);
+      assertTrue(operator.contains("name=\"berlioz-reload\" value=\"redirects\""), operator);
+      assertFalse(operator.contains("reload-redirects-disabled"), operator);
     }
 
     /**
@@ -500,6 +511,18 @@ final class RedirectsTest {
       assertEquals("relocation", xpath(xml, CONTENT + "/filter[2]/@type"));
       assertEquals("2", xpath(xml, "count(" + CONTENT + "/filter[@status='not-mapped'])"));
       assertEquals("0", xpath(xml, "count(" + CONTENT + "/filter/@name)"));
+    }
+
+    /**
+     * Without a filter, the rules cannot be reloaded: the button says why, and Berlioz applies nothing.
+     */
+    @Test
+    void hasNoRulesToReload() throws Exception {
+      String html = this.host.get("/bzadmin/config.html?view=redirects").body();
+      assertTrue(html.contains("No filter with a <code>config</code> file to reload"), html);
+      HttpResponse<String> reload = this.host.post("/bzadmin/api/redirects/reload.xml", "berlioz-reload=redirects");
+      assertEquals(200, reload.statusCode(), reload.body());
+      assertEquals("", reload.headers().firstValue("X-Berlioz-Reload").orElse(""));
     }
 
   }

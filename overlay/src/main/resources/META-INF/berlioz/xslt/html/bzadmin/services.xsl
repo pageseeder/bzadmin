@@ -5,7 +5,7 @@
   The services are those Berlioz is running (Berlioz ListRuntimeServices), including services
   declared in JARs, with the source that declared each, the declarations it replaced and the
   diagnostics of the last load (sources, warnings, failure). See docs/design/metadata-contract.md. GetBerliozControl ('berlioz-control')
-  tells whether the services can be reloaded. The Lookup view ('group-by=lookup') has the form to find
+  tells whether the services can be reloaded and the ETags reset, and when they were last reset. The Lookup view ('group-by=lookup') has the form to find
   the service matching a URL with Berlioz GetMatchingService ('service-match', /bzadmin/services/lookup).
 -->
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -47,20 +47,50 @@
 </xsl:template>
 
 <!--
+  When the ETag seed was last reset, under the "Reset ETags" button: the time of the file Berlioz
+  saves it in, and whether it can save it (otherwise a reset lasts until the application restarts).
+-->
+<xsl:template match="berlioz-control" mode="bzadmin-services-etags-reset">
+  <xsl:choose>
+    <xsl:when test="@etags-reset castable as xs:dateTime">Last reset <xsl:sequence select="f:last-modified(xs:dateTime(@etags-reset))"/></xsl:when>
+    <xsl:otherwise>Never reset</xsl:otherwise>
+  </xsl:choose>
+  <xsl:if test="@etags-saved = 'false'">; <code>WEB-INF</code> is not writable: a reset lasts until the application restarts</xsl:if>
+</xsl:template>
+
+<!--
   Display the services.
 -->
 <xsl:template match="content[@name='runtime-services']" mode="bzadmin-content">
   <xsl:variable name="group-by" select="string(/root/header/http-parameters/parameter[@name = 'group-by'][1])"/>
   <xsl:variable name="runtime" select="live-services"/>
-  <section>
+  <xsl:variable name="control" select="../content[@name='berlioz-control']/berlioz-control"/>
+  <xsl:variable name="disabled" as="node()*">
+    <xsl:apply-templates select="$control" mode="bzadmin-control-disabled"/>
+  </xsl:variable>
+  <section class="control-forms">
     <xsl:call-template name="bzadmin-control-form">
       <xsl:with-param name="id"       select="'reload-services'"/>
       <xsl:with-param name="path"     select="'/bzadmin/api/services/reload'"/>
       <xsl:with-param name="scope"    select="'services'"/>
       <xsl:with-param name="label"    select="'Reload services'"/>
       <xsl:with-param name="icon"     select="'refresh'"/>
-      <xsl:with-param name="disabled" as="node()*">
-        <xsl:apply-templates select="../content[@name='berlioz-control']/berlioz-control" mode="bzadmin-control-disabled"/>
+      <xsl:with-param name="disabled" select="$disabled"/>
+    </xsl:call-template>
+    <xsl:call-template name="bzadmin-control-form">
+      <xsl:with-param name="id"       select="'reset-etags'"/>
+      <xsl:with-param name="path"     select="'/bzadmin/api/etags/reset'"/>
+      <xsl:with-param name="scope"    select="'etags'"/>
+      <xsl:with-param name="label"    select="'Reset ETags'"/>
+      <xsl:with-param name="icon"     select="'recycle'"/>
+      <xsl:with-param name="class"    select="'button alert'"/>
+      <xsl:with-param name="disabled" select="$disabled"/>
+      <xsl:with-param name="description" as="node()*">Gives every response of the services a new ETag, so that browsers, proxies and CDNs download each of them again instead of revalidating it.
+        The new seed is saved in <code>WEB-INF/berlioz.etag</code> and kept after a restart.
+        Needed only when responses changed but the ETags of their generators did not: after a change to the global configuration or to the service parameters that generators use, or to the code of generators.
+        Changes to the XSLT already change the ETags.</xsl:with-param>
+      <xsl:with-param name="note" as="node()*">
+        <xsl:apply-templates select="$control" mode="bzadmin-services-etags-reset"/>
       </xsl:with-param>
     </xsl:call-template>
   </section>

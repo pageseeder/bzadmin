@@ -75,9 +75,12 @@ final class AccessPolicyTest {
         Arguments.of("GET", "/bzadmin/files/document", "path=/content/home.psml"),
         Arguments.of("GET", "/bzadmin/logs/raw", "id=" + LogIds.fixture("fixture.log")),
         Arguments.of("GET", "/bzadmin/services/lookup", "url=/bzadmin/config"),
+        Arguments.of("POST", "/bzadmin/api/reload", ""),
         Arguments.of("POST", "/bzadmin/api/config/reload", ""),
         Arguments.of("POST", "/bzadmin/api/services/reload", ""),
         Arguments.of("POST", "/bzadmin/api/xslt/cache/clear", ""),
+        Arguments.of("POST", "/bzadmin/api/redirects/reload", ""),
+        Arguments.of("POST", "/bzadmin/api/etags/reset", ""),
         Arguments.of("POST", "/bzadmin/api/cache/clear", ""),
         Arguments.of("POST", "/bzadmin/api/cache/clear", CACHE),
         Arguments.of("POST", "/bzadmin/api/cache/entries/remove", CACHE + "&key=x"),
@@ -712,9 +715,12 @@ final class AccessPolicyTest {
           {"POST", "/bzadmin/api/config/password/hash", "password=fixture-secret-hash&confirm=fixture-secret-hash"},
           {"POST", "/bzadmin/api/cache/statistics", CACHE + "&enable=true"},
           {"POST", "/bzadmin/api/cache/statistics/reset", CACHE},
-          {"POST", "/bzadmin/api/config/reload", "berlioz-reload=true"},
+          {"POST", "/bzadmin/api/reload", "berlioz-reload=config,services,xslt,redirects"},
+          {"POST", "/bzadmin/api/config/reload", "berlioz-reload=config"},
           {"POST", "/bzadmin/api/services/reload", "berlioz-reload=services"},
-          {"POST", "/bzadmin/api/xslt/cache/clear", "berlioz-reload=xslt"}};
+          {"POST", "/bzadmin/api/xslt/cache/clear", "berlioz-reload=xslt"},
+          {"POST", "/bzadmin/api/redirects/reload", "berlioz-reload=redirects"},
+          {"POST", "/bzadmin/api/etags/reset", "berlioz-reload=etags"}};
       for (String user : this.example.viewers()) {
         BerliozHost viewer = this.host.as(user);
         for (String[] operation : operations) {

@@ -200,7 +200,13 @@
     the X-Berlioz-Reload header lists the scopes Berlioz applied
   -->
 
-  <!-- Everything with 'berlioz-reload=true' (configuration, services, XSLT cache, ETags, redirects) -->
+  <!-- Everything but the ETags with 'berlioz-reload=config,services,xslt,redirects' -->
+  <service id="bzadmin-api-reload" method="post">
+    <url pattern="/bzadmin/api/reload"/>
+    <handler class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"/>
+  </service>
+
+  <!-- The global configuration with 'berlioz-reload=config' -->
   <service id="bzadmin-api-config-reload" method="post">
     <url pattern="/bzadmin/api/config/reload"/>
     <handler class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"/>
@@ -215,6 +221,18 @@
   <!-- The XSLT cache with 'berlioz-reload=xslt' -->
   <service id="bzadmin-api-xslt-cache-clear" method="post">
     <url pattern="/bzadmin/api/xslt/cache/clear" />
+    <handler class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"/>
+  </service>
+
+  <!-- The rules of the redirect and relocation filters with 'berlioz-reload=redirects' -->
+  <service id="bzadmin-api-redirects-reload" method="post">
+    <url pattern="/bzadmin/api/redirects/reload"/>
+    <handler class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"/>
+  </service>
+
+  <!-- A new ETag seed with 'berlioz-reload=etags': every response of Berlioz gets a new ETag -->
+  <service id="bzadmin-api-etags-reset" method="post">
+    <url pattern="/bzadmin/api/etags/reset"/>
     <handler class="org.pageseeder.bzadmin.berlioz.GetBerliozControl"/>
   </service>
 

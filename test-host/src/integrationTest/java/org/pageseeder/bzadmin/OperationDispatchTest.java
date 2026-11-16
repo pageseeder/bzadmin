@@ -147,9 +147,12 @@ final class OperationDispatchTest {
           Arguments.of("/bzadmin/api/cache/statistics/reset", JCACHE),
           Arguments.of("/bzadmin/api/logs/recent/threshold", "threshold=ERROR"),
           Arguments.of("/bzadmin/api/application/statistics/reset", ""),
-          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=true"),
+          Arguments.of("/bzadmin/api/reload", "berlioz-reload=config,services,xslt,redirects"),
+          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=config"),
           Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=services"),
-          Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload=xslt"));
+          Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload=xslt"),
+          Arguments.of("/bzadmin/api/redirects/reload", "berlioz-reload=redirects"),
+          Arguments.of("/bzadmin/api/etags/reset", "berlioz-reload=etags"));
     }
 
     /**
@@ -260,7 +263,15 @@ final class OperationDispatchTest {
           Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=true"),
           Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=services,xslt"),
           Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload=services"),
-          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=config"),
+          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=config,services"),
+          Arguments.of("/bzadmin/api/reload", "berlioz-reload=config"),
+          // The ETags are reset by their own service only
+          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=true"),
+          Arguments.of("/bzadmin/api/reload", "berlioz-reload=true"),
+          Arguments.of("/bzadmin/api/reload", "berlioz-reload=config,services,xslt,redirects,etags"),
+          Arguments.of("/bzadmin/api/etags/reset", "berlioz-reload=true"),
+          Arguments.of("/bzadmin/api/redirects/reload", "berlioz-reload=true"),
+          Arguments.of("/bzadmin/api/redirects/reload", "berlioz-reload=redirects,etags"),
           Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload=xslt,unknown"),
           Arguments.of("/bzadmin/api/xslt/cache/clear", "berlioz-reload="),
           // The deprecated aliases, even on the service of their scope
@@ -268,7 +279,7 @@ final class OperationDispatchTest {
           Arguments.of("/bzadmin/api/xslt/cache/clear", "clear-xsl-cache=true"),
           Arguments.of("/bzadmin/api/config/reload", "reset-etags=true"),
           // Other control parameters, or more than one value
-          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=true&berlioz-profile=true"),
+          Arguments.of("/bzadmin/api/config/reload", "berlioz-reload=config&berlioz-profile=true"),
           Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=services&reset-etags=true"),
           Arguments.of("/bzadmin/api/services/reload?berlioz-reload=services", "berlioz-reload=services"),
           Arguments.of("/bzadmin/api/services/reload", "berlioz-reload=services&berlioz-reload=services"),

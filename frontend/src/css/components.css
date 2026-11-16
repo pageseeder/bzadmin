@@ -550,6 +550,19 @@ line-chart {
   color: var(--text-muted);
 }
 
+/* Control buttons: the first to the left, the last to the right, wrapping on narrow screens */
+.control-forms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  column-gap: var(--space-7);
+
+  > .control-form:last-child:not(:first-child) {
+    text-align: right;
+  }
+}
+
 .panel {
   background: var(--surface-raised);
   border-radius: var(--radius-md);

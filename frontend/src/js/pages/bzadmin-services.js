@@ -39,6 +39,41 @@ if (page) {
     }
   });
 
+  // When resetting the ETag seed: every response gets a new ETag, also after a restart
+  on(page, 'submit', '#reset-etags', async (event, form) => {
+    event.preventDefault();
+    if (
+      !confirm(
+        'Reset the ETags? Every browser, proxy and CDN will download every response of the services again ' +
+          'instead of revalidating it. The new seed is kept after a restart.'
+      )
+    ) {
+      return;
+    }
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      const { authorized, applied, etagsSaved } = await postControl(form);
+      if (!authorized) {
+        flash(button, 'ETags not reset: requires the permission to operate', { type: 'error' });
+      } else if (!applied.includes('etags')) {
+        flash(button, 'ETags not reset: Berlioz did not apply berlioz-reload', { type: 'error' });
+      } else {
+        const note = form.querySelector('#reset-etags-note');
+        if (note) {
+          note.textContent = etagsSaved
+            ? 'Last reset just now'
+            : 'Reset until the application restarts: WEB-INF is not writable';
+        }
+        flash(button, etagsSaved ? 'ETags reset' : 'ETags reset until the application restarts');
+      }
+    } catch (error) {
+      flash(button, `Unable to reset ETags: ${error.message}`, { type: 'error' });
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   // When looking up the service matching a URL
   on(page, 'submit', '#service-lookup', async (event, form) => {
     event.preventDefault();

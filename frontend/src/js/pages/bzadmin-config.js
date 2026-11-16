@@ -6,11 +6,15 @@ const page = document.querySelector('.page-bzadmin-config');
 if (page) {
   const details = page.querySelector('#config-details');
 
-  // When reloading everything (configuration, services, XSLT cache, ETags and redirects)
-  on(page, 'submit', '#berlioz-reload', async (event, form) => {
-    event.preventDefault();
-    if (!confirm('Reload the configuration and the services, and clear the XSLT cache?')) return;
-    const button = form.querySelector('button');
+  /**
+   * Post a reload, then show the configuration Berlioz now uses in the current view, with the result.
+   *
+   * @param {HTMLFormElement} form
+   * @param {string} scope the scope that must be applied, e.g. 'config'
+   * @param {string} done the message when it was applied
+   */
+  const reload = async (form, scope, done) => {
+    const button = form.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
       const { authorized, applied, services, configuration } = await postControl(form);
@@ -18,29 +22,75 @@ if (page) {
         flash(button, 'Not reloaded: requires the permission to operate', { type: 'error' });
         return;
       }
-      if (!applied.includes('config')) {
+      if (!applied.includes(scope)) {
         flash(button, 'Not reloaded: Berlioz did not apply berlioz-reload', { type: 'error' });
         return;
       }
-      // Show the configuration Berlioz now uses, in the current view
       const shown = await reloadFragment(location.href, '#config-details', details, {
         anchor: button,
         error: 'Unable to load configuration'
       });
       const failed = [
-        configuration === 'reload-failed' && 'the configuration (Berlioz keeps the last valid one)',
-        services === 'reload-failed' && 'the services (Berlioz keeps running the last valid ones)'
+        applied.includes('config') &&
+          configuration === 'reload-failed' &&
+          'the configuration (Berlioz keeps the last valid one)',
+        applied.includes('services') &&
+          services === 'reload-failed' &&
+          'the services (Berlioz keeps running the last valid ones)'
       ].filter(Boolean);
       if (failed.length) {
         flash(button, `Reload of ${failed.join(' and of ')} failed`, { type: 'error', timeout: 10000 });
       } else if (shown) {
-        flash(button, `Reloaded (${applied.join(', ')})`);
+        flash(button, done.replace('{applied}', applied.join(', ')));
       }
     } catch (error) {
       flash(button, `Unable to reload: ${error.message}`, { type: 'error' });
     } finally {
       button.disabled = false;
     }
+  };
+
+  // When reloading the global configuration only
+  on(page, 'submit', '#reload-configuration', (event, form) => {
+    event.preventDefault();
+    reload(form, 'config', 'Configuration reloaded');
+  });
+
+  // When reloading the rules of the redirect filters (Redirects view): each filter loads them on its next request
+  on(page, 'submit', '#reload-redirects', async (event, form) => {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      const { authorized, applied } = await postControl(form);
+      if (!authorized) {
+        flash(button, 'Rules not reloaded: requires the permission to operate', { type: 'error' });
+        return;
+      }
+      if (!applied.includes('redirects')) {
+        flash(button, 'Rules not reloaded: no filter with a config file', { type: 'error' });
+        return;
+      }
+      // Show the filters with their pending reload
+      const shown = await reloadFragment(location.href, '#config-details', details, {
+        anchor: button,
+        error: 'Unable to load the redirect filters'
+      });
+      if (shown) flash(button, 'Rules reloaded on the next request through each filter');
+    } catch (error) {
+      flash(button, `Unable to reload rules: ${error.message}`, { type: 'error' });
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  // When reloading the configuration, the services, the XSLT cache and the redirect rules (not the ETags)
+  on(page, 'submit', '#reload-all', (event, form) => {
+    event.preventDefault();
+    const question =
+      'Reload the configuration and the services, clear the XSLT cache and reload the redirect rules? ' +
+      'The ETags are kept.';
+    if (confirm(question)) reload(form, 'config', 'Reloaded ({applied})');
   });
 
   // When making a password hash (Login view): the fields are cleared once it is made
@@ -93,6 +143,9 @@ if (page) {
       error: 'Unable to load configuration'
     });
     if (!doc) return;
+    // The control buttons depend on the view: the Redirects view reloads the rules
+    const controls = doc.querySelector('#config-controls');
+    if (controls) page.querySelector('#config-controls')?.replaceChildren(...document.adoptNode(controls).childNodes);
     for (const choice of page.querySelectorAll('.secondary-nav a')) {
       choice.classList.toggle('active', choice === link);
       if (choice === link) choice.setAttribute('aria-current', 'page');
