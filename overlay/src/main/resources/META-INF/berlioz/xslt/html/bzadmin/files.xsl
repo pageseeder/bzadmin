@@ -68,7 +68,8 @@
     <p><svg-icon name="warning"/> This folder has too many entries: only the first <xsl:value-of select="$total"/> found are listed, and sorted.</p>
   </div>
 </xsl:if>
-<div class="table-scroll" tabindex="0" role="group" aria-label="Folder contents"><table class="basic-table" aria-label="Folder contents">
+<div class="table-scroll" tabindex="0" role="group" aria-label="Folder contents"><sortable-table>
+<table class="basic-table psml-folder-table" aria-label="Folder contents">
   <colgroup>
     <col class="name"/>
     <col class="modified"/>
@@ -76,9 +77,9 @@
   </colgroup>
   <thead>
     <tr>
-      <th>Name</th>
-      <th>Last Modified</th>
-      <th>Size</th>
+      <th class="name">Name</th>
+      <th class="modified">Last modified</th>
+      <th class="size">Size</th>
     </tr>
   </thead>
   <tbody>
@@ -88,12 +89,12 @@
         <xsl:when test="@type = 'folder'">
           <td><a href="{f:psml-href('/bzadmin/files', ../@root, @path)}"><svg-icon name="folder-o"/><xsl:text> </xsl:text><xsl:value-of select="@name"/></a></td>
           <td><xsl:sequence select="f:last-modified(@modified)"/></td>
-          <td>Folder</td>
+          <td data-sort="-1">Folder</td>
         </xsl:when>
         <xsl:otherwise>
           <td><a href="{f:psml-href('/bzadmin/files/document', ../@root, @path)}"><xsl:value-of select="@name"/></a></td>
           <td><xsl:sequence select="f:last-modified(@modified)"/></td>
-          <td><xsl:value-of select="f:to-size(@size)"/></td>
+          <td data-sort="{@size}"><xsl:value-of select="f:to-size(@size)"/></td>
         </xsl:otherwise>
       </xsl:choose>
     </tr>
@@ -102,7 +103,8 @@
       <tr><td colspan="3">No folders or PSML files in this folder.</td></tr>
     </xsl:if>
   </tbody>
-</table></div>
+</table>
+</sortable-table></div>
 <xsl:if test="$total gt $count">
   <xsl:variable name="base" select="f:psml-href('/bzadmin/files', @root, @path)"/>
   <nav class="psml-pages" aria-label="Folder pages">

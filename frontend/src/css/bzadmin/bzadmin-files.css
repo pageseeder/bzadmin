@@ -15,6 +15,17 @@
   col.size {
     width: 15%;
   }
+  .psml-folder-table {
+    th.name {
+      text-align: left;
+    }
+    :is(th, td):nth-child(n + 2) {
+      text-align: right;
+    }
+    :is(th.modified, th.size) .sort-button {
+      justify-content: flex-end;
+    }
+  }
 
   /* Ranges of a large folder */
   .psml-pages {
