@@ -107,7 +107,7 @@
   <div class="application-overview-grid">
     <section class="panel" aria-labelledby="application-runtime-title">
       <h3 id="application-runtime-title">Runtime components</h3>
-      <p class="muted">Versions reported by the running application. <a href="{f:to-path('/bzadmin/application')}?view=libraries">Browse libraries</a> for the full inventory.</p>
+      <p class="muted">Versions reported by the running application.</p>
       <div class="table-scroll" tabindex="0" role="group" aria-label="Application versions"><table class="summary-table" aria-label="Application versions">
         <tbody>
           <xsl:for-each select="component">
