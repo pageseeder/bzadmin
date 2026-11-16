@@ -224,13 +224,23 @@ final class LogbackInspectionTest {
   }
 
   @Test
-  void countsTheStatusesSinceTheLastReset() throws InterruptedException {
-    this.context.getStatusManager().add(new ErrorStatus("before the reset", this));
-    Thread.sleep(5);
+  void countsTheStatusesSinceTheLastReset() {
+    // Timestamps well apart from the reset, rather than waiting for the clock to move
+    long now = System.currentTimeMillis();
+    this.context.getStatusManager().add(new ErrorStatus("before the reset", this) {
+      @Override
+      public long getTimestamp() {
+        return now - 60_000;
+      }
+    });
     this.context.reset();
-    Thread.sleep(5);
     root().addAppender(file("app", this.temp.resolve("app.log")));
-    this.context.getStatusManager().add(new WarnStatus("after the reset", this));
+    this.context.getStatusManager().add(new WarnStatus("after the reset", this) {
+      @Override
+      public long getTimestamp() {
+        return now + 60_000;
+      }
+    });
     LoggingConfiguration c = this.backend.configuration();
     assertEquals(0, c.errors);
     assertEquals(1, c.warnings);

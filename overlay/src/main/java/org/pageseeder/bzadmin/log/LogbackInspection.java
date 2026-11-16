@@ -44,6 +44,9 @@ final class LogbackInspection {
   /** The statuses that logback keeps: the first 150 and the last 150. */
   static final int STATUSES_KEPT = 300;
 
+  /** The name of the logging framework. */
+  private static final String FRAMEWORK = "logback";
+
   private final LoggerContext context;
 
   private final Appender<ILoggingEvent> capture;
@@ -71,11 +74,11 @@ final class LogbackInspection {
    */
   static LoggingConfiguration inspect(LoggerContext context, Appender<ILoggingEvent> capture, @Nullable String version,
       int resets, @Nullable Instant lastReset) {
-    if (!supports(version)) return LoggingConfiguration.without("logback", version, Verdict.UNAVAILABLE);
+    if (!supports(version)) return LoggingConfiguration.without(FRAMEWORK, version, Verdict.UNAVAILABLE);
     try {
       return new LogbackInspection(context, capture).inspect(version, resets, lastReset);
     } catch (LinkageError ex) {
-      return LoggingConfiguration.without("logback", version, Verdict.UNAVAILABLE);
+      return LoggingConfiguration.without(FRAMEWORK, version, Verdict.UNAVAILABLE);
     }
   }
 
@@ -96,7 +99,7 @@ final class LogbackInspection {
   }
 
   private LoggingConfiguration inspect(@Nullable String version, int resets, @Nullable Instant lastReset) {
-    LoggingConfiguration.Builder b = new LoggingConfiguration.Builder("logback", version);
+    LoggingConfiguration.Builder b = new LoggingConfiguration.Builder(FRAMEWORK, version);
     b.resets = resets;
     b.lastReset = lastReset;
     List<Logger> all = new ArrayList<>(this.context.getLoggerList());
@@ -106,26 +109,10 @@ final class LogbackInspection {
     Map<String, Boolean> output = new HashMap<>();
     List<Logger> listed = new ArrayList<>();
     for (Logger logger : all) {
-      boolean own = false;
-      boolean hasAppenders = false;
-      for (Iterator<Appender<ILoggingEvent>> i = logger.iteratorForAppenders(); i.hasNext();) {
-        Appender<ILoggingEvent> appender = i.next();
-        hasAppenders = true;
-        LoggingConfiguration.@Nullable Appender found = visit(appender, null, 0);
-        if (found != null) found.loggers.add(logger.getName());
-        if (writes(appender)) own = true;
-      }
-      output.put(logger.getName(), own);
-      if (logger == root || logger.getLevel() != null || (hasAppenders && !onlyCapture(logger))) listed.add(logger);
+      output.put(logger.getName(), visitAppenders(logger));
+      if (isListed(logger, root)) listed.add(logger);
     }
-    // Loggers are created with their ancestors, so a parent is known before its children when sorted by name
-    all.sort(Comparator.comparing(Logger::getName, LogbackInspection::byDepth));
-    for (Logger logger : all) {
-      if (logger == root) continue;
-      boolean own = output.getOrDefault(logger.getName(), false);
-      boolean inherited = logger.isAdditive() && output.getOrDefault(parent(logger.getName(), root.getName()), false);
-      output.put(logger.getName(), own || inherited);
-    }
+    inherit(all, root, output);
 
     // Appenders, not started first
     List<LoggingConfiguration.Appender> sorted = new ArrayList<>(this.order);
@@ -136,14 +123,7 @@ final class LogbackInspection {
     listed.sort(Comparator.comparing((Logger l) -> l != root).thenComparing(Logger::getName));
     b.loggerTotal = listed.size();
     for (Logger logger : listed.subList(0, Math.min(listed.size(), LoggingConfiguration.MAX_LOGGERS))) {
-      List<String> ids = new ArrayList<>();
-      for (Iterator<Appender<ILoggingEvent>> i = logger.iteratorForAppenders(); i.hasNext();) {
-        LoggingConfiguration.@Nullable Appender a = this.appenders.get(i.next());
-        if (a != null) ids.add(a.id);
-      }
-      b.loggers.add(new LoggingConfiguration.Logger(logger.getName(), LogbackBackend.level(logger.getLevel()),
-          LogbackBackend.level(logger.getEffectiveLevel()), logger.isAdditive(), ids,
-          output.getOrDefault(logger.getName(), false)));
+      b.loggers.add(logger(logger, hasOutput(output, logger.getName())));
     }
 
     statuses(b, lastReset);
@@ -151,6 +131,59 @@ final class LogbackInspection {
     watch(b);
     issues(b, listed, output);
     return b.build();
+  }
+
+  /**
+   * Records the appenders attached to a logger.
+   *
+   * @return whether an appender attached to the logger writes.
+   */
+  private boolean visitAppenders(Logger logger) {
+    boolean own = false;
+    for (Iterator<Appender<ILoggingEvent>> i = logger.iteratorForAppenders(); i.hasNext();) {
+      Appender<ILoggingEvent> appender = i.next();
+      LoggingConfiguration.@Nullable Appender found = visit(appender, null, 0);
+      if (found != null) found.loggers.add(logger.getName());
+      if (writes(appender)) own = true;
+    }
+    return own;
+  }
+
+  /**
+   * @return whether the logger is listed: the root, a logger with a level, or one with appenders other than the capture.
+   */
+  private boolean isListed(Logger logger, Logger root) {
+    if (logger == root || logger.getLevel() != null) return true;
+    return logger.iteratorForAppenders().hasNext() && !onlyCapture(logger);
+  }
+
+  /**
+   * Updates the output of each logger with that of its ancestors, while additivity holds.
+   */
+  private static void inherit(List<Logger> all, Logger root, Map<String, Boolean> output) {
+    // Loggers are created with their ancestors, so a parent is known before its children when sorted by name
+    List<Logger> sorted = new ArrayList<>(all);
+    sorted.sort(Comparator.comparing(Logger::getName, LogbackInspection::byDepth));
+    for (Logger logger : sorted) {
+      if (logger == root) continue;
+      boolean own = hasOutput(output, logger.getName());
+      boolean inherited = logger.isAdditive() && hasOutput(output, parent(logger.getName(), root.getName()));
+      output.put(logger.getName(), own || inherited);
+    }
+  }
+
+  private static boolean hasOutput(Map<String, Boolean> output, String name) {
+    return Boolean.TRUE.equals(output.get(name));
+  }
+
+  private LoggingConfiguration.Logger logger(Logger logger, boolean hasOutput) {
+    List<String> ids = new ArrayList<>();
+    for (Iterator<Appender<ILoggingEvent>> i = logger.iteratorForAppenders(); i.hasNext();) {
+      LoggingConfiguration.@Nullable Appender a = this.appenders.get(i.next());
+      if (a != null) ids.add(a.id);
+    }
+    return new LoggingConfiguration.Logger(logger.getName(), LogbackBackend.level(logger.getLevel()),
+        LogbackBackend.level(logger.getEffectiveLevel()), logger.isAdditive(), ids, hasOutput);
   }
 
   /**
@@ -217,7 +250,7 @@ final class LogbackInspection {
   /** Orders names so that a parent comes before its children. */
   private static int byDepth(String a, String b) {
     int c = Integer.compare(depth(a), depth(b));
-    return c != 0 ? c : a.compareTo(b);
+    return c == 0 ? a.compareTo(b) : c;
   }
 
   private static int depth(String name) {
@@ -288,32 +321,14 @@ final class LogbackInspection {
 
   private void issues(LoggingConfiguration.Builder b, List<Logger> listed, Map<String, Boolean> output) {
     List<Issue> issues = new ArrayList<>();
-    boolean anyWrites = this.unlisted.containsValue(Boolean.TRUE);
-    boolean consoleOnly = true;
-    for (Map.Entry<Appender<ILoggingEvent>, LoggingConfiguration.Appender> e : this.appenders.entrySet()) {
-      Appender<ILoggingEvent> appender = e.getKey();
-      LoggingConfiguration.Appender a = e.getValue();
-      if (a.capture) continue;
-      if (a.writes) {
-        anyWrites = true;
-        if (!(appender instanceof AppenderAttachable) && !(appender instanceof ConsoleAppender)) consoleOnly = false;
-      }
-    }
-    if (this.unlisted.containsValue(Boolean.TRUE)) consoleOnly = false;
+    boolean anyWrites = anyWrites();
     for (LoggingConfiguration.Appender a : this.order) {
       if (!a.capture && !a.started) issues.add(new Issue("stopped-appender", Severity.ERROR).appender(a.id, a.name));
     }
-    if (anyWrites) {
-      for (Logger logger : listed) {
-        boolean off = logger.getEffectiveLevel() != null && LogbackBackend.level(logger.getEffectiveLevel()) == EventLevel.OFF;
-        if (!off && !output.getOrDefault(logger.getName(), false)) {
-          issues.add(new Issue("no-output", Severity.ERROR).logger(logger.getName()));
-        }
-      }
-    }
+    if (anyWrites) noOutput(issues, listed, output);
     if (b.errors > 0) issues.add(new Issue("error-status", Severity.ERROR).count(b.errors));
     if (b.warnings > 0) issues.add(new Issue("warning-status", Severity.WARNING).count(b.warnings));
-    if (anyWrites && consoleOnly) issues.add(new Issue("console-only", Severity.WARNING));
+    if (anyWrites && consoleOnly()) issues.add(new Issue("console-only", Severity.WARNING));
     // The issues found with the statuses go after
     issues.addAll(b.issues);
     b.issues.clear();
@@ -321,6 +336,44 @@ final class LogbackInspection {
     if (!anyWrites) b.verdict = Verdict.NOT_WRITING;
     else if (issues.stream().anyMatch(i -> i.severity == Severity.ERROR)) b.verdict = Verdict.PROBLEMS;
     else b.verdict = Verdict.WRITING;
+  }
+
+  /**
+   * @return whether an appender other than the capture writes, listed or not.
+   */
+  private boolean anyWrites() {
+    if (this.unlisted.containsValue(Boolean.TRUE)) return true;
+    for (LoggingConfiguration.Appender a : this.appenders.values()) {
+      if (!a.capture && a.writes) return true;
+    }
+    return false;
+  }
+
+  /**
+   * @return whether the appenders that write, other than those holding other appenders, all write to the console.
+   */
+  private boolean consoleOnly() {
+    if (this.unlisted.containsValue(Boolean.TRUE)) return false;
+    for (Map.Entry<Appender<ILoggingEvent>, LoggingConfiguration.Appender> e : this.appenders.entrySet()) {
+      Appender<ILoggingEvent> appender = e.getKey();
+      LoggingConfiguration.Appender a = e.getValue();
+      if (!a.capture && a.writes && !(appender instanceof AppenderAttachable) && !(appender instanceof ConsoleAppender)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Adds an issue for each listed logger that is not off and has no output.
+   */
+  private static void noOutput(List<Issue> issues, List<Logger> listed, Map<String, Boolean> output) {
+    for (Logger logger : listed) {
+      boolean off = logger.getEffectiveLevel() != null && LogbackBackend.level(logger.getEffectiveLevel()) == EventLevel.OFF;
+      if (!off && !hasOutput(output, logger.getName())) {
+        issues.add(new Issue("no-output", Severity.ERROR).logger(logger.getName()));
+      }
+    }
   }
 
 }
