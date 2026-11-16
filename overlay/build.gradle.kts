@@ -238,6 +238,23 @@ listOf(tasks.jar, tasks.named<Jar>("sourcesJar"), tasks.named<Jar>("javadocJar")
   }
 }
 
+// The manifest of the overlay JAR, after Berlioz's own; the module is named after the Java
+// packages, since `org.pageseeder.berlioz` is Berlioz's
+tasks.jar {
+  manifest {
+    attributes(
+      "Automatic-Module-Name" to "org.pageseeder.bzadmin",
+      "Implementation-Title" to "Berlioz Admin",
+      "Implementation-Vendor" to "Allette Systems",
+      "Implementation-Vendor-Id" to publicationGroup,
+      "Implementation-Version" to version.toString(),
+      "Implementation-URL" to publicRepository,
+      "Bundle-License" to "Apache-2.0",
+      "Build-Jdk-Spec" to java.toolchain.languageVersion.get().toString(),
+    )
+  }
+}
+
 // The software bill of materials of the published runtime graph, published next to the JAR
 tasks.cyclonedxDirectBom {
   includeConfigs.set(listOf("runtimeClasspath"))
