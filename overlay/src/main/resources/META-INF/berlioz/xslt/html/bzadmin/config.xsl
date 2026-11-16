@@ -5,7 +5,7 @@
   Contents (see docs/implementation/metadata-contract.md):
   - 'global-config'         GetGlobalConfig: configured global properties (sensitive values redacted) and load status
   - 'berlioz-options'       ListBerliozOptions: options of this Berlioz version with their defaults
-  - 'berlioz-config'        GetBerliozConfig: Berlioz servlets, the XSLT processor and the servlet container
+  - 'berlioz-config'        GetBerliozConfig: Berlioz servlets (the XSLT processor and servlet container are on the Application page)
   - 'error-handler-config'  GetErrorHandlerConfig: Berlioz error handler servlets
   - 'berlioz-control'       GetBerliozControl: whether the "Reload everything" button (berlioz-reload) works
   - 'redirect-filters'      GetRedirectFilters: Berlioz's redirect filters and the rules they loaded (docs/design/redirects.md)
@@ -374,32 +374,6 @@
     <xsl:otherwise><p><i>No Berlioz servlet reported.</i></p></xsl:otherwise>
   </xsl:choose>
 </div>
-<xsl:if test="berlioz-config/xslt-processor/@factory or berlioz-config/container">
-  <div class="panel">
-    <h2>Runtime</h2>
-    <div class="table-scroll" tabindex="0" role="group" aria-label="Runtime"><table class="summary-table" aria-label="Runtime">
-      <tbody>
-        <xsl:for-each select="berlioz-config/xslt-processor[@factory]">
-          <tr>
-            <th scope="row">XSLT processor</th>
-            <td>
-              <xsl:value-of select="if (@product-name or @product-version) then string-join((@product-name, @product-version), ' ') else 'Unknown'"/>
-              <xsl:if test="@vendor"> (<xsl:value-of select="@vendor"/>)</xsl:if>
-              <xsl:if test="@xslt-version"><xsl:text> </xsl:text><span class="tag">XSLT <xsl:value-of select="@xslt-version"/></span></xsl:if>
-              <br/><code><xsl:value-of select="@factory"/></code>
-            </td>
-          </tr>
-        </xsl:for-each>
-        <xsl:for-each select="berlioz-config/container">
-          <tr>
-            <th scope="row">Servlet container</th>
-            <td><xsl:value-of select="@server-info"/><xsl:if test="@servlet-api"><xsl:text> </xsl:text><span class="tag">Servlet <xsl:value-of select="@servlet-api"/></span></xsl:if></td>
-          </tr>
-        </xsl:for-each>
-      </tbody>
-    </table></div>
-  </div>
-</xsl:if>
 </xsl:template>
 
 <!--
@@ -429,16 +403,17 @@
         <h3><xsl:value-of select="@name"/></h3>
         <div class="table-scroll" tabindex="0" role="group" aria-label="Error handler: {@name}"><table class="summary-table" aria-label="Error handler: {@name}">
           <tbody>
-            <tr><th>Mappings</th><td><code><xsl:value-of select="@mappings"/></code></td></tr>
-            <tr><th>Problem Details (XML)</th><td><xsl:value-of select="@problem-xml"/></td></tr>
-            <tr><th>Detail</th><td><xsl:value-of select="@detail"/></td></tr>
+            <xsl:variable name="servlet" select="@name"/>
+            <tr><th>Mappings<xsl:call-template name="error-handler-info"><xsl:with-param name="field" select="'mappings'"/><xsl:with-param name="servlet" select="$servlet"/></xsl:call-template></th><td><code><xsl:value-of select="@mappings"/></code></td></tr>
+            <tr><th>Problem Details (XML)<xsl:call-template name="error-handler-info"><xsl:with-param name="field" select="'problem-xml'"/><xsl:with-param name="servlet" select="$servlet"/></xsl:call-template></th><td><xsl:value-of select="@problem-xml"/></td></tr>
+            <tr><th>Detail<xsl:call-template name="error-handler-info"><xsl:with-param name="field" select="'detail'"/><xsl:with-param name="servlet" select="$servlet"/></xsl:call-template></th><td><xsl:value-of select="@detail"/></td></tr>
             <tr>
-              <th>Forwarded extensions</th>
+              <th>Forwarded extensions<xsl:call-template name="error-handler-info"><xsl:with-param name="field" select="'forward'"/><xsl:with-param name="servlet" select="$servlet"/></xsl:call-template></th>
               <td><code><xsl:value-of select="forward/@extensions"/></code>
                   (<xsl:value-of select="forward/@source"/><xsl:if test="forward/@default-extension">, default <code><xsl:value-of select="forward/@default-extension"/></code></xsl:if>)</td>
             </tr>
-            <tr><th>Ignored extensions</th><td><code><xsl:value-of select="ignore/@extensions"/></code></td></tr>
-            <tr><th>Stylesheet</th><td>configured: <xsl:value-of select="stylesheet/@configured"/>, selected: <xsl:value-of select="stylesheet/@selected"/></td></tr>
+            <tr><th>Ignored extensions<xsl:call-template name="error-handler-info"><xsl:with-param name="field" select="'ignore'"/><xsl:with-param name="servlet" select="$servlet"/></xsl:call-template></th><td><code><xsl:value-of select="ignore/@extensions"/></code></td></tr>
+            <tr><th>Stylesheet<xsl:call-template name="error-handler-info"><xsl:with-param name="field" select="'stylesheet'"/><xsl:with-param name="servlet" select="$servlet"/></xsl:call-template></th><td>configured: <xsl:value-of select="stylesheet/@configured"/>, selected: <xsl:value-of select="stylesheet/@selected"/></td></tr>
           </tbody>
         </table></div>
       </xsl:for-each>
@@ -446,6 +421,35 @@
     <xsl:otherwise><p><i>No Berlioz error handler servlet reported.</i></p></xsl:otherwise>
   </xsl:choose>
   </div>
+</xsl:template>
+
+<!--
+  What a field of the error handler means, from `org.pageseeder.berlioz.servlet.ErrorHandlerServlet`
+  in Berlioz 0.14.6, as HTML phrasing content shown in a popover by the 'config-info' template.
+-->
+<xsl:variable name="error-handler-explanations">
+  <explanation name="mappings">URL patterns of this servlet in <code>web.xml</code>. The container sends errors to it through the <code>&lt;error-page&gt;</code> locations; these patterns are not error-page registrations. An error page ending in <code>.auto</code> is forwarded to the extension of the failed request.</explanation>
+  <explanation name="problem-xml"><code>true</code> for RFC 9457 <code>&lt;problem&gt;</code> XML (and HTML made from it); <code>false</code> for the legacy <code>&lt;error&gt;</code> format. JSON errors are always <code>application/problem+json</code>. Set by <code>berlioz.errors.problem</code>.</explanation>
+  <explanation name="detail">Diagnostic detail in error responses: <code>minimal</code> (for production), <code>standard</code> (exception class and message) or <code>full</code> (stack trace, headers and parameters, for development only). Set by <code>berlioz.errors.detail</code>.</explanation>
+  <explanation name="forward">Extensions that an <code>.auto</code> error page keeps from the failed request; any other extension becomes the default. The source is <code>discovered</code> (extension mappings of the Berlioz servlets), <code>explicit</code> (<code>forward-extensions</code> init parameter, default from <code>forward-default</code>) or <code>legacy-default</code> (<code>html</code> and <code>xml</code>, when discovery is unavailable).</explanation>
+  <explanation name="ignore">Requests with these extensions (images, styles, scripts, fonts, media) get the error status with an empty body instead of an error page. Set by the <code>ignore-extensions</code> init parameter.</explanation>
+  <explanation name="stylesheet">Stylesheet that renders HTML error pages: <code>custom</code> when <code>berlioz.errors.stylesheet</code> names a file in <code>WEB-INF</code>, otherwise <code>built-in</code> (the fail-safe template). The selected one differs from the configured one when the custom stylesheet cannot be found; <code>none</code> returns XML.</explanation>
+</xsl:variable>
+
+<!--
+  The info button of a field of an error handler servlet.
+
+  @param field   The name of the field in 'error-handler-explanations'
+  @param servlet The name of the error handler servlet, for a unique ID
+-->
+<xsl:template name="error-handler-info">
+  <xsl:param name="field" as="xs:string"/>
+  <xsl:param name="servlet" as="xs:string"/>
+  <xsl:call-template name="config-info">
+    <xsl:with-param name="name" select="$field"/>
+    <xsl:with-param name="explanations" select="$error-handler-explanations"/>
+    <xsl:with-param name="id" select="concat('error-handler-info-', replace($servlet, '[^A-Za-z0-9_-]', '-'), '-', $field)"/>
+  </xsl:call-template>
 </xsl:template>
 
 <!-- Configuration check -->
@@ -559,14 +563,17 @@
   What a configuration property does, in a popover opened by an info button; nothing when it has
   no explanation. The row header is the sort key, so that the explanation is not part of it.
 
-  @param name The name of the configuration property
+  @param name         The name of the configuration property, or of the explained field
+  @param explanations The explanations to look the name up in (the Berlioz options by default)
+  @param id           The ID of the popover, unique in the page
 -->
 <xsl:template name="config-info">
   <xsl:param name="name" as="xs:string"/>
   <xsl:param name="description" as="attribute()?"/>
-  <xsl:variable name="explanation" select="$config-explanations/explanation[@name = $name]"/>
+  <xsl:param name="explanations" select="$config-explanations"/>
+  <xsl:param name="id" select="concat('config-info-', translate($name, '.', '-'))" as="xs:string"/>
+  <xsl:variable name="explanation" select="$explanations/explanation[@name = $name]"/>
   <xsl:if test="$explanation or normalize-space($description)">
-    <xsl:variable name="id" select="concat('config-info-', translate($name, '.', '-'))"/>
     <xsl:text> </xsl:text>
     <button type="button" class="info-button link-button" popovertarget="{$id}" aria-label="About {$name}"><svg-icon name="info-circle"/></button>
     <p id="{$id}" class="info-popover" popover="">

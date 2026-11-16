@@ -147,18 +147,25 @@ final class MetadataXsltTest {
     assertTrue(html.contains(">BerliozSource <span class=\"tag\" title=\"Only serves requests authorised for Berlioz control; others receive a 404\">requires control</span>"), html);
     assertTrue(html.contains(">BerliozJSON <span class=\"tag\" title=\"Registered, but not requested yet\">not initialised</span></th><td><code>*.json</code></td>"), html);
     assertTrue(html.indexOf(">BerliozSource ") < html.indexOf(">BerliozJSON "), "Initialised servlets first");
-    assertTrue(html.contains("<th scope=\"row\">XSLT processor</th><td>SAXON HE 12.10 (Saxonica) <span class=\"tag\">XSLT 3.0</span>"), html);
-    assertTrue(html.contains("<th scope=\"row\">Servlet container</th><td>jetty/10.0.26 <span class=\"tag\">Servlet 4.0</span></td>"), html);
+    assertFalse(html.contains("<h2>Runtime</h2>"), "Runtime components are on the Application page");
     String captured = render(deployment(fixture("config.xml")));
     assertFalse(captured.contains("requires control</span>"), "Not required by the test host");
-    String unreported = fixture("config.xml").replaceAll("<xslt-processor [^>]*/><container [^>]*/>", "");
-    assertFalse(render(deployment(unreported)).contains("<h2>Runtime</h2>"), "Without processor or container");
   }
 
   @Test
   void rendersServletsWithoutXsltCache() throws Exception {
     String html = render(deployment(fixture("config.xml")));
     assertFalse(html.contains(">XSLT cache</th>"), "Global setting, shown with the properties and on the XSLT page");
+  }
+
+  @Test
+  void explainsTheFieldsOfTheErrorHandler() throws Exception {
+    String html = render(deployment(fixture("config.xml")));
+    for (String field : new String[] {"mappings", "problem-xml", "detail", "forward", "ignore", "stylesheet"}) {
+      String id = "error-handler-info-ErrorHandlerServlet-" + field;
+      assertTrue(html.contains("popovertarget=\"" + id + "\""), field);
+      assertTrue(html.contains("<p id=\"" + id + "\" class=\"info-popover\" popover=\"\">"), field);
+    }
   }
 
   @Test

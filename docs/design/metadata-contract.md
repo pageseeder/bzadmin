@@ -30,8 +30,8 @@ Berlioz 0.14.6 is the reference framework version. Each field below comes from a
 | | | `stylesheet/@allocation` (`group`, `identity`…), `@source` (`filesystem`/`classpath`), `@path` (optional) | Stylesheet column |
 | | | `fallback/@source`, `@path` (optional) | "Fallback: …" |
 | | | `stylesheet/selection/@name` (`global`, group or service ID), `@source`, `@path` (optional) (0.14.5: selected so far) | List under the stylesheet |
-| | | `xslt-processor/@factory`, `@vendor`, `@xslt-version`, `@product-name`, `@product-version` (0.14.5, `XsltProcessorInfo`) | Runtime panel |
-| | | `container/@server-info`, `@servlet-api` (0.14.5, with an initialised servlet) | Runtime panel |
+| | | `xslt-processor/@factory`, `@vendor`, `@xslt-version`, `@product-name`, `@product-version` (0.14.5, `XsltProcessorInfo`) | Not shown (Application page: `GetApplicationSummary`) |
+| | | `container/@server-info`, `@servlet-api` (0.14.5, with an initialised servlet) | Not shown (Application page: `GetApplicationSummary`) |
 | `error-handler-config` | Berlioz `GetErrorHandlerConfig` | `servlet/@name`, `@mappings`, `@problem-xml`, `@detail` | Error handler table |
 | | | `forward/@source`, `@extensions`, `@default-extension` | Forwarded extensions |
 | | | `ignore/@extensions` | Ignored extensions |
