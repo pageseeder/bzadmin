@@ -352,9 +352,6 @@ final class MetadataXsltTest {
 
   // Helpers -------------------------------------------------------------------------------------
 
-  /** The configuration XML requested for the deployment tab. */
-  // Login ---------------------------------------------------------------------------------------
-
   /**
    * A notice above the other views when the password of the fallback login is not a hash.
    */
