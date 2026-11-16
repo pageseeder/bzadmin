@@ -88,6 +88,30 @@ final class OverlayXsltTest {
   }
 
   @Test
+  void showsCacheActionsAfterTheKeyMetrics() throws Exception {
+    String cache = "<cache name='pages' scope='local' capabilities='statistics entries clear'><statistics/></cache>";
+    String info = "<root service='bzadmin-cache-info' group='bzadmin'>"
+        + "<header><location path='/bzadmin/cache/info.html'/><path info='/bzadmin/cache/info' extension='.html'/></header>"
+        + "<content name='cache-info' target='main' status='ok'><cache-info provider='fixture' manager='main'>"
+        + cache + "</cache-info></content></root>";
+    String entries = "<root service='bzadmin-cache-entries' group='bzadmin'>"
+        + "<header><location path='/bzadmin/cache/entries.html'/><path info='/bzadmin/cache/entries' extension='.html'/></header>"
+        + "<content name='cache-entries' target='main' status='ok'><cache-entries provider='fixture' manager='main'>"
+        + cache + "<entries offset='0' limit='100' scanned='0' more='false' max-scan='10000'/></cache-entries></content></root>";
+    for (String xml : new String[]{info, entries}) {
+      String html = OverlayXslt.transform(new StreamSource(new StringReader(xml)));
+      int metrics = html.indexOf("<dl class=\"key-metrics\">");
+      int actions = html.indexOf("<p class=\"actions cache-actions\">");
+      int main = Math.max(html.indexOf("<div class=\"panel\">"), html.indexOf("<h3>Keys</h3>"));
+      assertTrue(metrics >= 0 && metrics < actions && actions < main, html);
+      assertTrue(html.contains("Clear entries"), html);
+      assertTrue(html.contains("data-reset-statistics="), html);
+      assertEquals(xml == entries, html.contains("View info"), html);
+      assertEquals(xml == info, html.contains("View keys"), html);
+    }
+  }
+
+  @Test
   void runsOnTheExpectedJavaVersion() {
     String expected = System.getProperty("bzadmin.java.expected");
     assertEquals(expected, Integer.toString(Runtime.version().feature()),

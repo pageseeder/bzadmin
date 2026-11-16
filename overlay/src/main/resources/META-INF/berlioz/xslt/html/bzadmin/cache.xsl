@@ -238,6 +238,7 @@
     <xsl:call-template name="cache-heading"/>
     <xsl:apply-templates select="cache/warning[1]" mode="bzadmin-content-cache"/>
     <xsl:apply-templates select="cache[statistics]" mode="bzadmin-content-cache-key-metrics"/>
+    <xsl:call-template name="cache-actions"/>
     <div class="panel">
     <div class="row">
       <div class="medium-6 columns">
@@ -261,7 +262,6 @@
         </xsl:choose>
       </div>
     </div>
-    <xsl:call-template name="cache-actions"/>
     </div>
     <xsl:apply-templates select="cache/statistics" mode="bzadmin-content-cache-rates"/>
     <xsl:call-template name="cache-remove-entry"/>
@@ -477,18 +477,21 @@
   </xsl:if>
 </xsl:template>
 
-<!-- The operations on the current cache-info or cache-entries, on one line: clearing on the right -->
+<!-- The operations on the current cache-info or cache-entries, on one line after the key metrics: clearing on the right -->
 <xsl:template name="cache-actions">
   <xsl:variable name="query" select="f:cache-query(@provider, @manager, cache/@name)"/>
-  <div class="actions cache-actions">
+  <p class="actions cache-actions">
     <xsl:apply-templates select="cache/statistics" mode="bzadmin-content-cache-actions"/>
     <xsl:if test="f:has-capability(cache, 'entries') and not(entries)">
       <a href="{f:to-path('/bzadmin/cache/entries')}{$query}" class="button hollow"><svg-icon name="eye"/> View keys</a>
     </xsl:if>
+    <xsl:if test="entries">
+      <a href="{f:to-path('/bzadmin/cache/info')}{$query}" class="button hollow"><svg-icon name="cog"/> View info</a>
+    </xsl:if>
     <xsl:if test="f:has-capability(cache, 'clear')">
       <button type="button" class="button alert clear-cache" data-scope="{cache/@scope}"><svg-icon name="trash"/> Clear entries</button>
     </xsl:if>
-  </div>
+  </p>
 </xsl:template>
 
 <!-- The statistics buttons, both toggles when the provider cannot tell whether statistics are collected -->
@@ -535,9 +538,14 @@
   A range of the keys of a cache
 -->
 <xsl:template match="content[@name='cache-entries']" mode="bzadmin-content">
-<section class="cache-details" data-clear="{f:xml-url('/bzadmin/api/cache/clear')}" data-remove="{f:xml-url('/bzadmin/api/cache/entries/remove')}">
+<section class="cache-details" data-clear="{f:xml-url('/bzadmin/api/cache/clear')}" data-statistics="{f:xml-url('/bzadmin/api/cache/statistics')}"
+         data-reset-statistics="{f:xml-url('/bzadmin/api/cache/statistics/reset')}"
+         data-remove="{f:xml-url('/bzadmin/api/cache/entries/remove')}">
   <xsl:for-each select="cache-entries">
     <xsl:call-template name="cache-heading"/>
+    <xsl:apply-templates select="cache/warning[1]" mode="bzadmin-content-cache"/>
+    <xsl:apply-templates select="cache[statistics]" mode="bzadmin-content-cache-key-metrics"/>
+    <xsl:call-template name="cache-actions"/>
     <xsl:variable name="query" select="f:cache-query(@provider, @manager, cache/@name)"/>
     <xsl:variable name="offset" select="xs:integer(entries/@offset)"/>
     <xsl:variable name="limit" select="xs:integer(entries/@limit)"/>
@@ -595,7 +603,6 @@
         </xsl:when>
       </xsl:choose>
     </nav>
-    <xsl:call-template name="cache-actions"/>
   </xsl:for-each>
   <xsl:apply-templates select="no-cache" mode="bzadmin-content-cache"/>
   <xsl:if test="no-cache">
