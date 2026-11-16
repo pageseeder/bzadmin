@@ -27,6 +27,7 @@
     --table-heading-background: hsl(205, 60%, 22%);
     --shadow-panel: 0 1px 3px rgb(0 0 0 / 18%), 0 0 0 1px rgb(255 255 255 / 3%);
     --shadow-popover: 0 0 0 1px var(--border-strong), 0 4px 16px rgb(0 0 0 / 50%);
+    --shadow-dialog: 0 0 0 1px rgb(255 255 255 / 6%), 0 12px 40px rgb(0 0 0 / 60%);
     --overlay-backdrop: rgb(0 0 0 / 65%);
     --success-text: #a5d66b;
     --warning-text: #ffb65c;

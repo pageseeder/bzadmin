@@ -82,7 +82,7 @@ size) for padding, margins and gaps, with `--panel-padding` and `--table-cell-pa
 shared component rules. `--page-gutter` and `--layout-gap` retain the header's 15px/30px
 alignment. Text-relative spacing, dense log rows and artwork offsets can remain local.
 Use `--radius-xs`, `--radius-sm` and `--radius-md` for 2px, 4px and 8px corners,
-`--shadow-panel`/`--shadow-popover` for elevation, `--overlay-backdrop` for dialog scrims,
+`--shadow-panel`/`--shadow-popover`/`--shadow-dialog` for elevation, `--overlay-backdrop` for dialog scrims,
 and `--duration-fast`/`--duration-normal` for transitions. Geometry stays the same in both
 themes. Review both colour schemes when adding a foreground/background pair.
 
@@ -185,7 +185,9 @@ Aggregate declaration views use separate IDs from the stylesheet-specific declar
 function IDs identify the declaration node, including overloads and repeated names.
 
 Landmarks use the native page header, main and footer. Administration, Views, XSLT
-documentation and pagination navigation have distinct accessible names. Service dialogs
-reference their visible title, matching the library and thread dialogs. System help
+documentation and pagination navigation have distinct accessible names. Dialogs are made
+with the `bzadmin-dialog` template (`bzadmin.xsl`): a header with the title, which the dialog
+references, and a Close button; a body that scrolls; and a footer of actions (OK by default).
+They are elevated with a shadow, without a border. System help
 popover paragraphs are rendered within main, outside headings. Simple tables keep native
 header cells; no ARIA grid or tab roles are added to ordinary tables or view links.

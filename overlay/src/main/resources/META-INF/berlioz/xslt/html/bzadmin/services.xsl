@@ -481,8 +481,9 @@
   Flags and direct mode of a service
 -->
 <xsl:template match="service" mode="bzadmin-service-tags">
+  <xsl:param name="direct" as="xs:boolean" select="true()"/>
   <xsl:if test="overridden"><xsl:text> </xsl:text><span class="tag" title="Replaces {string-join(for $o in overridden return concat($o/@service, ' in ', $o/@source), ', ')}">overrides</span></xsl:if>
-  <xsl:if test="@direct = 'true'"><xsl:text> </xsl:text><span class="tag" title="Returns the output of its generator directly, without a Berlioz envelope">direct</span></xsl:if>
+  <xsl:if test="$direct and @direct = 'true'"><xsl:text> </xsl:text><span class="tag" title="Returns the output of its generator directly, without a Berlioz envelope">direct</span></xsl:if>
   <xsl:for-each select="tokenize(@flags, '[\s,]+')[. != '']">
     <xsl:text> </xsl:text><span class="tag" title="Flag"><xsl:value-of select="."/></span>
   </xsl:for-each>
@@ -524,13 +525,11 @@
   Details of a service displayed in a dialog
 -->
 <xsl:template match="service" mode="reveal-service">
-<dialog id="{f:dialog-id(.)}" class="dialog" aria-labelledby="{f:dialog-id(.)}-title">
-  <h2 class="dialog-title" id="{f:dialog-id(.)}-title"><xsl:value-of select="@id"/> [<xsl:value-of select="@method"/>]<xsl:apply-templates select="." mode="bzadmin-service-tags"/></h2>
-  <xsl:apply-templates select="." mode="bzadmin-service-details"/>
-  <form method="dialog">
-    <button class="button">OK</button>
-  </form>
-</dialog>
+<xsl:call-template name="bzadmin-dialog">
+  <xsl:with-param name="id" select="f:dialog-id(.)"/>
+  <xsl:with-param name="title"><xsl:value-of select="@id"/> [<xsl:value-of select="@method"/>]<xsl:apply-templates select="." mode="bzadmin-service-tags"><xsl:with-param name="direct" select="false()"/></xsl:apply-templates></xsl:with-param>
+  <xsl:with-param name="body"><xsl:apply-templates select="." mode="bzadmin-service-details"/></xsl:with-param>
+</xsl:call-template>
 </xsl:template>
 
 <!--

@@ -140,6 +140,10 @@ final class DiagnosticsXsltTest {
     assertTrue(button.find(), html);
     assertTrue(html.contains("<dialog id=\"" + button.group(1) + "\" class=\"dialog library-dialog\" aria-labelledby=\"" + button.group(1) + "-title\">"), html);
     assertTrue(html.contains("<h2 id=\"" + button.group(1) + "-title\" class=\"dialog-title\">Saxon-HE "), html);
+    // The shared dialog: header with a close button, scrolling body, footer with OK
+    assertTrue(html.contains("<button class=\"dialog-close\" aria-label=\"Close\"><svg-icon name=\"close\"></svg-icon></button>"), html);
+    assertTrue(html.contains("<div class=\"dialog-body\">"), html);
+    assertTrue(html.contains("<footer class=\"dialog-footer\"><form method=\"dialog\"><button class=\"button\">OK</button></form></footer>"), html);
     assertTrue(html.contains("<td>implementation-title</td><td>Saxon-HE</td>"), html);
     assertTrue(html.contains("<td>manifest-version</td><td>1.0</td>"), html);
     assertTrue(html.contains("No manifest, or a manifest without main attributes."), html);

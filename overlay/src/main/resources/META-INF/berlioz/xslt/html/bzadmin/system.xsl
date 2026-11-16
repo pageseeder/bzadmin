@@ -626,13 +626,12 @@
     </tbody>
   </table>
   </sortable-table></div>
-  <dialog id="thread-dialog" class="dialog thread-dialog" aria-labelledby="thread-dialog-title">
-    <h2 class="dialog-title" id="thread-dialog-title">Thread</h2>
-    <div class="thread-dialog-content"></div>
-    <form method="dialog">
-      <button class="button">OK</button>
-    </form>
-  </dialog>
+  <xsl:call-template name="bzadmin-dialog">
+    <xsl:with-param name="id" select="'thread-dialog'"/>
+    <xsl:with-param name="class" select="'thread-dialog'"/>
+    <xsl:with-param name="title">Thread</xsl:with-param>
+    <xsl:with-param name="body"><div class="thread-dialog-content"></div></xsl:with-param>
+  </xsl:call-template>
 </xsl:template>
 
 <!--

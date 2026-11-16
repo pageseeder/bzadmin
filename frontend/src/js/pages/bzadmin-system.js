@@ -298,6 +298,7 @@ if (page) {
       await swapFragment(button.dataset.href, '#thread-info', dialog.querySelector('.thread-dialog-content'));
       dialog.querySelector('.dialog-title').textContent = button.getAttribute('aria-label');
       clearFlash(button);
+      dialog.querySelector('.dialog-body').scrollTop = 0;
       dialog.showModal();
     } catch (error) {
       const message = error.status === 404 ? 'This thread has ended' : `Unable to load the thread: ${error.message}`;

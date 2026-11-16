@@ -644,8 +644,11 @@
   The manifest of a library displayed in a dialog
 -->
 <xsl:template match="library" mode="bzadmin-library-dialog">
-<dialog id="{f:library-dialog-id(.)}" class="dialog library-dialog" aria-labelledby="{f:library-dialog-id(.)}-title">
-  <h2 id="{f:library-dialog-id(.)}-title" class="dialog-title"><xsl:value-of select="f:get-library-name(.)"/><xsl:text> </xsl:text><xsl:sequence select="f:get-library-version(.)"/></h2>
+<xsl:call-template name="bzadmin-dialog">
+  <xsl:with-param name="id" select="f:library-dialog-id(.)"/>
+  <xsl:with-param name="class" select="'library-dialog'"/>
+  <xsl:with-param name="title"><xsl:value-of select="f:get-library-name(.)"/><xsl:text> </xsl:text><xsl:sequence select="f:get-library-version(.)"/></xsl:with-param>
+  <xsl:with-param name="body">
   <p><code><xsl:value-of select="@file"/></code></p>
   <xsl:choose>
     <xsl:when test="attribute">
@@ -669,10 +672,8 @@
     </xsl:when>
     <xsl:otherwise><p>No manifest, or a manifest without main attributes.</p></xsl:otherwise>
   </xsl:choose>
-  <form method="dialog">
-    <button class="button">OK</button>
-  </form>
-</dialog>
+  </xsl:with-param>
+</xsl:call-template>
 </xsl:template>
 
 <!--

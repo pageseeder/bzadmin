@@ -236,26 +236,106 @@ meter {
   color: var(--text-strong);
 }
 
-/* Dialogs */
+/* Dialogs (see the bzadmin-dialog template): a fixed header and footer around a body that scrolls */
 .dialog {
   background: var(--surface-floating);
-  border: 1px solid var(--border-strong);
+  border: 0;
   border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dialog);
   color: var(--text-strong);
+  max-width: calc(100% - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: hidden;
+  padding: 0;
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
 
   &::backdrop {
     background: var(--overlay-backdrop);
   }
 }
 
-.dialog-title {
+.dialog-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-3);
   background: var(--dark-primary);
+  color: var(--text-on-color);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--panel-padding);
+}
+
+.dialog-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
   color: var(--text-on-color);
   font-size: 1rem;
   font-weight: bold;
-  margin: calc(-1 * var(--panel-padding));
-  margin-bottom: var(--space-3);
-  padding: var(--space-3) var(--space-5);
+  overflow-wrap: anywhere;
+
+  /* Tags would be the colour of the header */
+  .tag {
+    background: none;
+    border-color: currentColor;
+    color: inherit;
+  }
+}
+
+.dialog-header form {
+  display: contents;
+}
+
+.dialog-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.125rem;
+
+  &:hover {
+    background: rgb(255 255 255 / 15%);
+  }
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+  }
+}
+
+.dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--panel-padding);
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-4) var(--panel-padding);
+
+  form {
+    display: contents;
+  }
 }
 
 /* Sections of a dialog, under its title */

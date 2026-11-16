@@ -221,6 +221,35 @@
 </xsl:template>
 
 <!--
+  A modal dialog: a header with the title and a close button, a body that scrolls when the content
+  is taller than the viewport, and a footer with the actions. Open it with a button
+  `commandfor="{$id}" command="show-modal"` (or `showModal()`); Escape and the close button close it.
+
+  @param id     The id of the dialog; its title is `{$id}-title`
+  @param title  The title of the dialog
+  @param class  More classes of the dialog, such as its width; optional
+  @param body   The content of the dialog
+  @param footer The actions of the footer; an OK button that closes the dialog by default
+-->
+<xsl:template name="bzadmin-dialog">
+  <xsl:param name="id"     as="xs:string"/>
+  <xsl:param name="title"  as="node()*"/>
+  <xsl:param name="class"  as="xs:string?"/>
+  <xsl:param name="body"   as="node()*"/>
+  <xsl:param name="footer" as="node()*">
+    <form method="dialog"><button class="button">OK</button></form>
+  </xsl:param>
+  <dialog id="{$id}" class="{string-join(('dialog', $class[. != '']), ' ')}" aria-labelledby="{$id}-title">
+    <header class="dialog-header">
+      <h2 id="{$id}-title" class="dialog-title"><xsl:sequence select="$title"/></h2>
+      <form method="dialog"><button class="dialog-close" aria-label="Close"><svg-icon name="close"/></button></form>
+    </header>
+    <div class="dialog-body"><xsl:sequence select="$body"/></div>
+    <footer class="dialog-footer"><xsl:sequence select="$footer"/></footer>
+  </dialog>
+</xsl:template>
+
+<!--
   The location of the website (displayed in the header)
 -->
 <xsl:template match="header/location" mode="header">
