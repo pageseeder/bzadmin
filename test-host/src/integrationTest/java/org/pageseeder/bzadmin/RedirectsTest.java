@@ -451,7 +451,7 @@ final class RedirectsTest {
       assertTrue(this.host.as("viewer").get("/bzadmin/config.html").body().contains("?view=redirects"));
       String html = this.host.as("viewer").get("/bzadmin/config.html?view=redirects").body();
       assertTrue(html.contains("config/fixture-redirects.xml"), html);
-      assertTrue(html.contains("/fixture-redirect/target?token=<span class=\"redirect-redacted\">[REDACTED]</span>"), html);
+      assertTrue(html.contains("/fixture-redirect/target?token=<span class=\"redacted\">[REDACTED]</span>"), html);
       assertTrue(html.contains("/html/<span class=\"redirect-token\">{+path}</span>"), html);
       assertFalse(html.contains("href=\"/fixture-redirect"), html);
       assertFalse(html.contains("href=\"https://example.org"), html);

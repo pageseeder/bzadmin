@@ -310,6 +310,12 @@ sortable-table {
   }
 }
 
+/* A part of a value hidden by a generator ([REDACTED], `f:redacted`) */
+.redacted {
+  color: var(--error-text);
+  font-weight: bold;
+}
+
 svg-icon {
   vertical-align: -0.125em;
 }

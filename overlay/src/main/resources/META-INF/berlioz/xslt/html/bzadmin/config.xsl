@@ -170,7 +170,7 @@
           <td data-sort="{if ($configured) then $configured/@value else ''}">
             <xsl:choose>
               <xsl:when test="$configured">
-                <code><xsl:value-of select="$configured/@value"/></code>
+                <code><xsl:sequence select="f:redacted($configured/@value)"/></code>
                 <xsl:if test="f:config-is-default(., $configured/@value)"><xsl:text> </xsl:text><span class="tag" title="Configured with the default value: the property can be removed">same as default</span></xsl:if>
               </xsl:when>
               <xsl:otherwise>
@@ -291,7 +291,7 @@
         <tbody>
         <xsl:for-each select="current-group()">
           <xsl:sort select="@name"/>
-          <tr><th scope="row" data-sort="{@name}"><xsl:value-of select="@name"/><xsl:call-template name="config-info"><xsl:with-param name="name" select="@name"/></xsl:call-template></th><td><code><xsl:value-of select="@value"/></code></td></tr>
+          <tr><th scope="row" data-sort="{@name}"><xsl:value-of select="@name"/><xsl:call-template name="config-info"><xsl:with-param name="name" select="@name"/></xsl:call-template></th><td><code><xsl:sequence select="f:redacted(@value)"/></code></td></tr>
         </xsl:for-each>
         </tbody>
       </table>
@@ -695,7 +695,7 @@
   <xsl:param name="uri" as="xs:string?"/>
   <xsl:analyze-string select="string($uri)" regex="\{{[^{{}}]*\}}|\[REDACTED\]">
     <xsl:matching-substring>
-      <span class="{if (starts-with(., '[')) then 'redirect-redacted' else 'redirect-token'}"><xsl:value-of select="."/></span>
+      <span class="{if (starts-with(., '[')) then 'redacted' else 'redirect-token'}"><xsl:value-of select="."/></span>
     </xsl:matching-substring>
     <xsl:non-matching-substring><xsl:value-of select="."/></xsl:non-matching-substring>
   </xsl:analyze-string>

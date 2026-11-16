@@ -43,10 +43,6 @@
     color: var(--accent);
     font-weight: bold;
   }
-  .redirect-redacted {
-    color: var(--error-text);
-    font-weight: bold;
-  }
 
   /* The Login view: the password hash form */
   .password-hash-form {

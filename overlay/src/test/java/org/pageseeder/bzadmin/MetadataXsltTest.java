@@ -29,7 +29,7 @@ final class MetadataXsltTest {
     assertTrue(html.contains("Merged from the default configuration file, if any, and <code>config-test.xml</code>."), "Mode file over the default one");
     assertTrue(valueCell(html, "berlioz.xslt.cache").matches("<td[^>]*><code>false</code>"), "Configured value");
     assertTrue(valueCell(html, "berlioz.profile").matches("<td[^>]*><span class=\"tag\"[^>]*>default</span> <code class=\"muted\">false</code>"), "Default");
-    assertTrue(html.contains("<code>[REDACTED]</code>"), "Redacted by GetGlobalConfig");
+    assertTrue(html.contains("<code><span class=\"redacted\">[REDACTED]</span></code>"), "Redacted by GetGlobalConfig, highlighted");
     assertTrue(html.contains("XSLT template caching"), "Explanation from the 0.14.5 catalog");
   }
 

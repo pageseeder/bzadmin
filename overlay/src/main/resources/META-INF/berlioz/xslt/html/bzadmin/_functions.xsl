@@ -293,4 +293,18 @@
   </xsl:analyze-string>
 </xsl:function>
 
+<!--
+  A value with the parts redacted by a generator ([REDACTED], Redaction.REDACTED) highlighted.
+
+  @param value the value, as the generator reported it
+  @return its text, each redacted part in a span of class "redacted"
+-->
+<xsl:function name="f:redacted" as="node()*">
+  <xsl:param name="value" as="xs:string?"/>
+  <xsl:analyze-string select="string($value)" regex="\[REDACTED\]">
+    <xsl:matching-substring><span class="redacted"><xsl:value-of select="."/></span></xsl:matching-substring>
+    <xsl:non-matching-substring><xsl:value-of select="."/></xsl:non-matching-substring>
+  </xsl:analyze-string>
+</xsl:function>
+
 </xsl:stylesheet>

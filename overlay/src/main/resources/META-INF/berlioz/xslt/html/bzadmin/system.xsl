@@ -879,8 +879,7 @@
 
 <!--
   The JVM system properties, sorted by name (Berlioz's GetSystemProperties), with sensitive values or parts of
-  values redacted: a value redacted in whole is shown as a tag, one redacted in part as is, followed by
-  a tag.
+  values redacted, the redacted parts ([REDACTED]) highlighted.
 -->
 <xsl:template match="content[@name='sysproperties']" mode="bzadmin-system">
   <section>
@@ -894,11 +893,7 @@
         <tr>
           <th scope="row"><xsl:value-of select="@name"/></th>
           <td>
-            <xsl:choose>
-              <xsl:when test="@value = $system-redacted"><span class="tag" title="Hidden: the name suggests a secret">redacted</span></xsl:when>
-              <xsl:when test="contains(@value, $system-redacted)"><xsl:value-of select="@value"/><xsl:text> </xsl:text><span class="tag" title="Partly hidden: it may hold a secret">redacted</span></xsl:when>
-              <xsl:otherwise><xsl:value-of select="@value"/></xsl:otherwise>
-            </xsl:choose>
+            <xsl:sequence select="f:redacted(@value)"/>
           </td>
         </tr>
       </xsl:for-each>
