@@ -1,8 +1,15 @@
 /* Statistics */
 .page-bzadmin-application {
-  /* Refresh on the left, reset on the right */
+  /* Refresh on the left, when the statistics started and reset on the right */
+  #statistics-since {
+    color: var(--text-muted);
+    margin-inline-start: auto;
+  }
   #reset-statistics {
     margin-inline-start: auto;
+  }
+  #statistics-since + #reset-statistics {
+    margin-inline-start: 0;
   }
 
   .statistics-table {
@@ -16,7 +23,7 @@
 
       /* Zero values */
       &.muted {
-        color: var(--text-muted);
+        color: var(--text-quiet);
       }
       &.server_error {
         color: var(--error-text);
@@ -25,6 +32,19 @@
 
     .avg {
       background-color: var(--surface-subtle);
+    }
+
+    /* The sums: the total of each class of status codes and the calls, the calls in bold */
+    tbody :is(td.total, td.calls) {
+      background-color: var(--table-sum);
+    }
+    tbody td.calls {
+      font-weight: 600;
+    }
+
+    /* The class of status codes above its codes */
+    th.status-class {
+      text-align: center;
     }
 
     td abbr {

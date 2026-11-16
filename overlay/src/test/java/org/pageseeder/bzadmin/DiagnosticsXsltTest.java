@@ -5,12 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.xml.transform.stream.StreamSource;
 
 import org.junit.jupiter.api.Test;
+import org.pageseeder.berlioz.content.ContentStatus;
 
 /**
  * The Application and System pages render the summaries of {@code GetApplicationSummary} and
@@ -156,7 +160,7 @@ final class DiagnosticsXsltTest {
 
   /** The key metrics of a page, as label, value and detail, without the info popovers. */
   private static String metrics(String html) {
-    Matcher row = Pattern.compile("<dl class=\"key-metrics\">(.*?)</dl>", Pattern.DOTALL).matcher(html);
+    Matcher row = Pattern.compile("<dl class=\"key-metrics\"[^>]*>(.*?)</dl>", Pattern.DOTALL).matcher(html);
     assertTrue(row.find(), html);
     return row.group(1).replaceAll("<p id=\"system-info-[^\"]+\" class=\"info-popover\" popover=\"\">.*?</p>", "")
         .replaceAll(" <button type=\"button\" class=\"info-button[^>]*><svg-icon name=\"info-circle\"></svg-icon></button>", "")
@@ -176,8 +180,11 @@ final class DiagnosticsXsltTest {
         + "</statistics>");
     assertTrue(html.contains("<dl class=\"key-metrics\" id=\"statistics-metrics\">"), html);
     assertTrue(html.contains("<dt>Generator calls</dt><dd class=\"key-metric-value\">17</dd><dd class=\"key-metric-detail\">by 2 generators</dd>"), html);
-    assertTrue(html.contains("<div class=\"key-metric warning\"><dt>Server errors</dt><dd class=\"key-metric-value\">1</dd>"
-        + "<dd class=\"key-metric-detail\">2 bad requests, 1 not found</dd>"), html);
+    // The average of all the calls, from the averages without totals: (12 × 1,500 + 5 × 250,000) / 17 µs
+    assertTrue(html.contains("<div class=\"key-metric\"><dt>Average time</dt><dd class=\"key-metric-value\">74.6 ms</dd>"
+        + "<dd class=\"key-metric-detail\">Process per call; ETag 0.0 ms</dd></div>"), html);
+    assertFalse(html.contains("<dt>Server errors</dt>"), html);
+    assertTrue(html.contains("<span id=\"statistics-since\">Since <time datetime=\"2026-10-27T10:00:00+11:00\" title=\"27 Oct 2026 at 10:00:00 +11:00\">27 Oct 10:00</time></span>"), html);
     assertTrue(html.contains("<dt>Slowest generator</dt><dd class=\"key-metric-value\">250.0 ms</dd><dd class=\"key-metric-detail\">On average: org.example.SlowSearch</dd>"), html);
     assertTrue(html.contains("<div class=\"key-metric warning\"><dt>Slow generators</dt><dd class=\"key-metric-value\">1</dd>"), html);
     // Zero values of the table are muted
@@ -192,7 +199,161 @@ final class DiagnosticsXsltTest {
 
     String empty = page("bzadmin-application", "statistics", "<statistics since='2026-10-27T10:00:00+11:00'/>");
     assertTrue(empty.contains("<dt>Slowest generator</dt><dd class=\"key-metric-value muted\" title=\"Not available\"><span role=\"img\" aria-label=\"Not available\">—</span></dd>"), empty);
-    assertTrue(empty.contains("<div class=\"key-metric\"><dt>Server errors</dt><dd class=\"key-metric-value muted\">0</dd>"), empty);
+    assertTrue(empty.contains("<dt>Average time</dt><dd class=\"key-metric-value muted\" title=\"Not available\">"), empty);
+
+    // The totals of Berlioz when it reports them: (9,000 + 3,000) / 4 µs
+    String totals = page("bzadmin-application", "statistics", "<statistics>"
+        + "<statistic generator='org.example.A' count='3' avg-etag='100' avg-process='2999' total-etag='300' total-process='9000'/>"
+        + "<statistic generator='org.example.B' count='1' avg-etag='500' avg-process='3000' total-etag='500' total-process='3000'/>"
+        + "</statistics>");
+    assertTrue(totals.contains("<dd class=\"key-metric-value\">3.0 ms</dd><dd class=\"key-metric-detail\">Process per call; ETag 0.2 ms</dd>"), totals);
+    assertFalse(totals.contains("statistics-since"), totals);
+  }
+
+  @Test
+  void showsOnlyTheTimeWhenTheStatisticsStartedToday() throws Exception {
+    OffsetDateTime since = OffsetDateTime.now().withSecond(0).withNano(0);
+    String html = page("bzadmin-application", "statistics", "<statistics since='" + since.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX")) + "'/>");
+    assertTrue(html.contains(">" + since.format(DateTimeFormatter.ofPattern("HH:mm")) + "</time></span>"), html);
+  }
+
+  /** Statuses that the table did not show when it listed seven of them. */
+  private static final String STATUSES = "<statistics since='2026-10-27T10:00:00+11:00'>"
+      + "<statistic generator='org.example.Api' count='9' avg-etag='10' avg-process='1500'>"
+      + "<status ok='3' created='1' found='1' forbidden='1' not_implemented='1' gateway_timeout='2'/></statistic>"
+      + "<statistic generator='org.example.Page' count='4' avg-etag='10' avg-process='1500'>"
+      + "<status ok='3' forbidden='1'/></statistic>"
+      + "</statistics>";
+
+  @Test
+  void countsEveryStatusInItsClass() throws Exception {
+    String html = statistics(STATUSES, "performance");
+    assertTrue(html.contains("<h2>Generator performance</h2>"), html);
+    assertTrue(html.contains("<dt>Slowest generator</dt>"), html);
+    assertFalse(html.contains("Generators with errors"), html);
+    assertTrue(html.contains("<dt>Average time</dt><dd class=\"key-metric-value\">1.5 ms</dd>"), html);
+    assertTrue(html.contains("data-columns=\"performance\""), html);
+    // The times, in microseconds as before, the classes, then the calls
+    assertTrue(html.contains("<th colspan=\"3\">Etag (µs)</th>"), html);
+    assertTrue(html.contains("<th colspan=\"3\">Process (µs)</th>"), html);
+    assertTrue(html.contains("<th class=\"status\"><abbr title=\"Success\">2xx</abbr></th><th class=\"status\"><abbr title=\"Redirection\">3xx</abbr></th>"
+        + "<th class=\"status\"><abbr title=\"Client error\">4xx</abbr></th><th class=\"status\"><abbr title=\"Server error\">5xx</abbr></th>"
+        + "<th class=\"calls\">Calls</th></tr>"), html);
+    // A row with server errors other than 500 is highlighted; empty classes are empty
+    assertTrue(html.contains("<td class=\"status\">4</td><td class=\"status\">1</td><td class=\"status\">1</td><td class=\"status mark\">3</td>"
+        + "<td class=\"calls\">9</td>"), html);
+    assertTrue(html.contains("<td class=\"status\">3</td><td class=\"status\"></td><td class=\"status\">1</td><td class=\"status\"></td>"
+        + "<td class=\"calls\">4</td>"), html);
+    assertEquals(1, html.split("<tr class=\"warn\">", -1).length - 1, html);
+    // The totals of each class and all the calls
+    assertTrue(html.contains("<td class=\"status\">7</td><td class=\"status\">1</td><td class=\"status\">2</td><td class=\"status server_error\">3</td>"
+        + "<td class=\"calls\">13</td>"), html);
+    assertTrue(html.contains("data-href=\"/ctx/bzadmin/application/statistics.html\" id=\"refresh-statistics\""), html);
+  }
+
+  @Test
+  void listsTheStatusCodesByClassWithTheirTotal() throws Exception {
+    String html = statistics(STATUSES, "status-codes");
+    assertTrue(html.contains("<h2>Generator status codes</h2>"), html);
+    assertTrue(html.contains("data-href=\"/ctx/bzadmin/application/statistics.html?view=status-codes\" id=\"refresh-statistics\""), html);
+    // The likely codes, the codes returned, each class with its total, then the calls
+    assertTrue(html.contains("data-columns=\"status-codes 200 201 301 302 400 403 404 500 501 504\""), html);
+    assertTrue(html.contains("<tr><th></th><th colspan=\"3\" class=\"status-class\">Success</th>"
+        + "<th colspan=\"3\" class=\"status-class\">Redirection</th><th colspan=\"4\" class=\"status-class\">Client error</th>"
+        + "<th colspan=\"4\" class=\"status-class\">Server error</th><th></th></tr>"), html);
+    assertTrue(html.contains("<th>Generator</th><th class=\"status\"><abbr title=\"OK\">200</abbr></th>"
+        + "<th class=\"status\"><abbr title=\"Created\">201</abbr></th>"
+        + "<th class=\"status total\"><abbr title=\"All success codes\">2xx</abbr></th>"
+        + "<th class=\"status\"><abbr title=\"Moved Permanently\">301</abbr></th>"), html);
+    assertTrue(html.contains("<th class=\"status\"><abbr title=\"Gateway Timeout\">504</abbr></th>"
+        + "<th class=\"status total\"><abbr title=\"All server error codes\">5xx</abbr></th><th class=\"calls\">Calls</th></tr>"), html);
+    assertFalse(html.contains("Etag"), html);
+    assertTrue(html.contains("<td class=\"status\">3</td><td class=\"status\">1</td><td class=\"status total\">4</td>"
+        + "<td class=\"status\"></td><td class=\"status\">1</td><td class=\"status total\">1</td>"
+        + "<td class=\"status\"></td><td class=\"status\">1</td><td class=\"status\"></td><td class=\"status total\">1</td>"
+        + "<td class=\"status\"></td><td class=\"status mark\">1</td><td class=\"status mark\">2</td><td class=\"status total mark\">3</td>"
+        + "<td class=\"calls\">9</td>"), html);
+    assertTrue(html.contains("<td class=\"status\">6</td><td class=\"status\">1</td><td class=\"status total\">7</td>"
+        + "<td class=\"status muted\">0</td><td class=\"status\">1</td><td class=\"status total\">1</td>"
+        + "<td class=\"status muted\">0</td><td class=\"status\">2</td><td class=\"status muted\">0</td><td class=\"status total\">2</td>"
+        + "<td class=\"status muted\">0</td><td class=\"status server_error\">1</td><td class=\"status server_error\">2</td>"
+        + "<td class=\"status total server_error\">3</td><td class=\"calls\">13</td>"), html);
+    // A total is shown even when zero
+    assertTrue(html.contains("<td class=\"status\">3</td><td class=\"status\"></td><td class=\"status total\">3</td>"
+        + "<td class=\"status\"></td><td class=\"status\"></td><td class=\"status total muted\">0</td>"
+        + "<td class=\"status\"></td><td class=\"status\">1</td><td class=\"status\"></td><td class=\"status total\">1</td>"
+        + "<td class=\"status\"></td><td class=\"status\"></td><td class=\"status\"></td><td class=\"status total muted\">0</td>"
+        + "<td class=\"calls\">4</td>"), html);
+    // The key metrics of the status codes: the errors of each class, and the generators returning them
+    assertEquals(""
+        + "<div class=\"key-metric\"><dt>Generator calls</dt><dd class=\"key-metric-value\">13</dd><dd class=\"key-metric-detail\">by 2 generators</dd></div>"
+        + "<div class=\"key-metric\"><dt>Client errors</dt><dd class=\"key-metric-value\">2</dd><dd class=\"key-metric-detail\">15.4% of calls, mostly 403 Forbidden</dd></div>"
+        + "<div class=\"key-metric warning\"><dt>Server errors</dt><dd class=\"key-metric-value\">3</dd><dd class=\"key-metric-detail\">23.1% of calls, mostly 504 Gateway Timeout</dd></div>"
+        + "<div class=\"key-metric\"><dt>Generators with errors</dt><dd class=\"key-metric-value\">2</dd><dd class=\"key-metric-detail\">Highest rate: org.example.Api (44.4%)</dd></div>",
+        metrics(html));
+    // Without any status: the likely codes and the totals of every class
+    String empty = statistics("<statistics since='2026-10-27T10:00:00+11:00'/>", "status-codes");
+    assertTrue(empty.contains("data-columns=\"status-codes 200 301 302 400 404 500\""), empty);
+    assertTrue(empty.contains("<th colspan=\"2\" class=\"status-class\">Success</th>"), empty);
+    assertTrue(empty.contains("<th colspan=\"3\" class=\"status-class\">Client error</th>"), empty);
+    assertEquals(""
+        + "<div class=\"key-metric\"><dt>Generator calls</dt><dd class=\"key-metric-value muted\">0</dd><dd class=\"key-metric-detail\">by 0 generators</dd></div>"
+        + "<div class=\"key-metric\"><dt>Client errors</dt><dd class=\"key-metric-value muted\">0</dd></div>"
+        + "<div class=\"key-metric\"><dt>Server errors</dt><dd class=\"key-metric-value muted\">0</dd></div>"
+        + "<div class=\"key-metric\"><dt>Generators with errors</dt><dd class=\"key-metric-value muted\">0</dd><dd class=\"key-metric-detail\">Client or server errors</dd></div>",
+        metrics(empty));
+    // No errors: their share only
+    String ok = statistics("<statistics><statistic generator='org.example.Ok' count='4'><status ok='4'/></statistic></statistics>", "status-codes");
+    assertTrue(ok.contains("<dt>Client errors</dt><dd class=\"key-metric-value muted\">0</dd><dd class=\"key-metric-detail\">0.0% of calls</dd>"), ok);
+    assertFalse(ok.contains("Slowest generator"), ok);
+  }
+
+  @Test
+  void showsTheStatisticsInTwoViews() throws Exception {
+    String summary = "<application-summary mode='test'/>";
+    String performance = page("bzadmin-application", "summary", summary, "performance");
+    assertTrue(performance.contains("href=\"/ctx/bzadmin/x.html?view=performance\" class=\"choice active\" aria-current=\"page\">Performance</a>"), performance);
+    assertTrue(performance.contains("href=\"/ctx/bzadmin/x.html?view=status-codes\" class=\"choice\">Status codes</a>"), performance);
+    assertFalse(performance.contains(">Statistics</a>"), performance);
+    String codes = page("bzadmin-application", "summary", summary, "status-codes");
+    assertTrue(codes.contains("class=\"choice active\" aria-current=\"page\">Status codes</a>"), codes);
+    // The view before it was split
+    String statistics = page("bzadmin-application", "summary", summary, "statistics");
+    assertTrue(statistics.contains("class=\"choice active\" aria-current=\"page\">Performance</a>"), statistics);
+    assertTrue(page("bzadmin-application", "summary", summary).contains("class=\"choice active\" aria-current=\"page\">Overview</a>"));
+  }
+
+  /** Every status that Berlioz can count has a code and a class. */
+  @Test
+  void knowsEveryContentStatus() throws Exception {
+    StringBuilder status = new StringBuilder("<status");
+    for (ContentStatus value : ContentStatus.values()) {
+      status.append(' ').append(value.name().toLowerCase(Locale.ROOT)).append("='1'");
+    }
+    status.append("/>");
+    String content = "<statistics since='2026-10-27T10:00:00+11:00'>"
+        + "<statistic generator='org.example.All' count='" + ContentStatus.values().length + "'>" + status + "</statistic></statistics>";
+    String html = statistics(content, "status-codes");
+    for (ContentStatus value : ContentStatus.values()) {
+      assertTrue(html.contains("\">" + value.code() + "</abbr></th>"), value.name());
+    }
+    // Each status in exactly one class: the classes add up to the calls
+    String performance = statistics(content, "performance");
+    int[] classes = new int[6];
+    for (ContentStatus value : ContentStatus.values()) classes[value.code() / 100]++;
+    assertTrue(performance.contains("<td class=\"status\">" + classes[2] + "</td><td class=\"status\">" + classes[3]
+        + "</td><td class=\"status\">" + classes[4] + "</td><td class=\"status server_error\">" + classes[5] + "</td>"), performance);
+  }
+
+  /** The generator statistics, on their own, in the given view. */
+  private static String statistics(String content, String view) throws Exception {
+    String xml = "<root service='bzadmin-application-statistics' group='bzadmin'>"
+        + "<header><location path='/ctx/bzadmin/application/statistics.html'/><path context='/ctx' info='/bzadmin/application/statistics' extension='.html'/>"
+        + "<http-parameters><parameter name='view'>" + view + "</parameter></http-parameters>"
+        + "<berlioz version='0.14.6' mode='test'/></header>"
+        + "<content generator='org.pageseeder.bzadmin.X' name='statistics' target='main' status='ok'>"
+        + content + "</content></root>";
+    return OverlayXslt.transform(new StreamSource(new StringReader(xml)));
   }
 
   @Test

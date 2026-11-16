@@ -7,36 +7,45 @@
                               xmlns:xs="http://www.w3.org/2001/XMLSchema"
                               exclude-result-prefixes="#all">
 
+<!--
+  Returns the view of the application selected by the 'view' parameter: 'overview' (the default),
+  'performance' and 'status-codes' (the generator statistics; 'statistics' for 'performance', the
+  name of the view before it was split), or 'libraries'
+-->
+<xsl:function name="f:application-view" as="xs:string">
+  <xsl:param name="root" as="node()"/>
+  <xsl:variable name="view" select="string($root/root/header/http-parameters/parameter[@name = 'view'][1])"/>
+  <xsl:sequence select="if ($view = ('performance', 'statistics')) then 'performance'
+                        else if ($view = ('status-codes', 'libraries')) then $view
+                        else 'overview'"/>
+</xsl:function>
+
 <!-- The views of the application, selected by the 'view' parameter -->
 <xsl:template match="content[@name='summary']" mode="bzadmin-secondary-nav">
-  <xsl:variable name="view" select="string(/root/header/http-parameters/parameter[@name = 'view'][1])"/>
-  <xsl:call-template name="bzadmin-secondary-link">
-    <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=')"/>
-    <xsl:with-param name="label"  select="'Overview'"/>
-    <xsl:with-param name="active" select="not($view = ('statistics', 'libraries'))"/>
-  </xsl:call-template>
-  <xsl:call-template name="bzadmin-secondary-link">
-    <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=statistics')"/>
-    <xsl:with-param name="label"  select="'Statistics'"/>
-    <xsl:with-param name="active" select="$view = 'statistics'"/>
-  </xsl:call-template>
-  <xsl:call-template name="bzadmin-secondary-link">
-    <xsl:with-param name="href"   select="concat(/root/header/location/@path, '?view=libraries')"/>
-    <xsl:with-param name="label"  select="'Libraries'"/>
-    <xsl:with-param name="active" select="$view = 'libraries'"/>
-  </xsl:call-template>
+  <xsl:variable name="view" select="f:application-view(root(.))"/>
+  <xsl:variable name="path" select="/root/header/location/@path"/>
+  <xsl:for-each select="('overview', 'performance', 'status-codes', 'libraries')">
+    <xsl:call-template name="bzadmin-secondary-link">
+      <xsl:with-param name="href"   select="concat($path, '?view=', if (. = 'overview') then '' else .)"/>
+      <xsl:with-param name="label"  select="if (. = 'status-codes') then 'Status codes' else concat(upper-case(substring(., 1, 1)), substring(., 2))"/>
+      <xsl:with-param name="active" select=". = $view"/>
+    </xsl:call-template>
+  </xsl:for-each>
 </xsl:template>
 
 <!--
   Display the view of the application selected by the 'view' parameter: the overview by default,
-  the generator statistics or the libraries.
+  the generator statistics (performance or status codes) or the libraries.
 -->
 <xsl:template match="content[@name='summary']" mode="bzadmin-content">
-  <xsl:variable name="view" select="string(/root/header/http-parameters/parameter[@name = 'view'][1])"/>
+  <xsl:variable name="view" select="f:application-view(root(.))"/>
   <div id="application-details">
     <xsl:choose>
-      <xsl:when test="$view = ('statistics', 'libraries')">
-        <xsl:apply-templates select="../content[@name = $view]" mode="bzadmin-application"/>
+      <xsl:when test="$view = ('performance', 'status-codes')">
+        <xsl:apply-templates select="../content[@name = 'statistics']" mode="bzadmin-application"/>
+      </xsl:when>
+      <xsl:when test="$view = 'libraries'">
+        <xsl:apply-templates select="../content[@name = 'libraries']" mode="bzadmin-application"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:apply-templates select="." mode="bzadmin-application"/>
@@ -206,131 +215,389 @@
 </xsl:function>
 
 <!--
-  Display the generator statistics
+  The statuses of the generator statistics, in the order of their code: Berlioz writes the count of
+  each status a generator returned as an attribute of `status`, named after its `ContentStatus`
+  in lower case (`not_found`), without its code. Mirrors `ContentStatus` (DiagnosticsXsltTest checks it).
+  The status codes view always shows the likely codes (`@always`), even when no generator returned them.
+-->
+<xsl:variable name="bzadmin-statuses" as="element(status)+">
+  <status name="ok"                              code="200" reason="OK" always="true"/>
+  <status name="created"                         code="201" reason="Created"/>
+  <status name="accepted"                        code="202" reason="Accepted"/>
+  <status name="non_authoritative_information"   code="203" reason="Non-Authoritative Information"/>
+  <status name="no_content"                      code="204" reason="No Content"/>
+  <status name="reset_content"                   code="205" reason="Reset Content"/>
+  <status name="multiple_choice"                 code="300" reason="Multiple Choices"/>
+  <status name="moved_permanently"               code="301" reason="Moved Permanently" always="true"/>
+  <status name="found"                           code="302" reason="Found" always="true"/>
+  <status name="see_other"                       code="303" reason="See Other"/>
+  <status name="temporary_redirect"              code="307" reason="Temporary Redirect"/>
+  <status name="permanent_redirect"              code="308" reason="Permanent Redirect"/>
+  <status name="bad_request"                     code="400" reason="Bad Request" always="true"/>
+  <status name="unauthorized"                    code="401" reason="Unauthorized"/>
+  <status name="forbidden"                       code="403" reason="Forbidden"/>
+  <status name="not_found"                       code="404" reason="Not Found" always="true"/>
+  <status name="method_not_allowed"              code="405" reason="Method Not Allowed"/>
+  <status name="not_acceptable"                  code="406" reason="Not Acceptable"/>
+  <status name="request_timeout"                 code="408" reason="Request Timeout"/>
+  <status name="conflict"                        code="409" reason="Conflict"/>
+  <status name="gone"                            code="410" reason="Gone"/>
+  <status name="length_required"                 code="411" reason="Length Required"/>
+  <status name="payload_too_large"               code="413" reason="Payload Too Large"/>
+  <status name="uri_too_long"                    code="414" reason="URI Too Long"/>
+  <status name="unsupported_media_type"          code="415" reason="Unsupported Media Type"/>
+  <status name="unprocessable_entity"            code="422" reason="Unprocessable Entity"/>
+  <status name="locked"                          code="423" reason="Locked"/>
+  <status name="failed_dependency"               code="424" reason="Failed Dependency"/>
+  <status name="precondition_required"           code="428" reason="Precondition Required"/>
+  <status name="too_many_requests"               code="429" reason="Too Many Requests"/>
+  <status name="request_header_fields_too_large" code="431" reason="Request Header Fields Too Large"/>
+  <status name="unavailable_for_legal_reasons"   code="451" reason="Unavailable For Legal Reasons"/>
+  <status name="internal_server_error"           code="500" reason="Internal Server Error" always="true"/>
+  <status name="not_implemented"                 code="501" reason="Not Implemented"/>
+  <status name="bad_gateway"                     code="502" reason="Bad Gateway"/>
+  <status name="service_unavailable"             code="503" reason="Service Unavailable"/>
+  <status name="gateway_timeout"                 code="504" reason="Gateway Timeout"/>
+  <status name="insufficient_storage"            code="507" reason="Insufficient Storage"/>
+</xsl:variable>
+
+<!-- The classes of statuses: 2 for 2xx, etc. -->
+<xsl:variable name="bzadmin-status-classes" as="element(class)+">
+  <class code="2" label="Success"/>
+  <class code="3" label="Redirection"/>
+  <class code="4" label="Client error"/>
+  <class code="5" label="Server error"/>
+</xsl:variable>
+
+<!--
+  Returns the class of a status count attribute of the generator statistics (2 for `ok`), empty if
+  the status is unknown
+-->
+<xsl:function name="f:status-class" as="xs:integer?">
+  <xsl:param name="count" as="attribute()"/>
+  <xsl:sequence select="$bzadmin-statuses[@name = local-name($count)]/(xs:integer(@code) idiv 100)"/>
+</xsl:function>
+
+<!--
+  Returns the sum of the status counts of a class (2 for 2xx)
+-->
+<xsl:function name="f:status-class-count" as="xs:double">
+  <xsl:param name="counts" as="attribute()*"/>
+  <xsl:param name="class"  as="xs:integer"/>
+  <xsl:sequence select="sum($counts[f:status-class(.) = $class])"/>
+</xsl:function>
+
+<!--
+  Returns a status count of the statistics table: empty when there is none
+-->
+<xsl:function name="f:status-count" as="xs:string">
+  <xsl:param name="count" as="xs:double"/>
+  <xsl:sequence select="if ($count = 0) then '' else format-number($count, '#,##0')"/>
+</xsl:function>
+
+<!--
+  Display the generator statistics in the selected view: performance or status codes
 -->
 <xsl:template match="content[@name='statistics']" mode="bzadmin-application">
+<xsl:variable name="view" select="f:application-view(root(.))"/>
 <section>
-  <h2>Generator statistics</h2>
+  <h2>Generator <xsl:value-of select="if ($view = 'status-codes') then 'status codes' else 'performance'"/></h2>
   <xsl:apply-templates select="statistics" mode="bzadmin-application-key-metrics"/>
   <p class="actions">
-    <button type="button" data-href="{f:to-path('/bzadmin/application/statistics')}" id="refresh-statistics" class="button hollow"><svg-icon name="refresh"/> Refresh</button>
+    <button type="button" data-href="{f:to-path('/bzadmin/application/statistics')}{if ($view = 'status-codes') then '?view=status-codes' else ''}" id="refresh-statistics" class="button hollow"><svg-icon name="refresh"/> Refresh</button>
+    <xsl:apply-templates select="statistics/@since" mode="bzadmin-application-since"/>
     <button type="button" data-href="{f:xml-url('/bzadmin/api/application/statistics/reset')}" id="reset-statistics" class="button alert"><svg-icon name="trash"/> Reset statistics</button>
   </p>
   <xsl:for-each select="statistics">
     <div class="table-scroll" tabindex="0" role="group" aria-label="Generator statistics"><sortable-table>
-    <table class="basic-table statistics-table is-panel" aria-label="Generator statistics">
-      <thead>
-        <tr>
-          <th></th>
-          <th colspan="3">Etag (&#xb5;s)</th>
-          <th colspan="3">Process (&#xb5;s)</th>
-          <th colspan="7">Status</th>
-        </tr>
-        <tr>
-          <th>Generator</th>
-          <th>Min</th>
-          <th>Max</th>
-          <th>Avg</th>
-          <th>Min</th>
-          <th>Max</th>
-          <th>Avg</th>
-          <th class="status">OK</th>
-          <th class="status"><abbr title="Temporary Redirect">TR</abbr></th>
-          <th class="status"><abbr title="Not Found">NF</abbr></th>
-          <th class="status"><abbr title="Bad Request">BR</abbr></th>
-          <th class="status"><abbr title="Internal Server Error">ISE</abbr></th>
-          <th class="status"><abbr title="Bad Gateway">BG</abbr></th>
-          <th class="status"><abbr title="Service Unavailable">SU</abbr></th>
-        </tr>
-      </thead>
-      <tfoot>
-        <tr>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td class="status{if (descendant::status/@ok) then '' else ' muted'}"><xsl:value-of select="sum(descendant::status/@ok)"/></td>
-          <td class="status{if (descendant::status/@temporary_redirect) then '' else ' muted'}"><xsl:value-of select="sum(descendant::status/@temporary_redirect)"/></td>
-          <td class="status{if (descendant::status/@not_found) then '' else ' muted'}"><xsl:value-of select="sum(descendant::status/@not_found)"/></td>
-          <td class="status{if (descendant::status/@bad_request) then '' else ' muted'}"><xsl:value-of select="sum(descendant::status/@bad_request)"/></td>
-          <td class="status{if (descendant::status/@internal_server_error) then ' server_error' else ' muted'}"><xsl:value-of select="sum(descendant::status/@internal_server_error)"/></td>
-          <td class="status{if (descendant::status/@bad_gateway) then ' server_error' else ' muted'}"><xsl:value-of select="sum(descendant::status/@bad_gateway)"/></td>
-          <td class="status{if (descendant::status/@service_unavailable) then ' server_error' else ' muted'}"><xsl:value-of select="sum(descendant::status/@service_unavailable)"/></td>
-        </tr>
-      </tfoot>
-      <tbody>
-        <xsl:for-each select="*">
-          <xsl:sort select="f:generator-class(@generator)"/>
-        <tr>
-          <xsl:if test="@avg-etag > 10000 or @avg-process > 100000 or status/@internal_server_error">
-            <xsl:attribute name="class">warn</xsl:attribute>
-          </xsl:if>
-          <xsl:variable name="etag-trend"    select="if (@avg-last-etag    &gt; @avg-etag*1.2)    then 'up' else if (@avg-last-etag    &lt; @avg-etag*0.8)    then 'down' else ''"/>
-          <xsl:variable name="process-trend" select="if (@avg-last-process &gt; @avg-process*1.2) then 'up' else if (@avg-last-process &lt; @avg-process*0.8) then 'down' else ''" />
-          <td data-sort="{f:generator-class(@generator)}"><xsl:sequence select="f:generator-name(@generator, concat('generator-statistics-', generate-id(.)))"/></td>
-          <td><xsl:if test="number(@min-etag) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@min-etag, '#,###,###')"/></td>
-          <td><xsl:if test="number(@max-etag) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@max-etag, '#,###,###')"/></td>
-          <td class="avg{if (@avg-etag > 10000) then ' mark' else ''}{f:muted-zero(@avg-etag)} {$etag-trend}">
-            <span title="Average over the last 10: {if (@avg-last-etag > 0) then format-number(@avg-last-etag, '#,###,###') else '&#x2013;'}"><xsl:value-of select="format-number(@avg-etag, '#,###,###')"/><svg-icon name="arrow-{$etag-trend}"/></span>
-          </td>
-          <td><xsl:if test="number(@min-process) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@min-process, '#,###,##0')"/></td>
-          <td><xsl:if test="number(@max-process) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@max-process, '#,###,##0')"/></td>
-          <td class="avg{if (@avg-process > 100000) then ' mark' else ''}{f:muted-zero(@avg-process)} {$process-trend}">
-            <span title="Average over the last 10: {if (@avg-last-process > 0) then format-number(@avg-last-process, '#,###,###') else '&#x2013;'}"><xsl:value-of select="format-number(@avg-process, '#,###,##0')"/><svg-icon name="arrow-{$process-trend}"/></span>
-          </td>
-          <td class="status"><xsl:value-of select="status/@ok"/></td>
-          <td class="status"><xsl:value-of select="status/@temporary_redirect"/></td>
-          <td class="status"><xsl:value-of select="status/@not_found"/></td>
-          <td class="status"><xsl:value-of select="status/@bad_request"/></td>
-          <td class="status{if (status/@internal_server_error) then ' mark' else''}"><xsl:value-of select="status/@internal_server_error"/></td>
-          <td class="status{if (status/@bad_gateway) then ' mark' else''}"><xsl:value-of select="status/@bad_gateway"/></td>
-          <td class="status{if (status/@service_unavailable) then ' mark' else''}"><xsl:value-of select="status/@service_unavailable"/></td>
-        </tr>
-        </xsl:for-each>
-      </tbody>
-    </table>
+    <xsl:choose>
+      <xsl:when test="$view = 'status-codes'"><xsl:apply-templates select="." mode="bzadmin-application-status-table"/></xsl:when>
+      <xsl:otherwise><xsl:apply-templates select="." mode="bzadmin-application-performance-table"/></xsl:otherwise>
+    </xsl:choose>
     </sortable-table></div>
   </xsl:for-each>
 </section>
 </xsl:template>
 
 <!--
-  The generator calls, the server errors, the slowest generator and the generators slower than
-  100 ms on average (as marked in the table); times are in microseconds. Replaced with the table
-  when the statistics are refreshed (#statistics-metrics).
+  The first cell of a row of the statistics table: the generator, its row highlighted when it is
+  slow or returned server errors
+-->
+<xsl:template match="statistic" mode="bzadmin-application-statistic">
+  <xsl:if test="@avg-etag > 10000 or @avg-process > 100000 or f:status-class-count(status/@*, 5) > 0">
+    <xsl:attribute name="class">warn</xsl:attribute>
+  </xsl:if>
+  <td data-sort="{f:generator-class(@generator)}"><xsl:sequence select="f:generator-name(@generator, concat('generator-statistics-', generate-id(.)))"/></td>
+</xsl:template>
+
+<!--
+  The statistics table in the performance view: the times in microseconds, the counts of each
+  class of statuses and the calls
+-->
+<xsl:template match="statistics" mode="bzadmin-application-performance-table">
+  <table class="basic-table statistics-table is-panel" aria-label="Generator performance" data-columns="performance">
+    <thead>
+      <tr>
+        <th></th>
+        <th colspan="3">Etag (&#xb5;s)</th>
+        <th colspan="3">Process (&#xb5;s)</th>
+        <th colspan="4">Status</th>
+        <th></th>
+      </tr>
+      <tr>
+        <th>Generator</th>
+        <th>Min</th>
+        <th>Max</th>
+        <th>Avg</th>
+        <th>Min</th>
+        <th>Max</th>
+        <th>Avg</th>
+        <xsl:for-each select="$bzadmin-status-classes">
+          <th class="status"><abbr title="{@label}"><xsl:value-of select="@code"/>xx</abbr></th>
+        </xsl:for-each>
+        <th class="calls">Calls</th>
+      </tr>
+    </thead>
+    <tfoot>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <xsl:variable name="counts" select="statistic/status/@*"/>
+        <xsl:for-each select="$bzadmin-status-classes">
+          <xsl:variable name="total" select="f:status-class-count($counts, xs:integer(@code))"/>
+          <td class="status{if ($total = 0) then ' muted' else if (@code = 5) then ' server_error' else ''}"><xsl:value-of select="format-number($total, '#,##0')"/></td>
+        </xsl:for-each>
+        <td class="calls"><xsl:value-of select="format-number(sum(statistic/@count), '#,##0')"/></td>
+      </tr>
+    </tfoot>
+    <tbody>
+      <xsl:for-each select="statistic">
+        <xsl:sort select="f:generator-class(@generator)"/>
+      <tr>
+        <xsl:apply-templates select="." mode="bzadmin-application-statistic"/>
+        <xsl:variable name="etag-trend"    select="if (@avg-last-etag    &gt; @avg-etag*1.2)    then 'up' else if (@avg-last-etag    &lt; @avg-etag*0.8)    then 'down' else ''"/>
+        <xsl:variable name="process-trend" select="if (@avg-last-process &gt; @avg-process*1.2) then 'up' else if (@avg-last-process &lt; @avg-process*0.8) then 'down' else ''" />
+        <td><xsl:if test="number(@min-etag) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@min-etag, '#,###,###')"/></td>
+        <td><xsl:if test="number(@max-etag) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@max-etag, '#,###,###')"/></td>
+        <td class="avg{if (@avg-etag > 10000) then ' mark' else ''}{f:muted-zero(@avg-etag)} {$etag-trend}">
+          <span title="Average over the last 10: {if (@avg-last-etag > 0) then format-number(@avg-last-etag, '#,###,###') else '&#x2013;'}"><xsl:value-of select="format-number(@avg-etag, '#,###,###')"/><svg-icon name="arrow-{$etag-trend}"/></span>
+        </td>
+        <td><xsl:if test="number(@min-process) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@min-process, '#,###,##0')"/></td>
+        <td><xsl:if test="number(@max-process) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@max-process, '#,###,##0')"/></td>
+        <td class="avg{if (@avg-process > 100000) then ' mark' else ''}{f:muted-zero(@avg-process)} {$process-trend}">
+          <span title="Average over the last 10: {if (@avg-last-process > 0) then format-number(@avg-last-process, '#,###,###') else '&#x2013;'}"><xsl:value-of select="format-number(@avg-process, '#,###,##0')"/><svg-icon name="arrow-{$process-trend}"/></span>
+        </td>
+        <xsl:variable name="counts" select="status/@*"/>
+        <xsl:for-each select="$bzadmin-status-classes">
+          <xsl:variable name="count" select="f:status-class-count($counts, xs:integer(@code))"/>
+          <td class="status{if (@code = 5 and $count > 0) then ' mark' else ''}"><xsl:value-of select="f:status-count($count)"/></td>
+        </xsl:for-each>
+        <td class="calls{f:muted-zero(@count)}"><xsl:value-of select="format-number(@count, '#,##0')"/></td>
+      </tr>
+      </xsl:for-each>
+    </tbody>
+  </table>
+</xsl:template>
+
+<!--
+  The statistics table in the status codes view: for each class, its common codes (`@always`), the
+  other codes that a generator returned, and the total of the class, even when zero; then the calls. The codes are
+  listed in `data-columns`, so that a refresh can tell whether the columns changed.
+-->
+<xsl:template match="statistics" mode="bzadmin-application-status-table">
+  <xsl:variable name="names" select="distinct-values(statistic/status/@*/local-name())"/>
+  <xsl:variable name="codes" select="$bzadmin-statuses[@always = 'true' or @name = $names]"/>
+  <xsl:variable name="statistics" select="statistic"/>
+  <table class="basic-table statistics-table is-panel" aria-label="Generator status codes" data-columns="{string-join(('status-codes', $codes/@code), ' ')}">
+    <thead>
+      <tr>
+        <th></th>
+        <xsl:for-each select="$bzadmin-status-classes">
+          <xsl:variable name="class" select="xs:integer(@code)"/>
+          <th colspan="{count($codes[xs:integer(@code) idiv 100 = $class]) + 1}" class="status-class"><xsl:value-of select="@label"/></th>
+        </xsl:for-each>
+        <th></th>
+      </tr>
+      <tr>
+        <th>Generator</th>
+        <xsl:for-each select="$bzadmin-status-classes">
+          <xsl:variable name="class" select="xs:integer(@code)"/>
+          <xsl:for-each select="$codes[xs:integer(@code) idiv 100 = $class]">
+            <th class="status"><abbr title="{@reason}"><xsl:value-of select="@code"/></abbr></th>
+          </xsl:for-each>
+          <th class="status total"><abbr title="All {lower-case(@label)} codes"><xsl:value-of select="@code"/>xx</abbr></th>
+        </xsl:for-each>
+        <th class="calls">Calls</th>
+      </tr>
+    </thead>
+    <tfoot>
+      <tr>
+        <td></td>
+        <xsl:for-each select="$bzadmin-status-classes">
+          <xsl:variable name="class" select="xs:integer(@code)"/>
+          <xsl:for-each select="$codes[xs:integer(@code) idiv 100 = $class]">
+            <xsl:variable name="name" select="string(@name)"/>
+            <xsl:variable name="total" select="sum($statistics/status/@*[local-name() = $name])"/>
+            <td class="status{if ($total = 0) then ' muted' else if ($class = 5) then ' server_error' else ''}"><xsl:value-of select="format-number($total, '#,##0')"/></td>
+          </xsl:for-each>
+          <xsl:variable name="total" select="f:status-class-count($statistics/status/@*, $class)"/>
+          <td class="status total{if ($total = 0) then ' muted' else if ($class = 5) then ' server_error' else ''}"><xsl:value-of select="format-number($total, '#,##0')"/></td>
+        </xsl:for-each>
+        <td class="calls"><xsl:value-of select="format-number(sum($statistics/@count), '#,##0')"/></td>
+      </tr>
+    </tfoot>
+    <tbody>
+      <xsl:for-each select="statistic">
+        <xsl:sort select="f:generator-class(@generator)"/>
+      <tr>
+        <xsl:apply-templates select="." mode="bzadmin-application-statistic"/>
+        <xsl:variable name="counts" select="status/@*"/>
+        <xsl:for-each select="$bzadmin-status-classes">
+          <xsl:variable name="class" select="xs:integer(@code)"/>
+          <xsl:for-each select="$codes[xs:integer(@code) idiv 100 = $class]">
+            <xsl:variable name="name" select="string(@name)"/>
+            <xsl:variable name="count" select="sum($counts[local-name() = $name])"/>
+            <td class="status{if ($class = 5 and $count > 0) then ' mark' else ''}"><xsl:value-of select="f:status-count($count)"/></td>
+          </xsl:for-each>
+          <xsl:variable name="total" select="f:status-class-count($counts, $class)"/>
+          <td class="status total{if ($total = 0) then ' muted' else if ($class = 5) then ' mark' else ''}"><xsl:value-of select="format-number($total, '#,##0')"/></td>
+        </xsl:for-each>
+        <td class="calls{f:muted-zero(@count)}"><xsl:value-of select="format-number(@count, '#,##0')"/></td>
+      </tr>
+      </xsl:for-each>
+    </tbody>
+  </table>
+</xsl:template>
+
+<!--
+  When the statistics started: at startup or when they were last reset; the date only if it is not
+  today. Replaced when the statistics are refreshed (#statistics-since).
+-->
+<xsl:template match="@since" mode="bzadmin-application-since">
+  <xsl:variable name="since" select="xs:dateTime(.)"/>
+  <xsl:variable name="today" select="xs:date(adjust-dateTime-to-timezone(current-dateTime(), timezone-from-dateTime($since))) = xs:date($since)"/>
+  <span id="statistics-since">Since <time datetime="{.}" title="{format-dateTime($since, '[D1] [MNn,*-3] [Y0001] at [H01]:[m01]:[s01] [Z]')}">
+    <xsl:value-of select="format-dateTime($since, if ($today) then '[H01]:[m01]' else '[D1] [MNn,*-3] [H01]:[m01]')"/>
+  </time></span>
+</xsl:template>
+
+<!--
+  Returns the total time of the calls of a generator statistic in microseconds, for 'etag' or
+  'process': the average times the calls when Berlioz does not report the total
+-->
+<xsl:function name="f:total-time" as="xs:double">
+  <xsl:param name="statistic" as="element(statistic)"/>
+  <xsl:param name="kind"      as="xs:string"/>
+  <xsl:variable name="total" select="$statistic/@*[local-name() = concat('total-', $kind)]"/>
+  <xsl:sequence select="if ($total) then number($total)
+                        else number(($statistic/@*[local-name() = concat('avg-', $kind)], 0)[1]) * number($statistic/@count)"/>
+</xsl:function>
+
+<!--
+  Returns the share of the calls as a percentage with one decimal, empty without any call
+-->
+<xsl:function name="f:share-of-calls" as="xs:string?">
+  <xsl:param name="count" as="xs:double"/>
+  <xsl:param name="calls" as="xs:double"/>
+  <xsl:sequence select="if ($calls = 0) then () else format-number($count div $calls, '0.0%')"/>
+</xsl:function>
+
+<!--
+  Returns the status of a class (4 for 4xx) with the highest count, empty if there is none
+-->
+<xsl:function name="f:most-frequent-status" as="element(status)?">
+  <xsl:param name="counts" as="attribute()*"/>
+  <xsl:param name="class"  as="xs:integer"/>
+  <xsl:variable name="statuses" select="$bzadmin-statuses[xs:integer(@code) idiv 100 = $class][@name = $counts/local-name()]"/>
+  <xsl:variable name="totals" select="for $s in $statuses return sum($counts[local-name() = $s/@name])"/>
+  <xsl:sequence select="if (empty($statuses)) then () else $statuses[index-of($totals, max($totals))[1]]"/>
+</xsl:function>
+
+<!--
+  Returns the detail of the errors of a class: their share of the calls and their most frequent code
+-->
+<xsl:function name="f:errors-detail" as="xs:string?">
+  <xsl:param name="counts" as="attribute()*"/>
+  <xsl:param name="class"  as="xs:integer"/>
+  <xsl:param name="calls"  as="xs:double"/>
+  <xsl:variable name="share" select="f:share-of-calls(f:status-class-count($counts, $class), $calls)"/>
+  <xsl:variable name="most" select="f:most-frequent-status($counts, $class)"/>
+  <xsl:sequence select="if ($share) then concat($share, ' of calls', if ($most) then concat(', mostly ', $most/@code, ' ', $most/@reason) else '') else ()"/>
+</xsl:function>
+
+<!--
+  The key metrics of the view, replaced with the table when the statistics are refreshed
+  (#statistics-metrics); both start with the generator calls.
+
+  Performance: the average time of all the calls (from the totals of the generators), the slowest
+  generator and the generators slower than 100 ms on average (as marked in the table).
+
+  Status codes: the client errors (4xx) and the server errors (5xx), with their share of the calls
+  and their most frequent code, and the generators that returned errors (the highest error rate).
 -->
 <xsl:template match="statistics" mode="bzadmin-application-key-metrics">
-  <xsl:variable name="status" select="statistic/status"/>
-  <xsl:variable name="errors" select="sum($status/(@internal_server_error|@bad_gateway|@service_unavailable))"/>
-  <xsl:variable name="slowest" select="(statistic[number(@avg-process) = max(../statistic/@avg-process/number())])[1]"/>
-  <xsl:variable name="slow" select="statistic[number(@avg-process) gt 100000]"/>
+  <xsl:variable name="view" select="f:application-view(root(.))"/>
+  <xsl:variable name="counts" select="statistic/status/@*"/>
+  <xsl:variable name="calls" select="sum(statistic/@count)"/>
+  <xsl:variable name="errors" select="f:status-class-count($counts, 5)"/>
   <dl class="key-metrics" id="statistics-metrics">
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Generator calls'"/>
-      <xsl:with-param name="value" select="format-number(sum(statistic/@count), '#,##0')"/>
+      <xsl:with-param name="value" select="format-number($calls, '#,##0')"/>
       <xsl:with-param name="detail" select="concat('by ', count(statistic), ' generators')"/>
     </xsl:call-template>
-    <xsl:call-template name="bzadmin-key-metric">
-      <xsl:with-param name="label" select="'Server errors'"/>
-      <xsl:with-param name="value" select="format-number($errors, '#,##0')"/>
-      <xsl:with-param name="detail" select="concat(format-number(sum($status/@bad_request), '#,##0'), ' bad requests, ', format-number(sum($status/@not_found), '#,##0'), ' not found')"/>
-      <xsl:with-param name="warning" select="$errors gt 0"/>
-    </xsl:call-template>
-    <xsl:call-template name="bzadmin-key-metric">
-      <xsl:with-param name="label" select="'Slowest generator'"/>
-      <xsl:with-param name="value" select="if ($slowest) then concat(format-number(number($slowest/@avg-process) div 1000, '#,##0.0'), ' ms') else ()"/>
-      <xsl:with-param name="zero-muted" select="false()"/>
-      <xsl:with-param name="detail" select="if ($slowest) then concat('On average: ', f:generator-label($slowest/@generator)) else ()"/>
-    </xsl:call-template>
-    <xsl:call-template name="bzadmin-key-metric">
-      <xsl:with-param name="label" select="'Slow generators'"/>
-      <xsl:with-param name="value" select="string(count($slow))"/>
-      <xsl:with-param name="detail" select="'Over 100 ms on average'"/>
-      <xsl:with-param name="warning" select="exists($slow)"/>
-    </xsl:call-template>
+    <xsl:choose>
+      <xsl:when test="$view = 'status-codes'">
+        <xsl:variable name="failing" select="statistic[f:status-class-count(status/@*, 4) + f:status-class-count(status/@*, 5) gt 0]"/>
+        <xsl:variable name="rates" select="for $s in $failing return (f:status-class-count($s/status/@*, 4) + f:status-class-count($s/status/@*, 5)) div number($s/@count)"/>
+        <xsl:variable name="worst" select="if (empty($failing)) then () else $failing[index-of($rates, max($rates))[1]]"/>
+        <xsl:call-template name="bzadmin-key-metric">
+          <xsl:with-param name="label" select="'Client errors'"/>
+          <xsl:with-param name="value" select="format-number(f:status-class-count($counts, 4), '#,##0')"/>
+          <xsl:with-param name="detail" select="f:errors-detail($counts, 4, $calls)"/>
+        </xsl:call-template>
+        <xsl:call-template name="bzadmin-key-metric">
+          <xsl:with-param name="label" select="'Server errors'"/>
+          <xsl:with-param name="value" select="format-number($errors, '#,##0')"/>
+          <xsl:with-param name="detail" select="f:errors-detail($counts, 5, $calls)"/>
+          <xsl:with-param name="warning" select="$errors gt 0"/>
+        </xsl:call-template>
+        <xsl:call-template name="bzadmin-key-metric">
+          <xsl:with-param name="label" select="'Generators with errors'"/>
+          <xsl:with-param name="value" select="string(count($failing))"/>
+          <xsl:with-param name="detail" select="if ($worst) then concat('Highest rate: ', f:generator-label($worst/@generator), ' (', format-number(max($rates), '0.0%'), ')') else 'Client or server errors'"/>
+        </xsl:call-template>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="slowest" select="(statistic[number(@avg-process) = max(../statistic/@avg-process/number())])[1]"/>
+        <xsl:variable name="slow" select="statistic[number(@avg-process) gt 100000]"/>
+        <xsl:variable name="process" select="sum(for $s in statistic return f:total-time($s, 'process'))"/>
+        <xsl:variable name="etag" select="sum(for $s in statistic return f:total-time($s, 'etag'))"/>
+        <xsl:call-template name="bzadmin-key-metric">
+          <xsl:with-param name="label" select="'Average time'"/>
+          <xsl:with-param name="value" select="if ($calls gt 0) then concat(format-number($process div $calls div 1000, '#,##0.0'), ' ms') else ()"/>
+          <xsl:with-param name="zero-muted" select="false()"/>
+          <xsl:with-param name="detail" select="if ($calls gt 0) then concat('Process per call; ETag ', format-number($etag div $calls div 1000, '#,##0.0'), ' ms') else ()"/>
+        </xsl:call-template>
+        <xsl:call-template name="bzadmin-key-metric">
+          <xsl:with-param name="label" select="'Slowest generator'"/>
+          <xsl:with-param name="value" select="if ($slowest) then concat(format-number(number($slowest/@avg-process) div 1000, '#,##0.0'), ' ms') else ()"/>
+          <xsl:with-param name="zero-muted" select="false()"/>
+          <xsl:with-param name="detail" select="if ($slowest) then concat('On average: ', f:generator-label($slowest/@generator)) else ()"/>
+        </xsl:call-template>
+        <xsl:call-template name="bzadmin-key-metric">
+          <xsl:with-param name="label" select="'Slow generators'"/>
+          <xsl:with-param name="value" select="string(count($slow))"/>
+          <xsl:with-param name="detail" select="'Over 100 ms on average'"/>
+          <xsl:with-param name="warning" select="exists($slow)"/>
+        </xsl:call-template>
+      </xsl:otherwise>
+    </xsl:choose>
   </dl>
 </xsl:template>
 

@@ -31,6 +31,7 @@
   --text: var(--darkest-neutral);
   --text-strong: var(--black);
   --text-muted: #686868; /* 4.5:1 on the light page canvas and surfaces */
+  --text-quiet: var(--text-muted); /* repeated values such as zeros, only as much contrast as needed */
   --text-on-color: #fff; /* on primary and status backgrounds, in both modes */
   --surface-shadow: 0 0 8px 3px rgba(0, 0, 0, 0.1); /* light-mode panel elevation */
 
@@ -124,6 +125,7 @@
   /* Tables (.basic-table, .summary-table) */
   --table-border: var(--light-primary);
   --table-shade: var(--lightest-primary);
+  --table-sum: var(--lightest-neutral); /* columns adding up others */
 
   /* XML source (<xml-source>), on --background; comments and declarations use --text-muted */
   --code-tag: var(--darker-primary);

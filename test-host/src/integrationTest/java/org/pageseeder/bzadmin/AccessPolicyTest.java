@@ -746,7 +746,7 @@ final class AccessPolicyTest {
      * The pages show the class of the generators of Berlioz, not of the guards.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"/bzadmin/services.html", "/bzadmin/application.html?view=statistics"})
+    @ValueSource(strings = {"/bzadmin/services.html", "/bzadmin/application.html?view=performance"})
     void showsTheDelegateClasses(String page) throws Exception {
       // The statistics list the generators of earlier requests
       this.host.get(page);

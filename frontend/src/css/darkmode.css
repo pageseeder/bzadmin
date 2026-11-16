@@ -10,6 +10,7 @@
     --border: hsl(0, 0%, 35%);
     --border-strong: hsl(0, 0%, 46.3%);
     --text-muted: hsl(0, 0%, 79.2%);
+    --text-quiet: hsl(0, 0%, 62%); /* 5.1:1 on --table-sum, 5.3:1 on --table-shade */
     --text: hsl(0, 0%, 93.7%);
     --text-strong: hsl(0, 0%, 96.9%);
     --surface-hover: #353535;
@@ -41,6 +42,7 @@
 
     --table-border: hsl(205, 60%, 30%);
     --table-shade: hsl(205, 60%, 16%);
+    --table-sum: #2d2d2d;
 
     --code-tag: var(--light-primary);
     --code-attr: #f4a06b;
