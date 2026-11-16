@@ -101,6 +101,34 @@ final class AdminFilterTest {
   }
 
   /**
+   * Only the exact roots of the admin services in the context of the application are redirected,
+   * to a path within that context.
+   */
+  @ParameterizedTest
+  @CsvSource(nullValues = "-", value = {
+      // Context   Request URI              Home page
+      "'',         /bzadmin,                /bzadmin/application.html",
+      "'',         /bzadmin/,               /bzadmin/application.html",
+      "'',         /html/bzadmin,           /html/bzadmin/application",
+      "'',         /html/bzadmin/,          /html/bzadmin/application",
+      "/host,      /host/bzadmin/,          /host/bzadmin/application.html",
+      "/host,      /host/html/bzadmin/,     /host/html/bzadmin/application",
+      "'',         /bzadmin//,              -",
+      "'',         /bzadmin/;x,             -",
+      "'',         /bzadmin/index.html,     -",
+      "'',         /bzadmin/config.html,    -",
+      "'',         /xml/bzadmin/,           -",
+      "'',         /BZADMIN/,               -",
+      "'',         //bzadmin/,              -",
+      "/host,      /bzadmin/,               -",
+      "/host,      //host/bzadmin/,         -",
+      "/host,      /hostx/bzadmin/,         -",
+      "/host,      /host;x/bzadmin/,        -"})
+  void redirectsOnlyTheRootOfTheAdminServices(String context, String uri, @Nullable String expected) {
+    assertEquals(expected, AdminFilter.homePage(context, uri), context + uri);
+  }
+
+  /**
    * @return a request received by a container at {@code http://localhost:8999}.
    */
   private static HttpServletRequest request(@Nullable String requestedWith, @Nullable String site, @Nullable String origin) {

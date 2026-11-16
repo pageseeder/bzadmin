@@ -75,6 +75,9 @@ import org.slf4j.LoggerFactory;
  *     ({@link ControlAuthorization#CONTROL_AUTHORIZED_ATTRIBUTE}); the deprecated aliases
  *     ({@code reload-services}, {@code clear-xsl-cache}, {@code reset-etags}) and
  *     {@code berlioz-profile} are always rejected;</li>
+ *   <li>a GET or HEAD request for the root of the admin services ({@code /bzadmin} or
+ *     {@code /bzadmin/}, {@code /html/bzadmin} or {@code /html/bzadmin/} by prefix) is redirected
+ *     (302) to the Application page;</li>
  *   <li>the filter sets an {@link AdminVerdict} as request attribute.</li>
  * </ol>
  * A request denied or rejected does not reach Berlioz. Every response has
@@ -153,6 +156,16 @@ public final class AdminFilter implements Filter {
       "/bzadmin/api/services/reload", EnumSet.of(ReloadScope.SERVICES),
       "/bzadmin/api/xslt/cache/clear", EnumSet.of(ReloadScope.XSLT));
 
+  /**
+   * The first admin page, by root of the admin services: Berlioz mapped by extension, or by the
+   * {@code /html/} prefix. Only these exact paths are redirected.
+   */
+  static final Map<String, String> HOME_PAGES = Map.of(
+      "/bzadmin", "/bzadmin/application.html",
+      "/bzadmin/", "/bzadmin/application.html",
+      "/html/bzadmin", "/html/bzadmin/application",
+      "/html/bzadmin/", "/html/bzadmin/application");
+
   /** The problem reported when the fallback login is refused over plain HTTP, not through a proxy. */
   private static final String LOGIN_PLAIN_HTTP =
       "The fallback login of Berlioz administration is refused over plain HTTP, except from this machine";
@@ -221,6 +234,7 @@ public final class AdminFilter implements Filter {
     boolean operation = !("GET".equals(req.getMethod()) || "HEAD".equals(req.getMethod()));
     AdminAccess access = authenticate(req, res, operation);
     if (access == null || !isAccepted(req, res, access, operation)) return;
+    if (!operation && redirectsHome(req, res)) return;
     req.setAttribute(AdminVerdict.ATTRIBUTE, new AdminVerdict(access, req.getServletContext()));
     if (!operation) {
       chain.doFilter(req, res);
@@ -307,6 +321,37 @@ public final class AdminFilter implements Filter {
     }
     req.setAttribute(ControlAuthorization.CONTROL_AUTHORIZED_ATTRIBUTE, Boolean.TRUE);
     return true;
+  }
+
+  /**
+   * Redirects the root of the admin services to their first page ({@link #HOME_PAGES}).
+   *
+   * <p>Only for a request that was let through: without access, the root is denied like any admin
+   * URL. The {@code Location} is a path made of the context path of the application, not the one
+   * of the request (as the client wrote it, such as {@code //host}), and of a constant: nothing of
+   * the request goes into it, and it is never made absolute with the {@code Host} header.
+   *
+   * @return whether the request was redirected.
+   */
+  private static boolean redirectsHome(HttpServletRequest req, HttpServletResponse res) {
+    String target = homePage(req.getServletContext().getContextPath(), req.getRequestURI());
+    if (target == null || res.isCommitted()) return false;
+    res.resetBuffer();
+    res.setStatus(HttpServletResponse.SC_FOUND);
+    res.setHeader("Location", target);
+    return true;
+  }
+
+  /**
+   * @param context The context path of the application, "" for the root context.
+   * @param uri     The request URI, without query.
+   * @return the path of the first admin page when the URI is exactly the root of the admin services
+   *   in the context, {@code null} otherwise.
+   */
+  static @Nullable String homePage(String context, String uri) {
+    if (!uri.startsWith(context)) return null;
+    String page = HOME_PAGES.get(uri.substring(context.length()));
+    return page != null ? context + page : null;
   }
 
   /**

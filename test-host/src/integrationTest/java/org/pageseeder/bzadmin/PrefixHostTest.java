@@ -102,6 +102,17 @@ final class PrefixHostTest {
   }
 
   @Test
+  void redirectsTheRootToTheApplicationPage() throws Exception {
+    for (String root : new String[]{"/html/bzadmin", "/html/bzadmin/"}) {
+      HttpResponse<String> response = host.get(root);
+      assertEquals(302, response.statusCode(), root);
+      assertEquals("/html/bzadmin/application", response.headers().firstValue("Location").orElse(""), root);
+      assertEquals(403, host.as(null).get(root).statusCode(), root);
+    }
+    assertTrue(host.get("/xml/bzadmin/").headers().firstValue("Location").isEmpty());
+  }
+
+  @Test
   void deniesAccessOnBothPrefixes() throws Exception {
     assertEquals(403, host.as(null).get("/html/bzadmin/config").statusCode());
     assertEquals(403, host.as(null).get(SAMPLE).statusCode());

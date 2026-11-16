@@ -398,6 +398,28 @@ final class HostIntegrationTest {
       assertEquals(403, this.host.postRaw("/bzadmin/api/cache/clear.src", "", "X-Requested-With: XMLHttpRequest", "Origin: " + HostExample.PROXY_ORIGIN + "/host"));
     }
 
+    /**
+     * The root of the admin services redirects the administrators to the Application page, within
+     * the context and without the query of the request; others are refused as on any
+     * admin URL, and operations are not redirected.
+     */
+    @Test
+    void redirectsTheRootToTheApplicationPage() throws Exception {
+      for (String root : new String[]{"/bzadmin", "/bzadmin/", "/bzadmin/?next=//attacker.example"}) {
+        HttpResponse<String> response = this.host.get(root);
+        assertEquals(302, response.statusCode(), root);
+        assertEquals("/host/bzadmin/application.html", response.headers().firstValue("Location").orElse(""), root);
+        assertEquals("no-store", response.headers().firstValue("Cache-Control").orElse(""), root);
+        HttpResponse<String> anonymous = this.host.as(null).get(root);
+        assertEquals(401, anonymous.statusCode(), root);
+        assertTrue(anonymous.headers().firstValue("Location").isEmpty(), root);
+      }
+      assertEquals(403, this.host.direct().get("/bzadmin/", "X-Forwarded-For", "203.0.113.5").statusCode());
+      HttpResponse<String> post = this.host.post("/bzadmin/", "", "Sec-Fetch-Site", "same-origin");
+      assertTrue(post.headers().firstValue("Location").isEmpty(), "POST: " + post.statusCode());
+      assertEquals(400, this.host.get("/bzadmin/?berlioz-reload=true").statusCode());
+    }
+
   }
 
   /**
