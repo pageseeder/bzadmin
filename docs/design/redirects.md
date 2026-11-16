@@ -181,11 +181,13 @@ Field-level schemas and compatibility notes are in the [metadata contract](metad
 
 ## Presentation
 
-The Config page has a Redirects tab next to the existing views. Each registration has a panel with its
-status and what it means, the configuration, mappings, load time and rule count, then a table of rules
-(position, from, to, effect and warnings), following the existing table and status styles. The empty
-state, when neither filter is mapped, explains the two filters. Long patterns wrap; the table scrolls
-horizontally on narrow screens.
+The Config page has a Redirects tab next to the existing views. Each registration has a heading, above
+a panel with its status and what it means, the configuration, mappings, load time and rule count, then
+a table of rules as a panel of its own, with left-aligned column headings (position, from, to, effect
+and warnings), following the existing table and status styles. URI template tokens (`{path}`) are in
+bold blue and redacted parts (`[REDACTED]`) in bold red. The empty state, when neither filter is
+mapped, explains the two filters. Long patterns wrap anywhere, leaving the effect column its width;
+the table scrolls horizontally on narrow screens.
 
 ## Non-goals
 

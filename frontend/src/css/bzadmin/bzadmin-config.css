@@ -20,6 +20,34 @@
     }
   }
 
+  /* The Redirects view: long patterns and targets wrap, the position and effect do not */
+  .redirect-rules {
+    th {
+      text-align: left;
+    }
+    th:first-child,
+    td:first-child,
+    th:last-child,
+    td:last-child {
+      white-space: nowrap;
+    }
+    th:last-child,
+    td:last-child {
+      width: 1%;
+    }
+    code {
+      overflow-wrap: anywhere;
+    }
+  }
+  .redirect-token {
+    color: var(--accent);
+    font-weight: bold;
+  }
+  .redirect-redacted {
+    color: var(--error-text);
+    font-weight: bold;
+  }
+
   /* The Login view: the password hash form */
   .password-hash-form {
     max-width: 24rem;

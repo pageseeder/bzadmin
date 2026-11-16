@@ -590,8 +590,8 @@
       <p><i>The filters of the application are not available for this request.</i></p>
     </xsl:when>
     <xsl:when test="not($filters/filter[@status != 'not-mapped'])">
+      <h2>No redirect filter</h2>
       <div class="panel">
-        <h2>No redirect filter</h2>
         <p>The application maps neither Berlioz filter. <code>RedirectFilter</code> redirects URLs (301, 302, 307 or 308) and <code>RelocationFilter</code> forwards them internally, each with the rules of the file named by its <code>config</code> parameter, relative to <code>WEB-INF</code>.</p>
       </div>
     </xsl:when>
@@ -609,17 +609,20 @@
 
 <!-- A type of filter that the application does not map -->
 <xsl:template match="filter[@status = 'not-mapped']" mode="bzadmin-config">
-  <div class="panel">
+  <section>
     <h2><xsl:value-of select="f:redirect-type(@type)"/></h2>
-    <p class="muted">Not mapped.</p>
-  </div>
+    <div class="panel">
+      <p class="muted">Not mapped.</p>
+    </div>
+  </section>
 </xsl:template>
 
 <!-- A registration of a filter -->
 <xsl:template match="filter" mode="bzadmin-config">
   <xsl:variable name="label" select="concat(f:redirect-type(@type), ': ', @name)"/>
+  <section>
+  <h2><xsl:value-of select="$label"/></h2>
   <div class="panel">
-    <h2><xsl:value-of select="$label"/></h2>
     <div class="table-scroll" tabindex="0" role="group" aria-label="{$label}"><table class="summary-table" aria-label="{$label}">
       <tbody>
         <tr>
@@ -659,8 +662,9 @@
         </xsl:if>
       </tbody>
     </table></div>
+  </div>
     <xsl:if test="rule">
-      <div class="table-scroll" tabindex="0" role="group" aria-label="Rules: {@name}"><table class="basic-table redirect-rules" aria-label="Rules: {@name}">
+      <div class="table-scroll" tabindex="0" role="group" aria-label="Rules: {@name}"><table class="basic-table redirect-rules is-panel" aria-label="Rules: {@name}">
         <thead>
           <tr>
             <th scope="col">#</th>
@@ -673,8 +677,8 @@
           <xsl:for-each select="rule">
             <tr>
               <td><xsl:value-of select="@position"/></td>
-              <td><code><xsl:value-of select="@from"/></code></td>
-              <td><code><xsl:value-of select="@to"/></code></td>
+              <td><code><xsl:sequence select="f:redirect-uri(@from)"/></code></td>
+              <td><code><xsl:sequence select="f:redirect-uri(@to)"/></code></td>
               <td>
                 <xsl:value-of select="if (not(@effect)) then '' else if (@effect = 'forward') then 'Forward' else concat(@effect, if (@effect = ('301', '308')) then ' permanent' else ' temporary')"/>
                 <xsl:apply-templates select="warning" mode="redirect-warning"/>
@@ -684,8 +688,22 @@
         </tbody>
       </table></div>
     </xsl:if>
-  </div>
+  </section>
 </xsl:template>
+
+<!--
+  A pattern or target of a rule, with its URI template tokens ({path}, {+path}) and the parts
+  redacted by the generator ([REDACTED]) highlighted.
+-->
+<xsl:function name="f:redirect-uri" as="node()*">
+  <xsl:param name="uri" as="xs:string?"/>
+  <xsl:analyze-string select="string($uri)" regex="\{{[^{{}}]*\}}|\[REDACTED\]">
+    <xsl:matching-substring>
+      <span class="{if (starts-with(., '[')) then 'redirect-redacted' else 'redirect-token'}"><xsl:value-of select="."/></span>
+    </xsl:matching-substring>
+    <xsl:non-matching-substring><xsl:value-of select="."/></xsl:non-matching-substring>
+  </xsl:analyze-string>
+</xsl:function>
 
 <!-- What a status means for the filter -->
 <xsl:template match="filter" mode="redirect-status">
