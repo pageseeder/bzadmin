@@ -146,14 +146,27 @@ final class Chains {
     String rest = path.substring(contextPath.length());
     if (!rest.startsWith("/")) return false;
     for (String pattern : urlPatterns) {
-      if (pattern.equals("/*") || pattern.equals(rest)) return true;
-      if (pattern.endsWith("/*")) {
-        String prefix = pattern.substring(0, pattern.length() - 2);
-        if (rest.equals(prefix) || rest.startsWith(prefix + "/")) return true;
-      } else if (pattern.startsWith("*.")) {
-        String name = rest.substring(rest.lastIndexOf('/') + 1);
-        if (name.endsWith(pattern.substring(1))) return true;
-      }
+      if (matches(pattern, rest)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Whether this URL pattern matches the path, as the container matches them.
+   *
+   * @param pattern The URL pattern of the filter.
+   * @param rest    The path of the request, without the context path.
+   * @return whether the pattern covers the path.
+   */
+  private static boolean matches(String pattern, String rest) {
+    if (pattern.equals("/*") || pattern.equals(rest)) return true;
+    if (pattern.endsWith("/*")) {
+      String prefix = pattern.substring(0, pattern.length() - 2);
+      return rest.equals(prefix) || rest.startsWith(prefix + "/");
+    }
+    if (pattern.startsWith("*.")) {
+      String name = rest.substring(rest.lastIndexOf('/') + 1);
+      return name.endsWith(pattern.substring(1));
     }
     return false;
   }
