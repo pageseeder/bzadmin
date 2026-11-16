@@ -208,6 +208,8 @@ public final class AdminFilter implements Filter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AdminFilter.class);
 
+  /** A separate logger so that operators can route the audit records apart from diagnostics. */
+  @SuppressWarnings("java:S9436") // The audit records have their own documented logger name
   private static final Logger AUDIT = LoggerFactory.getLogger(AUDIT_LOGGER);
 
   private final FallbackLogin login = new FallbackLogin();
