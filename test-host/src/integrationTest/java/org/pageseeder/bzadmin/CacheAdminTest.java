@@ -135,8 +135,8 @@ final class CacheAdminTest {
     assertTrue(ehcache.contains("1000 entries"), ehcache);
     assertTrue(html.contains("No limit"), "The Caffeine cache has no maximum");
     assertTrue(html.contains("Unbounded: </strong>"), html);
-    // The recent activity reads the XML of the same cache, from the handler (no envelope)
-    assertTrue(ehcache.contains("<div class=\"cache-rates\" hidden data-source=\"/bzadmin/api/cache/info.xml?" + FIXTURE.replace("&", "&amp;") + "\""), ehcache);
+    // The recent activity, in its own panel, reads the XML of the same cache, from the handler (no envelope)
+    assertTrue(ehcache.contains("<section class=\"cache-rates panel\" hidden data-source=\"/bzadmin/api/cache/info.xml?" + FIXTURE.replace("&", "&amp;") + "\""), ehcache);
     HttpResponse<String> source = host.get("/bzadmin/api/cache/info.xml?" + FIXTURE);
     assertEquals(200, source.statusCode());
     assertEquals("no-store", source.headers().firstValue("Cache-Control").orElse(""));

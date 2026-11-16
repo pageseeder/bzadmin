@@ -243,7 +243,6 @@
       <div class="medium-6 columns">
         <xsl:apply-templates select="cache/statistics" mode="bzadmin-content-cache"/>
         <xsl:if test="not(cache/statistics)"><h3>Statistics</h3><p><i>This cache has no statistics.</i></p></xsl:if>
-        <xsl:call-template name="cache-actions"/>
       </div>
       <div class="medium-6 columns">
         <xsl:apply-templates select="cache[tier]" mode="bzadmin-content-cache-tiers"/>
@@ -262,11 +261,15 @@
         </xsl:choose>
       </div>
     </div>
+    <xsl:call-template name="cache-actions"/>
     </div>
+    <xsl:apply-templates select="cache/statistics" mode="bzadmin-content-cache-rates"/>
     <xsl:call-template name="cache-remove-entry"/>
   </xsl:for-each>
   <xsl:apply-templates select="no-cache" mode="bzadmin-content-cache"/>
-  <p class="cache-back"><a href="{f:to-path('/bzadmin/cache')}" class="button hollow"><svg-icon name="angle-left"/> back to cache overview</a></p>
+  <xsl:if test="no-cache">
+    <p class="cache-back"><xsl:call-template name="cache-back"/></p>
+  </xsl:if>
 </section>
 </xsl:template>
 
@@ -301,26 +304,7 @@
   <xsl:if test="metric[@name = ('hits', 'puts')]">
     <p class="muted">The counts are those of the library, usually since the cache was created or its statistics were enabled or reset.</p>
   </xsl:if>
-  <xsl:call-template name="cache-rates"/>
   <xsl:if test="not(metric)"><p><i>No statistic is available<xsl:if test="@enabled = 'false'">: their collection is disabled</xsl:if>.</i></p></xsl:if>
-  <!-- Both buttons when the provider cannot tell whether statistics are collected -->
-  <xsl:variable name="toggle" select="f:has-capability(.., 'statistics-toggle')"/>
-  <xsl:variable name="reset" select="f:has-capability(.., 'statistics-reset')"/>
-  <xsl:if test="$toggle or $reset">
-    <p>
-      <xsl:if test="$toggle and not(@enabled = 'true')">
-        <button type="button" class="button toggle-statistics" data-enable="true"><svg-icon name="play"/> Enable statistics</button>
-        <xsl:text> </xsl:text>
-      </xsl:if>
-      <xsl:if test="$toggle and not(@enabled = 'false')">
-        <button type="button" class="button toggle-statistics" data-enable="false"><svg-icon name="stop"/> Disable statistics</button>
-        <xsl:text> </xsl:text>
-      </xsl:if>
-      <xsl:if test="$reset">
-        <button type="button" class="button hollow reset-statistics"><svg-icon name="refresh"/> Reset statistics</button>
-      </xsl:if>
-    </p>
-  </xsl:if>
 </div>
 </xsl:template>
 
@@ -464,13 +448,14 @@
 </xsl:template>
 
 <!--
-  The recent activity, computed by the page from successive reads of the statistics (filled by script)
+  The recent activity, in its own panel, computed by the page from successive reads of the statistics
+  (filled by script, once started with the button)
 -->
-<xsl:template name="cache-rates">
+<xsl:template match="cache/statistics" mode="bzadmin-content-cache-rates">
   <xsl:variable name="info" select="../.."/>
   <xsl:variable name="counters" select="metric[@name = ('hits', 'misses', 'puts', 'evictions', 'expirations', 'removals')]/@name"/>
   <xsl:if test="exists($counters)">
-    <div class="cache-rates" hidden="hidden" data-source="{f:xml-url('/bzadmin/api/cache/info')}{f:cache-query($info/@provider, $info/@manager, ../@name)}">
+    <section class="cache-rates panel" hidden="hidden" data-source="{f:xml-url('/bzadmin/api/cache/info')}{f:cache-query($info/@provider, $info/@manager, ../@name)}">
       <h3>Recent activity</h3>
       <div class="table-scroll" tabindex="0" role="group" aria-label="Recent cache activity"><table class="basic-table summary-table properties-table" aria-label="Recent cache activity">
         <tbody>
@@ -484,27 +469,44 @@
         </tbody>
       </table></div>
       <p>
-        <button type="button" class="button small hollow toggle-rates"><svg-icon name="stop"/> Stop</button>
+        <button type="button" class="button hollow toggle-rates"><svg-icon name="play"/> Start</button>
         <xsl:text> </xsl:text>
-        <span class="cache-rates-window muted">Measuring…</span>
+        <span class="cache-rates-window muted">Start to measure the activity of the cache over the last minute.</span>
       </p>
-    </div>
+    </section>
   </xsl:if>
 </xsl:template>
 
-<!-- The operations on the current cache-info or cache-entries -->
+<!-- The operations on the current cache-info or cache-entries, on one line: clearing on the right -->
 <xsl:template name="cache-actions">
   <xsl:variable name="query" select="f:cache-query(@provider, @manager, cache/@name)"/>
-  <div>
-    <xsl:if test="f:has-capability(cache, 'clear')">
-      <p><button type="button" class="button alert clear-cache" data-scope="{cache/@scope}"><svg-icon name="trash"/> Clear entries</button>
-        <xsl:if test="cache/@scope != 'local'"> <small> The <xsl:value-of select="cache/@scope"/> scope: clearing may affect other nodes.</small></xsl:if>
-      </p>
-    </xsl:if>
+  <div class="actions cache-actions">
+    <xsl:apply-templates select="cache/statistics" mode="bzadmin-content-cache-actions"/>
     <xsl:if test="f:has-capability(cache, 'entries') and not(entries)">
-      <p><a href="{f:to-path('/bzadmin/cache/entries')}{$query}" class="button hollow"><svg-icon name="eye"/> View keys</a></p>
+      <a href="{f:to-path('/bzadmin/cache/entries')}{$query}" class="button hollow"><svg-icon name="eye"/> View keys</a>
+    </xsl:if>
+    <xsl:if test="f:has-capability(cache, 'clear')">
+      <button type="button" class="button alert clear-cache" data-scope="{cache/@scope}"><svg-icon name="trash"/> Clear entries</button>
     </xsl:if>
   </div>
+</xsl:template>
+
+<!-- The statistics buttons, both toggles when the provider cannot tell whether statistics are collected -->
+<xsl:template match="cache/statistics" mode="bzadmin-content-cache-actions">
+  <xsl:variable name="toggle" select="f:has-capability(.., 'statistics-toggle')"/>
+  <xsl:if test="$toggle and not(@enabled = 'true')">
+    <button type="button" class="button toggle-statistics" data-enable="true"><svg-icon name="play"/> Enable statistics</button>
+  </xsl:if>
+  <xsl:if test="$toggle and not(@enabled = 'false')">
+    <button type="button" class="button toggle-statistics" data-enable="false"><svg-icon name="stop"/> Disable statistics</button>
+  </xsl:if>
+  <xsl:if test="f:has-capability(.., 'statistics-reset')">
+    <button type="button" class="button hollow reset-statistics"><svg-icon name="refresh"/> Reset statistics</button>
+  </xsl:if>
+</xsl:template>
+
+<xsl:template name="cache-back">
+  <a href="{f:to-path('/bzadmin/cache')}" class="button hollow"><svg-icon name="angle-left"/> back to cache overview</a>
 </xsl:template>
 
 <!-- Removing an entry by key, in its own panel, when the keys of the current cache-info cannot be listed -->
@@ -513,6 +515,7 @@
     <section class="panel">
       <form class="remove-entry">
         <h3>Remove an entry</h3>
+        <div class="remove-entry-fields">
         <label>Key <input type="text" name="key" required="required" maxlength="1024"/></label>
         <label>Type
           <select name="key-type">
@@ -521,7 +524,8 @@
             <option value="long">Long</option>
           </select>
         </label>
-        <p><button class="button alert"><svg-icon name="trash"/> Remove</button></p>
+        <button class="button alert"><svg-icon name="trash"/> Remove</button>
+        </div>
       </form>
     </section>
   </xsl:if>
@@ -594,16 +598,24 @@
     <xsl:call-template name="cache-actions"/>
   </xsl:for-each>
   <xsl:apply-templates select="no-cache" mode="bzadmin-content-cache"/>
-  <p class="cache-back"><a href="{f:to-path('/bzadmin/cache')}" class="button hollow"><svg-icon name="angle-left"/> back to cache overview</a></p>
+  <xsl:if test="no-cache">
+    <p class="cache-back"><xsl:call-template name="cache-back"/></p>
+  </xsl:if>
 </section>
 </xsl:template>
 
 <!-- The heading of a cache-info or cache-entries, with the identity of the cache for the scripts -->
 <xsl:template name="cache-heading">
-  <h2 class="cache-identity" data-provider="{@provider}" data-manager="{@manager}" data-cache="{cache/@name}">
-    Cache: <xsl:value-of select="cache/@name"/>
-  </h2>
-  <p class="muted">Manager <code><xsl:value-of select="@manager"/></code> of <code><xsl:value-of select="@provider"/></code>, scope <xsl:value-of select="cache/@scope"/></p>
+  <header class="cache-header">
+    <div>
+      <h2 class="cache-identity" data-provider="{@provider}" data-manager="{@manager}" data-cache="{cache/@name}">
+        Cache: <xsl:value-of select="cache/@name"/>
+      </h2>
+      <p class="muted">Manager <code><xsl:value-of select="@manager"/></code> of <code><xsl:value-of select="@provider"/></code>, scope <xsl:value-of select="cache/@scope"/>
+        <xsl:if test="f:has-capability(cache, 'clear') and cache/@scope != 'local'">: clearing may affect other nodes</xsl:if></p>
+    </div>
+    <xsl:call-template name="cache-back"/>
+  </header>
 </xsl:template>
 
 <!--

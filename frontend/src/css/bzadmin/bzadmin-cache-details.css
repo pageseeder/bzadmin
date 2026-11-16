@@ -8,6 +8,35 @@
     }
   }
 
+  /* The cache, with its operations and the way back on the right */
+  .cache-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3) var(--layout-gap);
+    margin-bottom: var(--space-5);
+    h2 {
+      margin-bottom: var(--space-2);
+    }
+    p {
+      margin-bottom: 0;
+    }
+    .button {
+      margin: 0;
+    }
+  }
+
+  /* Viewing keys on the left, clearing on the right */
+  .cache-actions {
+    .button {
+      margin: 0;
+    }
+    .clear-cache {
+      margin-left: auto;
+    }
+  }
+
   .cache-pages {
     display: flex;
     gap: var(--space-5);
@@ -32,8 +61,42 @@
     margin-top: var(--space-7);
   }
 
-  .remove-entry label {
+  /* The key, its type and the button on one row, about two thirds of a wide panel */
+  .remove-entry-fields {
+    max-width: 48rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--space-3) var(--space-5);
+    label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin: 0;
+    }
+    /* The key takes the room left by the type and the button */
+    label:has(input) {
+      flex: 1 1 20rem;
+    }
+    /* As high as the button, rounded like it */
+    input,
+    select {
+      align-self: stretch;
+      flex: 1 1 auto;
+      width: auto;
+      height: auto;
+      border-radius: var(--radius-sm);
+      margin: 0;
+    }
+    .button {
+      margin: 0;
+    }
+  }
+
+  /* The feedback of a removal, under the fields */
+  .remove-entry .message {
     display: block;
-    margin-bottom: var(--space-3);
+    margin-top: var(--space-3);
+    padding-left: 0;
   }
 }

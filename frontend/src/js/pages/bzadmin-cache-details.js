@@ -72,14 +72,15 @@ if (heading) {
     event.preventDefault();
     const key = form.elements.key.value;
     const type = form.elements['key-type'].value;
-    const button = form.querySelector('button');
+    // The feedback goes under the fields, not beside the button
+    const fields = form.querySelector('.remove-entry-fields');
     try {
       const body = new URLSearchParams({ ...identity, key, 'key-type': type });
       const xml = await fetchDocument(section.dataset.remove, 'application/xml', { method: 'POST', body });
       const removed = xml.querySelector('remove-cache-entry')?.getAttribute('removed') === 'true';
-      flash(button, removed ? 'Entry removed' : 'No entry with this key');
+      flash(fields, removed ? 'Entry removed' : 'No entry with this key');
     } catch {
-      flash(button, 'Unable to remove entry', { type: 'error' });
+      flash(fields, 'Unable to remove entry', { type: 'error' });
     }
   });
 
@@ -89,8 +90,8 @@ if (heading) {
 
 /**
  * Reads the statistics of the cache every few seconds, and shows the rates of its counters over
- * the last minute: the counts of the library may cover a long period. Reading starts with the
- * page, stops with the button or after `RATES_DURATION`, and pauses while the page is hidden.
+ * the last minute: the counts of the library may cover a long period. Reading starts and stops
+ * with the button, stops by itself after `RATES_DURATION`, and pauses while the page is hidden.
  *
  * @param {HTMLElement} rates the `.cache-rates` block, with the XML endpoint in `data-source`
  */
@@ -167,5 +168,4 @@ function showRecentActivity(rates) {
 
   on(rates, 'click', 'button.toggle-rates', () => (polling.running ? stop('Stopped.') : start()));
   rates.hidden = false;
-  start();
 }
