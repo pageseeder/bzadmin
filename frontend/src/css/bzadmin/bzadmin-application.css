@@ -1,5 +1,10 @@
 /* Statistics */
 .page-bzadmin-application {
+  /* Refresh on the left, reset on the right */
+  #reset-statistics {
+    margin-inline-start: auto;
+  }
+
   .statistics-table {
     font-size: 90%;
 

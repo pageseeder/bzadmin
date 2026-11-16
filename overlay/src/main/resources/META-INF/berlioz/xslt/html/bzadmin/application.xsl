@@ -146,7 +146,7 @@
       <p class="muted">Capabilities detected in this host application.</p>
       <div class="table-scroll" tabindex="0" role="group" aria-label="Application integrations"><table class="summary-table application-integrations-table" aria-label="Application integrations"><tbody>
         <xsl:for-each select="logging">
-          <tr><th scope="row"><a href="{f:to-path('/bzadmin/logs')}">Logs</a></th><td>
+          <tr><th scope="row">Logs</th><td>
             <strong><xsl:value-of select="@backend"/></strong>
             <p><xsl:value-of select="if (@recent-events = 'true') then 'Recent event capture is available.' else 'This backend does not provide recent event capture. Log files may still be available.'"/></p>
             <xsl:choose>
@@ -158,7 +158,7 @@
             </xsl:choose>
           </td></tr>
         </xsl:for-each>
-        <tr><th scope="row"><a href="{f:to-path('/bzadmin/cache')}">Caches</a></th><td>
+        <tr><th scope="row">Caches</th><td>
           <xsl:choose>
             <xsl:when test="cache-provider"><ul class="application-providers"><xsl:for-each select="cache-provider"><li>
               <strong><xsl:value-of select="@label"/></strong>
@@ -170,7 +170,6 @@
             <xsl:otherwise>No cache provider detected.</xsl:otherwise>
           </xsl:choose>
         </td></tr>
-      <tr><th scope="row">XSLT</th><td><a href="{f:to-path('/bzadmin/xslt')}">Cache settings and controls</a></td></tr>
       <xsl:for-each select="access">
         <tr><th scope="row">Access</th><td><details class="application-access"><summary>Access configuration</summary>
           <p>Host access attribute<xsl:if test="@roles = 'true'">, container roles</xsl:if><xsl:if test="@fallback-login = 'true'">, fallback login</xsl:if>.</p>
