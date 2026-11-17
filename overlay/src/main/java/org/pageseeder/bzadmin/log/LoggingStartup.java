@@ -95,10 +95,10 @@ final class LoggingStartup {
     for (Map<String, Object> candidate : objects(this.fields, CANDIDATES)) {
       @Nullable String outcome = text(candidate, "outcome");
       if ("failed".equals(outcome)) {
-        issues.add(new Issue("startup-file-failed", Severity.WARNING).file(text(candidate, "location"), text(candidate, "path")));
+        issues.add(new Issue("startup-file-failed", Severity.WARNING).withFile(text(candidate, "location"), text(candidate, "path")));
       } else if ("loaded-with-errors".equals(outcome) && flag(candidate, "in-use")) {
         issues.add(new Issue("startup-file-with-errors", Severity.WARNING)
-            .file(text(candidate, "location"), text(candidate, "path")).count(number(candidate, "problem-count", 0)));
+            .withFile(text(candidate, "location"), text(candidate, "path")).withCount(number(candidate, "problem-count", 0)));
       }
     }
     return issues;
@@ -110,14 +110,14 @@ final class LoggingStartup {
    */
   void write(OutputWriter out) {
     out.startObject("startup");
-    Map<String, Object> fields = new LinkedHashMap<>(this.fields);
-    if ("logback".equals(text(fields, "backend"))) fields.remove("logger-factory");
-    List<Map<String, Object>> candidates = objects(fields, CANDIDATES);
-    fields.remove(CANDIDATES);
+    Map<String, Object> written = new LinkedHashMap<>(this.fields);
+    if ("logback".equals(text(written, "backend"))) written.remove("logger-factory");
+    List<Map<String, Object>> candidates = objects(written, CANDIDATES);
+    written.remove(CANDIDATES);
     // In XML, the values are attributes, written before the nested objects
-    values(out, fields, false);
+    values(out, written, false);
     if (initialised()) out.field("current", this.current);
-    values(out, fields, true);
+    values(out, written, true);
     out.startArray(CANDIDATES, ContextOption.JSON_ONLY);
     for (Map<String, Object> candidate : candidates) object(out, "candidate", candidate);
     out.endArray();
@@ -158,20 +158,30 @@ final class LoggingStartup {
     } else if (value instanceof Long) {
       out.field(name, (Long) value);
     } else if (value instanceof List) {
-      List<?> list = (List<?>) value;
-      if (!list.isEmpty() && list.get(0) instanceof Map) {
-        String item = name.endsWith("s") ? name.substring(0, name.length() - 1) : name;
-        out.startArray(name, ContextOption.JSON_ONLY);
-        for (Object o : list) if (o instanceof Map) object(out, item, (Map<String, Object>) o);
-        out.endArray();
-      } else {
-        List<String> strings = new ArrayList<>();
-        for (Object o : list) strings.add(String.valueOf(o));
-        out.field(name, strings);
-      }
+      list(out, name, (List<?>) value);
     } else if (value != null) {
       out.field(name, value.toString());
     }
+  }
+
+  private static void list(OutputWriter out, String name, List<?> list) {
+    if (isNested(list)) {
+      array(out, name, list);
+    } else {
+      List<String> strings = new ArrayList<>();
+      for (Object o : list) strings.add(String.valueOf(o));
+      out.field(name, strings);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void array(OutputWriter out, String name, List<?> list) {
+    String item = name.endsWith("s") ? name.substring(0, name.length() - 1) : name;
+    out.startArray(name, ContextOption.JSON_ONLY);
+    for (Object o : list) {
+      if (o instanceof Map) object(out, item, (Map<String, Object>) o);
+    }
+    out.endArray();
   }
 
 }

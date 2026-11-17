@@ -202,7 +202,7 @@ final class LogbackInspection {
     @Nullable String file = appender instanceof FileAppender ? ((FileAppender<ILoggingEvent>) appender).getFile() : null;
     LoggingConfiguration.Appender recorded = new LoggingConfiguration.Appender("a" + (this.order.size() + 1),
         appender.getName(), appender.getClass().getName(), appender.isStarted(), writes(appender),
-        appender == this.capture, file, holder != null ? holder.id : null);
+        appender == this.capture).at(file, holder != null ? holder.id : null);
     this.appenders.put(appender, recorded);
     this.order.add(recorded);
     if (appender instanceof AppenderAttachable && nesting < MAX_NESTING) {
@@ -279,7 +279,7 @@ final class LogbackInspection {
       if (level >= Status.WARN) shown.add(status);
     }
     if (this.context.getStatusManager().getCount() > all.size()) {
-      b.issues.add(new Issue("statuses-dropped", Severity.WARNING).count(this.context.getStatusManager().getCount()));
+      b.issues.add(new Issue("statuses-dropped", Severity.WARNING).withCount(this.context.getStatusManager().getCount()));
     }
     for (int i = shown.size() - 1; i >= 0 && b.statuses.size() < LoggingConfiguration.MAX_STATUSES; i--) {
       b.statuses.add(status(shown.get(i)));
@@ -323,11 +323,11 @@ final class LogbackInspection {
     List<Issue> issues = new ArrayList<>();
     boolean anyWrites = anyWrites();
     for (LoggingConfiguration.Appender a : this.order) {
-      if (!a.capture && !a.started) issues.add(new Issue("stopped-appender", Severity.ERROR).appender(a.id, a.name));
+      if (!a.capture && !a.started) issues.add(new Issue("stopped-appender", Severity.ERROR).withAppender(a.id, a.name));
     }
     if (anyWrites) noOutput(issues, listed, output);
-    if (b.errors > 0) issues.add(new Issue("error-status", Severity.ERROR).count(b.errors));
-    if (b.warnings > 0) issues.add(new Issue("warning-status", Severity.WARNING).count(b.warnings));
+    if (b.errors > 0) issues.add(new Issue("error-status", Severity.ERROR).withCount(b.errors));
+    if (b.warnings > 0) issues.add(new Issue("warning-status", Severity.WARNING).withCount(b.warnings));
     if (anyWrites && consoleOnly()) issues.add(new Issue("console-only", Severity.WARNING));
     // The issues found with the statuses go after
     issues.addAll(b.issues);
@@ -371,7 +371,7 @@ final class LogbackInspection {
     for (Logger logger : listed) {
       boolean off = logger.getEffectiveLevel() != null && LogbackBackend.level(logger.getEffectiveLevel()) == EventLevel.OFF;
       if (!off && !hasOutput(output, logger.getName())) {
-        issues.add(new Issue("no-output", Severity.ERROR).logger(logger.getName()));
+        issues.add(new Issue("no-output", Severity.ERROR).withLogger(logger.getName()));
       }
     }
   }

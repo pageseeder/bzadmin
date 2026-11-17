@@ -96,23 +96,23 @@ final class LoggingConfiguration {
       this.severity = severity;
     }
 
-    Issue appender(String id, @Nullable String appenderName) {
+    Issue withAppender(String id, @Nullable String appenderName) {
       this.appender = id;
       this.name = appenderName;
       return this;
     }
 
-    Issue logger(String loggerName) {
+    Issue withLogger(String loggerName) {
       this.logger = loggerName;
       return this;
     }
 
-    Issue count(long n) {
+    Issue withCount(long n) {
       this.count = n;
       return this;
     }
 
-    Issue file(@Nullable String fileLocation, @Nullable String filePath) {
+    Issue withFile(@Nullable String fileLocation, @Nullable String filePath) {
       this.location = fileLocation;
       this.path = filePath;
       return this;
@@ -136,22 +136,28 @@ final class LoggingConfiguration {
 
     final boolean capture;
 
-    final @Nullable String file;
+    @Nullable String file;
 
-    final @Nullable String holder;
+    @Nullable String holder;
 
     final List<String> loggers = new ArrayList<>();
 
-    Appender(String id, @Nullable String name, String className, boolean started, boolean writes, boolean capture,
-        @Nullable String file, @Nullable String holder) {
+    Appender(String id, @Nullable String name, String className, boolean started, boolean writes, boolean capture) {
       this.id = id;
       this.name = name;
       this.className = className;
       this.started = started;
       this.writes = writes;
       this.capture = capture;
-      this.file = file;
-      this.holder = holder;
+    }
+
+    /**
+     * Sets the file the appender writes to and the ID of the appender that holds it.
+     */
+    Appender at(@Nullable String filePath, @Nullable String holderId) {
+      this.file = filePath;
+      this.holder = holderId;
+      return this;
     }
   }
 

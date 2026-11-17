@@ -27,7 +27,7 @@ final class LoggingConfigurationOutputTest {
   private static final Instant STARTUP = Instant.parse("2026-11-10T01:02:00Z");
 
   @Test
-  void writesTheVerdictAndIssuesInEveryView() throws Exception {
+  void writesTheVerdictAndIssuesInEveryView() {
     LoggingConfiguration c = problems();
     String summary = xml(c, startup(file("loaded"), null), false);
     assertTrue(summary.startsWith("<logging-configuration framework=\"logback\" version=\"1.5.38\" verdict=\"problems\">"), summary);
@@ -46,7 +46,7 @@ final class LoggingConfigurationOutputTest {
   }
 
   @Test
-  void writesCamelCaseJson() throws Exception {
+  void writesCamelCaseJson() {
     StringWriter json = new StringWriter();
     try (JsonOutputAdapter out = new JsonOutputAdapter(json)) {
       GetLoggingConfiguration.write(problems(), startup(file("loaded"), null), true, out);
@@ -61,7 +61,7 @@ final class LoggingConfigurationOutputTest {
   }
 
   @Test
-  void writesUnsupportedWithTheStartupOnly() throws Exception {
+  void writesUnsupportedWithTheStartupOnly() {
     LoggingConfiguration c = LoggingConfiguration.without("org.slf4j.helpers.NOPLoggerFactory", null, Verdict.UNSUPPORTED);
     Map<String, Object> fields = fields("nop", "none");
     fields.put("logger-factory", "org.slf4j.helpers.NOPLoggerFactory");
@@ -71,7 +71,7 @@ final class LoggingConfigurationOutputTest {
         + "<startup initialised=\"true\" framework=\"logback\" backend=\"nop\" configuration=\"none\" mode=\"test\" time=\"2026-11-10T01:02:00Z\""
         + " logger-factory=\"org.slf4j.helpers.NOPLoggerFactory\" current=\"true\">"
         + "<candidate framework=\"logback\" location=\"webinf\" path=\"config/logback.xml\" outcome=\"ignored\"/></startup></logging-configuration>",
-        xml.replaceAll("\\s*<\\?xml[^>]*>\\s*", ""));
+        xml);
   }
 
   @Test
@@ -111,7 +111,7 @@ final class LoggingConfigurationOutputTest {
   }
 
   @Test
-  void addsTheStartupIssuesAfterTheErrors() throws Exception {
+  void addsTheStartupIssuesAfterTheErrors() {
     Map<String, Object> fields = fields("logback", "file");
     fields.put("candidates", List.of(candidate("logback", "webinf", "config/logback-test.xml", "failed", false)));
     String xml = xml(problems(), LoggingStartup.of(fields, null), false);
@@ -123,7 +123,7 @@ final class LoggingConfigurationOutputTest {
   }
 
   @Test
-  void dropsTheLoggerFactoryWithLogback() throws Exception {
+  void dropsTheLoggerFactoryWithLogback() {
     Map<String, Object> fields = fields("logback", "file");
     fields.put("logger-factory", "ch.qos.logback.classic.LoggerContext");
     Map<String, Object> hint = new LinkedHashMap<>();
@@ -145,9 +145,9 @@ final class LoggingConfigurationOutputTest {
   private static LoggingConfiguration problems() {
     LoggingConfiguration.Builder b = new LoggingConfiguration.Builder("logback", "1.5.38");
     b.verdict = Verdict.PROBLEMS;
-    b.issues.add(new Issue("stopped-appender", Severity.ERROR).appender("a2", "FILE"));
+    b.issues.add(new Issue("stopped-appender", Severity.ERROR).withAppender("a2", "FILE"));
     LoggingConfiguration.Appender file = new LoggingConfiguration.Appender("a2", "FILE", "ch.qos.logback.core.FileAppender",
-        false, false, false, "/var/log/app.log", null);
+        false, false, false).at("/var/log/app.log", null);
     file.loggers.add("ROOT");
     b.appenders.add(file);
     b.loggers.add(new LoggingConfiguration.Logger("ROOT", EventLevel.INFO, EventLevel.INFO, true, List.of("a1", "a2"), true));
@@ -193,12 +193,22 @@ final class LoggingConfigurationOutputTest {
     return c;
   }
 
-  private static String xml(LoggingConfiguration c, LoggingStartup startup, boolean details) throws Exception {
+  private static String xml(LoggingConfiguration c, LoggingStartup startup, boolean details) {
     StringWriter xml = new StringWriter();
     try (XmlOutputAdapter out = new XmlOutputAdapter(xml)) {
       GetLoggingConfiguration.write(c, startup, details, out);
     }
-    return xml.toString().replaceAll("\\s*<\\?xml[^>]*>\\s*", "");
+    return withoutDeclaration(xml.toString());
+  }
+
+  /** The XML without its leading declaration and the whitespace around it. */
+  private static String withoutDeclaration(String xml) {
+    String s = xml.strip();
+    if (s.startsWith("<?xml")) {
+      int end = s.indexOf("?>");
+      if (end >= 0) s = s.substring(end + 2).strip();
+    }
+    return s;
   }
 
   private static List<String> types(List<Issue> issues) {
