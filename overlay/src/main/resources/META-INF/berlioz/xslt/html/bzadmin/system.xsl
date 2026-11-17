@@ -365,7 +365,7 @@
   <h2>Memory areas and pools</h2>
   <div class="table-scroll" tabindex="0" role="group" aria-label="Memory areas and pools"><table class="basic-table summary-table memory-pools-table" aria-label="Memory areas and pools">
     <thead>
-      <tr><th>Area or pool</th><th>Used</th><th>Committed</th><th>Max</th><th>Peak</th></tr>
+      <tr><th>Area or pool</th><th class="number">Used</th><th class="number">Committed</th><th class="number">Max</th><th class="number">Peak</th></tr>
     </thead>
     <tbody>
       <xsl:for-each select="memory-area">
@@ -387,7 +387,7 @@
               </xsl:if>
             </td>
             <xsl:apply-templates select="." mode="system-usage"/>
-            <td><xsl:value-of select="if (@peak-used) then f:to-size(@peak-used) else ''"/></td>
+            <td class="number"><xsl:value-of select="if (@peak-used) then f:to-size(@peak-used) else ''"/></td>
           </tr>
         </xsl:for-each>
       </xsl:for-each>
@@ -400,14 +400,14 @@
     <xsl:when test="garbage-collector">
       <div class="table-scroll" tabindex="0" role="group" aria-label="Garbage collectors"><table class="basic-table summary-table" aria-label="Garbage collectors">
         <thead>
-          <tr><th>Collector</th><th>Collections</th><th>Total time</th><th>Pools</th></tr>
+          <tr><th>Collector</th><th class="number">Collections</th><th class="number">Total time</th><th>Pools</th></tr>
         </thead>
         <tbody>
           <xsl:for-each select="garbage-collector">
             <tr>
               <td><xsl:value-of select="@name"/></td>
-              <td><xsl:value-of select="if (@collections) then @collections else 'Not available'"/></td>
-              <td><xsl:value-of select="if (@time-ms) then concat(format-number(@time-ms, '#,##0'), ' ms') else 'Not available'"/></td>
+              <td class="number"><xsl:value-of select="if (@collections) then @collections else 'Not available'"/></td>
+              <td class="number"><xsl:value-of select="if (@time-ms) then concat(format-number(@time-ms, '#,##0'), ' ms') else 'Not available'"/></td>
               <td><xsl:value-of select="replace(@pools, ',', ', ')"/></td>
             </tr>
           </xsl:for-each>
@@ -441,9 +441,9 @@
 </xsl:function>
 
 <xsl:template match="memory-area|memory-pool" mode="system-usage">
-  <td><xsl:value-of select="f:to-size(@used)"/></td>
-  <td><xsl:value-of select="f:to-size(@committed)"/></td>
-  <td><xsl:value-of select="if (@max) then f:to-size(@max) else 'Undefined'"/></td>
+  <td class="number"><xsl:value-of select="f:to-size(@used)"/></td>
+  <td class="number"><xsl:value-of select="f:to-size(@committed)"/></td>
+  <td class="number"><xsl:value-of select="if (@max) then f:to-size(@max) else 'Undefined'"/></td>
 </xsl:template>
 
 <!-- A duration in milliseconds, in days, hours, minutes and seconds -->
@@ -557,7 +557,7 @@
 <xsl:template match="public|private" mode="system-files">
 <div class="table-scroll" tabindex="0" role="group" aria-label="Application folders"><table class="basic-table folders-table" aria-label="Application folders">
   <thead>
-    <tr><th>Directory</th><th>Size</th><th># of Files</th></tr>
+    <tr><th class="name">Directory</th><th class="size">Size</th><th class="count"># of Files</th></tr>
   </thead>
   <tbody>
   <xsl:for-each select="directory">
@@ -626,14 +626,14 @@
         <th>State</th>
         <th>Activity</th>
         <xsl:if test="threads/@cpu-time = 'true'">
-          <th>CPU</th>
-          <th>&#x394; CPU</th>
+          <th class="number">CPU</th>
+          <th class="number">&#x394; CPU</th>
         </xsl:if>
         <xsl:if test="threads/@allocated-bytes = 'true'">
-          <th>Allocated</th>
-          <th>&#x394; Allocated</th>
+          <th class="number">Allocated</th>
+          <th class="number">&#x394; Allocated</th>
         </xsl:if>
-        <th>Blocked / waited</th>
+        <th class="number">Blocked / waited</th>
         <th data-sort="none" aria-label="Stack"></th>
       </tr>
     </thead>

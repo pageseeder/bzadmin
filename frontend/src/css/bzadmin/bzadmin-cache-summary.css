@@ -15,6 +15,11 @@
     th:last-child {
       text-align: right;
     }
+    /* Entries, hits, misses and hit ratio: their cells mark zero as muted with their class */
+    td:nth-child(n + 3):nth-child(-n + 6) {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
     .actions {
       justify-content: flex-end;
     }

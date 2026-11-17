@@ -96,6 +96,9 @@ Selected primary and secondary navigation links expose `aria-current="page"`; se
 view changes update it only after the new content loads successfully.
 Unavailable key metric and cache table values use a dash with `role="img"` and `aria-label="Not available"`,
 retaining the hover hint without relying on it for the accessible name.
+Table headings are left-aligned (`.basic-table thead th` in `components.css`); a column of numbers is
+right-aligned, its heading too, with `class="number"` on its heading and cells (or a column rule of its
+table where the cells already use `class`, such as the cache tables), and its sort icon just before the heading.
 The cache capacity table explains “Not sized in bytes” through a heading information
 button and popover rather than a tooltip. Cache manager status icons use `role="img"`
 and a status-specific accessible label, retaining the hover hint. Cache statistics explain

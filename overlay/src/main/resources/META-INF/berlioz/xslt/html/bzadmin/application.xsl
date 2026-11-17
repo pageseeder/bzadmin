@@ -346,16 +346,16 @@
       </tr>
       <tr>
         <th>Generator</th>
-        <th>Min</th>
-        <th>Max</th>
-        <th>Avg</th>
-        <th>Min</th>
-        <th>Max</th>
-        <th>Avg</th>
+        <th class="number">Min</th>
+        <th class="number">Max</th>
+        <th class="number">Avg</th>
+        <th class="number">Min</th>
+        <th class="number">Max</th>
+        <th class="number">Avg</th>
         <xsl:for-each select="$bzadmin-status-classes">
-          <th class="status"><abbr title="{@label}"><xsl:value-of select="@code"/>xx</abbr></th>
+          <th class="status number"><abbr title="{@label}"><xsl:value-of select="@code"/>xx</abbr></th>
         </xsl:for-each>
-        <th class="calls">Calls</th>
+        <th class="calls number">Calls</th>
       </tr>
     </thead>
     <tfoot>
@@ -428,11 +428,11 @@
         <xsl:for-each select="$bzadmin-status-classes">
           <xsl:variable name="class" select="xs:integer(@code)"/>
           <xsl:for-each select="$codes[xs:integer(@code) idiv 100 = $class]">
-            <th class="status"><abbr title="{@reason}"><xsl:value-of select="@code"/></abbr></th>
+            <th class="status number"><abbr title="{@reason}"><xsl:value-of select="@code"/></abbr></th>
           </xsl:for-each>
-          <th class="status total"><abbr title="All {lower-case(@label)} codes"><xsl:value-of select="@code"/>xx</abbr></th>
+          <th class="status total number"><abbr title="All {lower-case(@label)} codes"><xsl:value-of select="@code"/>xx</abbr></th>
         </xsl:for-each>
-        <th class="calls">Calls</th>
+        <th class="calls number">Calls</th>
       </tr>
     </thead>
     <tfoot>

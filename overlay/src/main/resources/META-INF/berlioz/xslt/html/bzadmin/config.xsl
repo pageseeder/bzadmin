@@ -695,7 +695,7 @@
       <div class="table-scroll" tabindex="0" role="group" aria-label="Rules: {@name}"><table class="basic-table redirect-rules is-panel" aria-label="Rules: {@name}">
         <thead>
           <tr>
-            <th scope="col">#</th>
+            <th scope="col" class="number">#</th>
             <th scope="col">From</th>
             <th scope="col">To</th>
             <th scope="col">Effect</th>
@@ -704,7 +704,7 @@
         <tbody>
           <xsl:for-each select="rule">
             <tr>
-              <td><xsl:value-of select="@position"/></td>
+              <td class="number"><xsl:value-of select="@position"/></td>
               <td><code><xsl:sequence select="f:redirect-uri(@from)"/></code></td>
               <td><code><xsl:sequence select="f:redirect-uri(@to)"/></code></td>
               <td>

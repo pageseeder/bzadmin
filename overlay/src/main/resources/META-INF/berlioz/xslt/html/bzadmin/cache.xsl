@@ -174,10 +174,10 @@
           <tr>
             <th>Name</th>
             <th>Scope</th>
-            <th>Entries</th>
-            <th>Hits</th>
-            <th>Misses</th>
-            <th>Hit ratio</th>
+            <th class="number">Entries</th>
+            <th class="number">Hits</th>
+            <th class="number">Misses</th>
+            <th class="number">Hit ratio</th>
             <th>Statistics</th>
             <th data-sort="none">Actions</th>
           </tr>
@@ -357,8 +357,8 @@
 <!-- The tiers of a cache: where it keeps its entries, its limit there, and the entries it has there -->
 <xsl:template match="cache" mode="bzadmin-content-cache-tiers">
   <h3>Storage tiers</h3>
-  <div class="table-scroll" tabindex="0" role="group" aria-label="Cache storage tiers"><table class="basic-table" aria-label="Cache storage tiers">
-    <thead><tr><th>Tier</th><th>Limit</th><th>Entries</th></tr></thead>
+  <div class="table-scroll" tabindex="0" role="group" aria-label="Cache storage tiers"><table class="basic-table cache-tiers-table" aria-label="Cache storage tiers">
+    <thead><tr><th>Tier</th><th>Limit</th><th class="number">Entries</th></tr></thead>
     <tbody>
       <xsl:for-each select="tier">
         <xsl:variable name="entries" select="../statistics/metric[@name = concat(current()/@type, '-entries')]"/>

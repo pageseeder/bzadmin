@@ -26,16 +26,6 @@
     }
   }
 
-  /* Configuration view: headings aligned with their columns, as in the other tables */
-  .logging-appenders,
-  .logging-loggers,
-  .logging-candidates,
-  .logging-statuses {
-    thead th {
-      text-align: left;
-    }
-  }
-
   /* events table */
   .basic-table.events {
     font-size: 90%;

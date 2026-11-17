@@ -241,9 +241,9 @@ final class DiagnosticsXsltTest {
     // The times, in microseconds as before, the classes, then the calls
     assertTrue(html.contains("<th colspan=\"3\">ETag (µs)</th>"), html);
     assertTrue(html.contains("<th colspan=\"3\">Process (µs)</th>"), html);
-    assertTrue(html.contains("<th class=\"status\"><abbr title=\"Success\">2xx</abbr></th><th class=\"status\"><abbr title=\"Redirection\">3xx</abbr></th>"
-        + "<th class=\"status\"><abbr title=\"Client error\">4xx</abbr></th><th class=\"status\"><abbr title=\"Server error\">5xx</abbr></th>"
-        + "<th class=\"calls\">Calls</th></tr>"), html);
+    assertTrue(html.contains("<th class=\"status number\"><abbr title=\"Success\">2xx</abbr></th><th class=\"status number\"><abbr title=\"Redirection\">3xx</abbr></th>"
+        + "<th class=\"status number\"><abbr title=\"Client error\">4xx</abbr></th><th class=\"status number\"><abbr title=\"Server error\">5xx</abbr></th>"
+        + "<th class=\"calls number\">Calls</th></tr>"), html);
     // A row with server errors other than 500 is highlighted; empty classes are empty
     assertTrue(html.contains("<td class=\"status\">4</td><td class=\"status\">1</td><td class=\"status\">1</td><td class=\"status mark\">3</td>"
         + "<td class=\"calls\">9</td>"), html);
@@ -266,12 +266,12 @@ final class DiagnosticsXsltTest {
     assertTrue(html.contains("<tr><th></th><th colspan=\"3\" class=\"status-class\">Success</th>"
         + "<th colspan=\"3\" class=\"status-class\">Redirection</th><th colspan=\"4\" class=\"status-class\">Client error</th>"
         + "<th colspan=\"4\" class=\"status-class\">Server error</th><th></th></tr>"), html);
-    assertTrue(html.contains("<th>Generator</th><th class=\"status\"><abbr title=\"OK\">200</abbr></th>"
-        + "<th class=\"status\"><abbr title=\"Created\">201</abbr></th>"
-        + "<th class=\"status total\"><abbr title=\"All success codes\">2xx</abbr></th>"
-        + "<th class=\"status\"><abbr title=\"Moved Permanently\">301</abbr></th>"), html);
-    assertTrue(html.contains("<th class=\"status\"><abbr title=\"Gateway Timeout\">504</abbr></th>"
-        + "<th class=\"status total\"><abbr title=\"All server error codes\">5xx</abbr></th><th class=\"calls\">Calls</th></tr>"), html);
+    assertTrue(html.contains("<th>Generator</th><th class=\"status number\"><abbr title=\"OK\">200</abbr></th>"
+        + "<th class=\"status number\"><abbr title=\"Created\">201</abbr></th>"
+        + "<th class=\"status total number\"><abbr title=\"All success codes\">2xx</abbr></th>"
+        + "<th class=\"status number\"><abbr title=\"Moved Permanently\">301</abbr></th>"), html);
+    assertTrue(html.contains("<th class=\"status number\"><abbr title=\"Gateway Timeout\">504</abbr></th>"
+        + "<th class=\"status total number\"><abbr title=\"All server error codes\">5xx</abbr></th><th class=\"calls number\">Calls</th></tr>"), html);
     assertFalse(html.contains("Etag"), html);
     assertTrue(html.contains("<td class=\"status\">3</td><td class=\"status\">1</td><td class=\"status total\">4</td>"
         + "<td class=\"status\"></td><td class=\"status\">1</td><td class=\"status total\">1</td>"
@@ -470,7 +470,7 @@ final class DiagnosticsXsltTest {
   void showsTheMemoryOfTheJvm() throws Exception {
     String html = page("bzadmin-system", "system-summary", JVM_SUMMARY, "memory");
     assertTrue(html.contains("class=\"choice active\" aria-current=\"page\">Memory</a>"), html);
-    assertTrue(html.contains("<th>Max</th><th>Peak</th>"), html);
+    assertTrue(html.contains("<th class=\"number\">Max</th><th class=\"number\">Peak</th>"), html);
     assertTrue(html.contains("<b>Peak</b>: highest used memory since the JVM started, shown in the Memory areas and pools table."), html);
     assertFalse(html.contains("title=\"Highest used since the JVM started\""), html);
     assertEquals(""
@@ -480,8 +480,8 @@ final class DiagnosticsXsltTest {
         + "<dd class=\"key-metric-meter\"><meter min=\"0\" max=\"1\" optimum=\"0\" value=\"0.0625\"></meter></dd><dd class=\"key-metric-detail\">268.4 MB of 4.3 GB</dd></div>"
         + "<div class=\"key-metric\"><dt>Non-heap</dt><dd class=\"key-metric-value\">61.9 MB</dd><dd class=\"key-metric-detail\">66.7 MB committed</dd></div>"
         + "<div class=\"key-metric\" id=\"metric-gc-time\"><dt>GC time</dt><dd class=\"key-metric-value\">0.0%</dd><dd class=\"key-metric-detail\">3 collections, 1,200 ms</dd></div>", metrics(html));
-    assertTrue(html.contains("<th>Heap</th><td>52.4 MB</td><td>268.4 MB</td><td>4.3 GB</td>"), html);
-    assertTrue(html.contains("<th>Non-heap</th><td>61.9 MB</td><td>66.7 MB</td><td>Undefined</td>"), html);
+    assertTrue(html.contains("<th>Heap</th><td class=\"number\">52.4 MB</td><td class=\"number\">268.4 MB</td><td class=\"number\">4.3 GB</td>"), html);
+    assertTrue(html.contains("<th>Non-heap</th><td class=\"number\">61.9 MB</td><td class=\"number\">66.7 MB</td><td class=\"number\">Undefined</td>"), html);
     // The pools follow their area
     assertTrue(html.contains("<td>G1 Eden Space <button"), html);
     assertTrue(html.indexOf("<td>G1 Eden Space") < html.indexOf("<th>Non-heap</th>"), html);
@@ -491,7 +491,7 @@ final class DiagnosticsXsltTest {
     assertTrue(html.contains("<td>Metaspace <button type=\"button\" class=\"info-button link-button\" popovertarget=\"system-info-pool-metaspace\" aria-label=\"About Metaspace\">"), html);
     assertTrue(html.contains("<p id=\"system-info-pool-eden\" class=\"info-popover\" popover=\"\">"), html);
     assertTrue(html.contains("a full Eden is normal"), html);
-    assertTrue(html.contains("<td>1,200 ms</td><td>G1 Eden Space, G1 Survivor Space</td>"), html);
+    assertTrue(html.contains("<td class=\"number\">1,200 ms</td><td>G1 Eden Space, G1 Survivor Space</td>"), html);
     assertFalse(html.contains("id=\"cpu-live\""), html);
   }
 
@@ -543,7 +543,7 @@ final class DiagnosticsXsltTest {
     String memory = page("bzadmin-system", "system-summary", summary, "memory");
     assertTrue(metrics(memory).contains("<dt>Heap used</dt><dd class=\"key-metric-value\">1 bytes</dd><dd class=\"key-metric-detail\">No maximum</dd>"), memory);
     assertTrue(metrics(memory).contains("<dt>Heap committed</dt><dd class=\"key-metric-value\">2 bytes</dd><dd class=\"key-metric-detail\">No maximum</dd>"), memory);
-    assertTrue(memory.contains("<td>Epsilon</td><td>Not available</td><td>Not available</td>"), memory);
+    assertTrue(memory.contains("<td>Epsilon</td><td class=\"number\">Not available</td><td class=\"number\">Not available</td>"), memory);
     String none = page("bzadmin-system", "system-summary",
         "<system-summary processors='1'><runtime start='2026-10-23T01:02:03Z' uptime-ms='0'/>"
         + "<memory-area type='heap' used='1' committed='2'/><memory-area type='non-heap' used='3' committed='4'/>"
@@ -657,9 +657,9 @@ final class DiagnosticsXsltTest {
   @Test
   void listsTheThreadsOnTheirOwnPage() throws Exception {
     String html = page("bzadmin-system-threads", "threads", THREADS);
-    assertTrue(html.contains("<th>Δ CPU</th>"), html);
-    assertTrue(html.contains("<th>Δ Allocated</th>"), html);
-    assertTrue(html.contains("<th>Blocked / waited</th>"), html);
+    assertTrue(html.contains("<th class=\"number\">Δ CPU</th>"), html);
+    assertTrue(html.contains("<th class=\"number\">Δ Allocated</th>"), html);
+    assertTrue(html.contains("<th class=\"number\">Blocked / waited</th>"), html);
     Matcher explanation = Pattern.compile("<p id=\"system-info-thread-columns\"[^>]*>(.*?)</p>").matcher(html);
     assertTrue(explanation.find(), html);
     assertTrue(explanation.group(1).contains("<b>Δ CPU</b>: CPU used since the last refresh, as a share of one processor."), html);
@@ -726,8 +726,8 @@ final class DiagnosticsXsltTest {
     assertTrue(html.contains("Only the first 1 of 3000 threads are listed."), html);
     assertTrue(html.contains("<span class=\"tag warning\">deadlocked</span>"), html);
     assertTrue(html.contains("<span class=\"thread-component\">Unknown</span>"), html);
-    assertFalse(html.contains("<th>Allocated</th>"), html);
-    assertFalse(html.contains("<th>Δ Allocated</th>"), html);
+    assertFalse(html.contains(">Allocated</th>"), html);
+    assertFalse(html.contains(">Δ Allocated</th>"), html);
     assertFalse(html.contains("allocated-delta"), html);
     assertFalse(html.contains("cpu-delta"), html);
   }

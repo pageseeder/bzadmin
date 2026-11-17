@@ -352,17 +352,17 @@
     </p>
     <div class="table-scroll" tabindex="0" role="group" aria-label="Service configuration files"><table class="basic-table" aria-label="Service configuration files">
       <thead>
-        <tr><th scope="col">#</th><th scope="col">File</th><th scope="col">From</th><th scope="col">Services</th><th scope="col">Replaced</th></tr>
+        <tr><th scope="col" class="number">#</th><th scope="col">File</th><th scope="col">From</th><th scope="col" class="number">Services</th><th scope="col" class="number">Replaced</th></tr>
       </thead>
       <tbody>
         <xsl:for-each select="source">
           <xsl:variable name="name" select="@name"/>
           <tr>
-            <td><xsl:value-of select="position()"/></td>
+            <td class="number"><xsl:value-of select="position()"/></td>
             <td><code><xsl:value-of select="@name"/></code></td>
             <td><xsl:value-of select="if (@kind = 'classpath') then 'JAR overlay' else 'Application'"/></td>
-            <td><xsl:value-of select="count(../service[@source = $name])"/></td>
-            <td><xsl:value-of select="count(../service/overridden[@source = $name])"/></td>
+            <td class="number"><xsl:value-of select="count(../service[@source = $name])"/></td>
+            <td class="number"><xsl:value-of select="count(../service/overridden[@source = $name])"/></td>
           </tr>
         </xsl:for-each>
       </tbody>

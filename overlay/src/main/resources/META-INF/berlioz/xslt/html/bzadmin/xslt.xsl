@@ -473,7 +473,7 @@
   <h3>Templates summary</h3>
   <div class="table-scroll" tabindex="0" role="group" aria-label="XSLT templates summary"><table class="basic-table templates" aria-label="XSLT templates summary">
     <thead>
-      <tr><th>Match/Name</th><th>Priority</th><th>Mode</th><th>Description</th></tr>
+      <tr><th>Match/Name</th><th class="number">Priority</th><th>Mode</th><th>Description</th></tr>
     </thead>
     <tbody>
     <xsl:for-each select="stylesheet/template|template">
@@ -482,7 +482,7 @@
           <xsl:if test="@match"><a href="#template_{generate-id()}"><code><xsl:value-of select="@match" /></code></a></xsl:if>
           <xsl:if test="@name"><i><xsl:value-of select="@name" /></i></xsl:if>
         </td>
-        <td><xsl:sequence select="xf:priority-for-template(@priority, @implicit-priority)"/></td>
+        <td class="number"><xsl:sequence select="xf:priority-for-template(@priority, @implicit-priority)"/></td>
         <td><xsl:sequence select="xf:mode-for-template(@mode, @implicit-mode)"/></td>
         <td><xsl:value-of select="doc/description/p[1]"/></td>
       </tr>

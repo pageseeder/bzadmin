@@ -100,3 +100,9 @@
     padding-left: 0;
   }
 }
+
+/* Storage tiers: the entries of each tier (their cells mark zero as muted with their class) */
+.cache-tiers-table td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

@@ -84,6 +84,21 @@
   top: 0;
 }
 
+/* Headings on the left, as the text of their column; a column of numbers (`.number` on its heading
+   and cells, or a rule of its table) on the right, its heading too, with the sort icon just before
+   it rather than at the far left, where it would look like the icon of the previous column */
+.basic-table thead th {
+  text-align: left;
+}
+.basic-table .number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.basic-table th.number > .sort-button {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
 /* Row headers in lists (`<th scope="row">`): a bold name on the row's background */
 .basic-table tbody th[scope='row'] {
   background: var(--surface);

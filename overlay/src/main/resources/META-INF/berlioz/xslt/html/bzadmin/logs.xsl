@@ -315,7 +315,7 @@
       <tr>
         <th>Name</th>
         <th>Directory</th>
-        <th class="size">Size</th>
+        <th class="size number">Size</th>
         <th class="modified">Last modified</th>
       </tr>
     </thead>
