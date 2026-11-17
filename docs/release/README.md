@@ -2,12 +2,13 @@
 
 Version `0.14.0` is the first public release. Earlier versions were internal or development candidates.
 
-## 0.14.1 (unreleased)
+## 0.14.1
 
-See the [draft release notes](0.14.1.md). Release requiring Berlioz 0.14.6: a Redirects tab for
-Berlioz's redirect and relocation filters, fallback login throttling, admin operations under the
-internal API `/bzadmin/api/`, operations with Berlioz mapped by prefix, support for development
-proxies, an XML stylesheet that avoids Kickstart's fallback warning, and interface refinements. Hosts or proxies that name admin
+See the [release notes](0.14.1.md). Released 18 November 2026, requiring Berlioz 0.14.6: a Redirects tab for
+Berlioz's redirect and relocation filters, a logging configuration view, EHCache 3 statistics, fallback
+login throttling, admin operations under the internal API `/bzadmin/api/`, operations with Berlioz mapped
+by prefix, support for development proxies, an XML stylesheet that avoids Kickstart's fallback warning,
+tests on Java 17, 21 and 25 and Tomcat 9, and interface refinements. Hosts or proxies that name admin
 operation URLs must update them.
 
 ## 0.14.0
