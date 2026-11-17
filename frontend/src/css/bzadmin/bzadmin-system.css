@@ -307,6 +307,11 @@ label.hide-idle {
   background: var(--table-heading-background);
 }
 
+/* System properties: headings aligned with their columns, as in the other tables */
+.page-bzadmin-system .properties-table thead th {
+  text-align: left;
+}
+
 .memory-pools-table .memory-area td {
   background: var(--surface-accent-subtle);
   font-weight: bold;
