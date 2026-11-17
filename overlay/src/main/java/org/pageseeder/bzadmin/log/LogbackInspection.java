@@ -301,12 +301,21 @@ final class LogbackInspection {
   }
 
   /**
+   * How much of a message is redacted: past the output limit so a credential straddling the cut is still
+   * recognised, as long as it ends within this slack.
+   */
+  private static final int MAX_REDACTED_INPUT = LoggingConfiguration.MAX_MESSAGE + 1024;
+
+  /**
    * @return the message redacted by value and bounded.
    */
   static String safe(String message) {
-    String bounded = message.length() > LoggingConfiguration.MAX_MESSAGE
-        ? message.substring(0, LoggingConfiguration.MAX_MESSAGE) + "…" : message;
-    return Redaction.redactValue(bounded);
+    // A URL's '@' can fall past the output limit, leaving its password visible if cut first: redact
+    // with some slack past the limit, but still bounded so the redaction never scans unbounded input.
+    String head = message.length() > MAX_REDACTED_INPUT ? message.substring(0, MAX_REDACTED_INPUT) : message;
+    String redacted = Redaction.redactValue(head);
+    return redacted.length() > LoggingConfiguration.MAX_MESSAGE
+        ? redacted.substring(0, LoggingConfiguration.MAX_MESSAGE) + "…" : redacted;
   }
 
   /**

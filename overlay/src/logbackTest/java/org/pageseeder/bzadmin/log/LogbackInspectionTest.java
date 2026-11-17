@@ -285,6 +285,34 @@ final class LogbackInspectionTest {
   }
 
   @Test
+  void redactsCredentialsBeforeBoundingStatusAndCauseMessages() {
+    String secret = "secret-secret-secret";
+    String prefix = "x".repeat(LoggingConfiguration.MAX_MESSAGE - (" https://u:" + secret).length());
+    String message = prefix + " https://u:" + secret + "@example.org";
+    this.context.getStatusManager().add(new ErrorStatus(message, this, new IllegalStateException(message)));
+
+    LoggingConfiguration c = this.backend.configuration();
+    String status = c.statuses.get(0).message;
+    String cause = c.statuses.get(0).causes.get(0).message;
+    assertFalse(status.contains("secret"), status);
+    assertFalse(cause.contains("secret"), cause);
+    assertTrue(status.contains("[REDACTED]"), status);
+    assertTrue(cause.contains("[REDACTED]"), cause);
+    assertEquals(LoggingConfiguration.MAX_MESSAGE + 1, status.length());
+    assertEquals(LoggingConfiguration.MAX_MESSAGE + 1, cause.length());
+  }
+
+  @Test
+  void boundsVeryLongMessagesBeforeRedacting() {
+    String message = "x".repeat(LoggingConfiguration.MAX_MESSAGE - 20) + " https://u:secret@example.org " + "y".repeat(1_000_000);
+    this.context.getStatusManager().add(new WarnStatus(message, this));
+
+    String status = this.backend.configuration().statuses.get(0).message;
+    assertFalse(status.contains("secret"), status);
+    assertEquals(LoggingConfiguration.MAX_MESSAGE + 1, status.length());
+  }
+
+  @Test
   void reportsTheTurboFiltersAndScan() {
     ch.qos.logback.classic.turbo.MarkerFilter filter = new ch.qos.logback.classic.turbo.MarkerFilter();
     filter.start();
