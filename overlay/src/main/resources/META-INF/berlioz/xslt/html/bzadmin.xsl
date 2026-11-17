@@ -2,7 +2,7 @@
 <!--
   Templates for Berlioz Administration.
 
-  This group is reserved and provide online access to the Berlioz configuration.
+  This group is reserved and provides online access to the Berlioz configuration.
 -->
 <xsl:stylesheet version="2.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
