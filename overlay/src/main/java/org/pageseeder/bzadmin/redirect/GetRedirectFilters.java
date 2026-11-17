@@ -179,8 +179,7 @@ public final class GetRedirectFilters implements Generator {
     List<Map<String, Object>> ignored = objects(entry, "ignored-rules");
     long[] positions = positions(rules.size(), ignored, number(entry, "ignored-count", 0));
     @Nullable Chains chains = type == FilterType.REDIRECT ? chains(rules, registration, contextPath) : null;
-    // The first position of each pattern, as Berlioz detects patterns mapped twice
-    Map<String, Long> firsts = new HashMap<>();
+    LoadedRules loaded = new LoadedRules(out, type, positions, chains, adminPaths);
     out.startArray(RULES, ContextOption.JSON_ONLY);
     int next = 0;
     for (int i = 0; i < rules.size(); i++) {
@@ -189,10 +188,7 @@ public final class GetRedirectFilters implements Generator {
         Map<String, Object> rule = ignored.get(next++);
         ignored(out, rule, number(rule, POSITION, 0));
       }
-      loaded(out, type, rules.get(i), positions[i], firsts, adminPaths);
-      if (chains != null) chain(out, chains, i, positions);
-      out.endArray();
-      out.endObject();
+      loaded.write(i, rules.get(i));
     }
     while (next < ignored.size()) {
       Map<String, Object> rule = ignored.get(next++);
@@ -232,32 +228,6 @@ public final class GetRedirectFilters implements Generator {
     return Chains.of(from, to, contextPath, registration.urlPatterns);
   }
 
-  /** Writes {@code redirect-loop} or {@code redirect-chain} when the target of the rule is redirected again. */
-  private static void chain(OutputWriter out, Chains chains, int index, long[] positions) {
-    int next = chains.next(index);
-    if (next == Chains.NONE) return;
-    warning(out, chains.loops(index) ? "redirect-loop" : "redirect-chain", positions[next], null);
-  }
-
-  /** Writes a loaded rule and its warnings, leaving the rule and its warnings open for more. */
-  private static void loaded(OutputWriter out, FilterType type, Map<String, Object> rule, long position,
-      Map<String, Long> positions, List<String> adminPaths) {
-    String from = value(rule, "from");
-    String to = value(rule, "to");
-    out.startObject("rule");
-    if (position > 0) out.field(POSITION, position);
-    out.field("from", Targets.bound(from, Targets.MAX_VALUE));
-    out.field("to", Targets.bound(to, Targets.MAX_VALUE));
-    out.field("effect", type == FilterType.RELOCATION ? "forward" : Long.toString(number(rule, STATUS, 302)));
-    out.startArray(WARNINGS, ContextOption.JSON_ONLY);
-    // Berlioz gives the pattern as it compares patterns mapped twice
-    Long first = position > 0 ? positions.putIfAbsent(from, position) : positions.get(from);
-    if (first != null) warning(out, "duplicate-from", first, null);
-    if (type == FilterType.RELOCATION && Targets.forwardsToAdmin(to, adminPaths)) {
-      warning(out, "forwards-to-admin", 0, null);
-    }
-  }
-
   private static void ignored(OutputWriter out, Map<String, Object> rule, long position) {
     out.startObject("rule");
     if (position > 0) out.field(POSITION, position);
@@ -282,6 +252,67 @@ public final class GetRedirectFilters implements Generator {
     if (position > 0) out.field(POSITION, position);
     out.optionalField("reason", reason);
     out.endObject();
+  }
+
+  /**
+   * Writes the loaded rules of one filter, each with its warnings: patterns mapped twice, forwards
+   * to admin URLs, and redirect chains and loops.
+   */
+  private static final class LoadedRules {
+
+    private final OutputWriter out;
+
+    private final FilterType type;
+
+    /** The position of each loaded rule, or 0 when unknown. */
+    private final long[] positions;
+
+    /** The links between the rules of a redirect filter, {@code null} for a relocation filter. */
+    private final @Nullable Chains chains;
+
+    private final List<String> adminPaths;
+
+    /** The first position of each pattern, as Berlioz detects patterns mapped twice. */
+    private final Map<String, Long> firsts = new HashMap<>();
+
+    LoadedRules(OutputWriter out, FilterType type, long[] positions, @Nullable Chains chains, List<String> adminPaths) {
+      this.out = out;
+      this.type = type;
+      this.positions = positions;
+      this.chains = chains;
+      this.adminPaths = adminPaths;
+    }
+
+    /**
+     * @param index The index of the rule among the loaded rules, in file order.
+     * @param rule  The rule.
+     */
+    void write(int index, Map<String, Object> rule) {
+      long position = this.positions[index];
+      String from = value(rule, "from");
+      String to = value(rule, "to");
+      this.out.startObject("rule");
+      if (position > 0) this.out.field(POSITION, position);
+      this.out.field("from", Targets.bound(from, Targets.MAX_VALUE));
+      this.out.field("to", Targets.bound(to, Targets.MAX_VALUE));
+      this.out.field("effect", this.type == FilterType.RELOCATION ? "forward" : Long.toString(number(rule, STATUS, 302)));
+      this.out.startArray(WARNINGS, ContextOption.JSON_ONLY);
+      // Berlioz gives the pattern as it compares patterns mapped twice
+      Long first = position > 0 ? this.firsts.putIfAbsent(from, position) : this.firsts.get(from);
+      if (first != null) warning(this.out, "duplicate-from", first, null);
+      if (this.type == FilterType.RELOCATION && Targets.forwardsToAdmin(to, this.adminPaths)) {
+        warning(this.out, "forwards-to-admin", 0, null);
+      }
+      // When the target of the rule is redirected again
+      @Nullable Chains links = this.chains;
+      int next = links != null ? links.next(index) : Chains.NONE;
+      if (links != null && next != Chains.NONE) {
+        warning(this.out, links.loops(index) ? "redirect-loop" : "redirect-chain", this.positions[next], null);
+      }
+      this.out.endArray();
+      this.out.endObject();
+    }
+
   }
 
 }

@@ -3,7 +3,6 @@ package org.pageseeder.bzadmin.access;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.EnumSet;
@@ -531,7 +530,7 @@ public final class AdminFilter implements Filter {
    */
   static boolean isLoopbackLiteral(@Nullable String address) {
     if (address == null || address.isEmpty()) return false;
-    String literal = address.startsWith("[") && address.endsWith("]") ? address.substring(1, address.length() - 1) : address;
+    String literal = Addresses.unbracket(address);
     if (literal.matches("\\d{1,3}(\\.\\d{1,3}){3}")) {
       String[] octets = literal.split("\\.");
       for (String octet : octets) {
@@ -539,13 +538,8 @@ public final class AdminFilter implements Filter {
       }
       return "127".equals(octets[0]);
     }
-    // An IPv6 literal (with a colon) is parsed, not looked up
-    if (literal.indexOf(':') < 0 || !literal.matches("[0-9A-Fa-f:.]+(%[0-9A-Za-z]+)?")) return false;
-    try {
-      return InetAddress.getByName(literal).isLoopbackAddress();
-    } catch (UnknownHostException ex) {
-      return false;
-    }
+    InetAddress parsed = Addresses.ipv6(literal);
+    return parsed != null && parsed.isLoopbackAddress();
   }
 
   /**

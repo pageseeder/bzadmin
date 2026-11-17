@@ -42,7 +42,8 @@ public final class InstallationCheck implements ServletContainerInitializer {
   private static final String SEE_ACCESS = " See the access documentation of Berlioz Admin.";
 
   private static final String NOT_DECLARED =
-      "AdminFilter is not declared in the web descriptor, so every admin page is denied." + SEE_ACCESS;
+      "AdminFilter is not declared in the web descriptor: every admin page is denied, unless the host registers it in code."
+      + SEE_ACCESS;
 
   private static final String NOT_MAPPED =
       "Berlioz is not mapped to *.html and *.xml or to /html/* and /xml/*, so the admin pages cannot run.";

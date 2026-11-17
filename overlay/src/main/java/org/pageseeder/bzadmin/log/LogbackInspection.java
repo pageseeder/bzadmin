@@ -144,7 +144,8 @@ final class LogbackInspection {
       Appender<ILoggingEvent> appender = i.next();
       LoggingConfiguration.@Nullable Appender found = visit(appender, null, 0);
       if (found != null) found.loggers.add(logger.getName());
-      if (writes(appender)) own = true;
+      // Recorded by the visit, listed or not
+      if (found != null ? found.writes : Boolean.TRUE.equals(this.unlisted.get(appender))) own = true;
     }
     return own;
   }

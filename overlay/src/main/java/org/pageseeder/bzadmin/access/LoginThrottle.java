@@ -1,7 +1,6 @@
 package org.pageseeder.bzadmin.access;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -163,22 +162,17 @@ final class LoginThrottle {
    */
   static String client(@Nullable String address) {
     if (address == null) return "";
-    String literal = address.startsWith("[") && address.endsWith("]") ? address.substring(1, address.length() - 1) : address;
-    // An IPv6 literal (with a colon) is parsed, not looked up
-    if (literal.indexOf(':') < 0 || !literal.matches("[0-9A-Fa-f:.]+(%[0-9A-Za-z]+)?")) return literal;
-    try {
-      InetAddress parsed = InetAddress.getByName(literal);
-      byte[] bytes = parsed.getAddress();
-      // An IPv4-mapped address
-      if (bytes.length != 16) return parsed.getHostAddress();
-      StringBuilder network = new StringBuilder(20);
-      for (int i = 0; i < 8; i += 2) {
-        network.append(Integer.toHexString(((bytes[i] & 0xff) << 8) | (bytes[i + 1] & 0xff))).append(':');
-      }
-      return network.append(":/64").toString();
-    } catch (UnknownHostException ex) {
-      return literal;
+    String literal = Addresses.unbracket(address);
+    InetAddress parsed = Addresses.ipv6(literal);
+    if (parsed == null) return literal;
+    byte[] bytes = parsed.getAddress();
+    // An IPv4-mapped address
+    if (bytes.length != 16) return parsed.getHostAddress();
+    StringBuilder network = new StringBuilder(20);
+    for (int i = 0; i < 8; i += 2) {
+      network.append(Integer.toHexString(((bytes[i] & 0xff) << 8) | (bytes[i + 1] & 0xff))).append(':');
     }
+    return network.append(":/64").toString();
   }
 
 }

@@ -1,6 +1,8 @@
 package org.pageseeder.bzadmin.access;
 
 import java.util.Arrays;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import org.jspecify.annotations.Nullable;
 import org.pageseeder.berlioz.content.ContentStatus;
@@ -37,8 +39,8 @@ public final class HashAdminPassword implements Generator {
   /** The longest password, in characters. */
   static final int MAX_LENGTH = 1024;
 
-  /** One hash at a time: the throttle of the fallback login is separate. */
-  private static final LoginThrottle THROTTLE = new LoginThrottle(System::nanoTime, 1);
+  /** One hash at a time, apart from the password checks of the fallback login. */
+  private static final Semaphore HASHING = new Semaphore(1);
 
   @Override
   public Response generate(Request req, OutputWriter out) {
@@ -47,14 +49,14 @@ public final class HashAdminPassword implements Generator {
     @Nullable String confirm = req.getParameter("confirm");
     String problem = problem(password, confirm);
     if (problem != null || password == null) return noHash(out, problem != null ? problem : "missing", ContentStatus.BAD_REQUEST);
-    if (!THROTTLE.begin()) return noHash(out, "busy", ContentStatus.TOO_MANY_REQUESTS).header("Retry-After", "1");
+    if (!begin()) return noHash(out, "busy", ContentStatus.TOO_MANY_REQUESTS).header("Retry-After", "1");
     char[] chars = password.toCharArray();
     String hash;
     try {
       hash = AdminPassword.hash(chars);
     } finally {
       Arrays.fill(chars, '\0');
-      THROTTLE.end();
+      HASHING.release();
     }
     out.startObject("password-hash");
     out.field("iterations", AdminPassword.ITERATIONS);
@@ -72,6 +74,20 @@ public final class HashAdminPassword implements Generator {
     if (password.length() > MAX_LENGTH) return "too-long";
     if (!password.equals(confirm)) return "mismatch";
     return null;
+  }
+
+  /**
+   * Waits up to {@value LoginThrottle#WAIT_MILLIS} ms for the hash to start: release it after.
+   *
+   * @return whether the hash can start.
+   */
+  private static boolean begin() {
+    try {
+      return HASHING.tryAcquire(LoginThrottle.WAIT_MILLIS, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      return false;
+    }
   }
 
   private static Response noHash(OutputWriter out, String problem, ContentStatus status) {
