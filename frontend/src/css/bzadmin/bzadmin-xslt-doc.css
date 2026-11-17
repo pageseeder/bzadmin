@@ -85,7 +85,7 @@
     }
   }
 
-  /* A priority ('0.5', 'N/A') stays on one line; a mode only breaks after its hyphens */
+  /* A priority ('0.5', '-0.5') stays on one line; a mode only breaks after its hyphens */
   .templates td:nth-child(2) {
     white-space: nowrap;
   }

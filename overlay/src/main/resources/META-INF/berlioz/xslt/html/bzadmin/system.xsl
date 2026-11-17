@@ -228,7 +228,7 @@
     <xsl:with-param name="label" select="'Deadlocked'"/>
     <xsl:with-param name="value" select="string(@deadlocked)"/>
     <xsl:with-param name="warning" select="number(@deadlocked) gt 0"/>
-    <xsl:with-param name="detail" select="if (number(@deadlocked) gt 0) then 'Marked in the thread list' else if (@deadlocked) then 'None' else ()"/>
+    <xsl:with-param name="detail" select="if (number(@deadlocked) gt 0) then 'Marked in the thread list' else ()"/>
     <xsl:with-param name="info" as="node()*"><xsl:call-template name="system-info"><xsl:with-param name="name" select="'threads-deadlocked'"/><xsl:with-param name="label" select="'Deadlocked threads'"/></xsl:call-template></xsl:with-param>
   </xsl:call-template>
 </xsl:template>
@@ -339,9 +339,9 @@
       <div class="table-scroll" tabindex="0" role="group" aria-label="CPU usage values"><table class="basic-table" id="cpu-current-values" aria-label="CPU usage: current, minimum and maximum">
         <thead><tr><th scope="col">CPU</th><th scope="col">Current</th><th scope="col">Min</th><th scope="col">Max</th></tr></thead>
         <tbody>
-          <tr data-series="0"><th scope="row"><span class="series"/>Machine</th><td id="cpu-live-machine">--</td><td data-history="min">—</td><td data-history="max">—</td></tr>
-          <tr data-series="1"><th scope="row"><span class="series series-2"/>Process</th><td id="cpu-live-process">--</td><td data-history="min">—</td><td data-history="max">—</td></tr>
-          <tr data-series="2"><th scope="row"><span class="series series-3"/>GC time</th><td id="cpu-live-gc">--</td><td data-history="min">—</td><td data-history="max">—</td></tr>
+          <tr data-series="0"><th scope="row"><span class="series"/>Machine</th><td id="cpu-live-machine">—</td><td data-history="min">—</td><td data-history="max">—</td></tr>
+          <tr data-series="1"><th scope="row"><span class="series series-2"/>Process</th><td id="cpu-live-process">—</td><td data-history="min">—</td><td data-history="max">—</td></tr>
+          <tr data-series="2"><th scope="row"><span class="series series-3"/>GC time</th><td id="cpu-live-gc">—</td><td data-history="min">—</td><td data-history="max">—</td></tr>
         </tbody>
       </table></div>
     </div>
@@ -406,8 +406,8 @@
           <xsl:for-each select="garbage-collector">
             <tr>
               <td><xsl:value-of select="@name"/></td>
-              <td class="number"><xsl:value-of select="if (@collections) then @collections else 'Not available'"/></td>
-              <td class="number"><xsl:value-of select="if (@time-ms) then concat(format-number(@time-ms, '#,##0'), ' ms') else 'Not available'"/></td>
+              <td class="number"><xsl:choose><xsl:when test="@collections"><xsl:value-of select="@collections"/></xsl:when><xsl:otherwise><xsl:sequence select="f:not-available()"/></xsl:otherwise></xsl:choose></td>
+              <td class="number"><xsl:choose><xsl:when test="@time-ms"><xsl:value-of select="concat(format-number(@time-ms, '#,##0'), ' ms')"/></xsl:when><xsl:otherwise><xsl:sequence select="f:not-available()"/></xsl:otherwise></xsl:choose></td>
               <td><xsl:value-of select="replace(@pools, ',', ', ')"/></td>
             </tr>
           </xsl:for-each>
@@ -443,7 +443,7 @@
 <xsl:template match="memory-area|memory-pool" mode="system-usage">
   <td class="number"><xsl:value-of select="f:to-size(@used)"/></td>
   <td class="number"><xsl:value-of select="f:to-size(@committed)"/></td>
-  <td class="number"><xsl:value-of select="if (@max) then f:to-size(@max) else 'Undefined'"/></td>
+  <td class="number"><xsl:value-of select="if (@max) then f:to-size(@max) else 'No limit'"/></td>
 </xsl:template>
 
 <!-- A duration in milliseconds, in days, hours, minutes and seconds -->
@@ -511,8 +511,8 @@
             <tr><th scope="col">Heap</th><th scope="col">Current MB</th><th scope="col">Current %</th><th scope="col">Min %</th><th scope="col">Max %</th></tr>
           </thead>
           <tbody>
-            <tr data-series="0"><th scope="row"><span class="series"/>Committed</th><td id="total-live-mb">--</td><td id="total-live-pct">--</td><td data-history="min">—</td><td data-history="max">—</td></tr>
-            <tr data-series="1"><th scope="row"><span class="series series-2"/>Used</th><td id="used-live-mb">--</td><td id="used-live-pct">--</td><td data-history="min">—</td><td data-history="max">—</td></tr>
+            <tr data-series="0"><th scope="row"><span class="series"/>Committed</th><td id="total-live-mb">—</td><td id="total-live-pct">—</td><td data-history="min">—</td><td data-history="max">—</td></tr>
+            <tr data-series="1"><th scope="row"><span class="series series-2"/>Used</th><td id="used-live-mb">—</td><td id="used-live-pct">—</td><td data-history="min">—</td><td data-history="max">—</td></tr>
           </tbody>
         </table></div>
       </div>

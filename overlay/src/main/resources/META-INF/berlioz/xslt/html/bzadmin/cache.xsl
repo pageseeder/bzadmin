@@ -115,11 +115,11 @@
                                         else concat(' free', if (@total) then concat(' of ', f:cache-bytes(@total)) else '')"/>
                 </small>
               </xsl:when>
-              <xsl:otherwise><span class="muted" title="Not available"><span role="img" aria-label="Not available">—</span></span></xsl:otherwise>
+              <xsl:otherwise><xsl:sequence select="f:not-available()"/></xsl:otherwise>
             </xsl:choose>
           </td>
           <td><xsl:value-of select="if (@ratio) then f:cache-percent(@ratio) else '—'"/></td>
-          <td><xsl:value-of select="if (xs:integer(@unsized) gt 0) then @unsized else '—'"/></td>
+          <td><xsl:sequence select="f:cache-zero-muted(@unsized)"/><xsl:value-of select="@unsized"/></td>
         </tr>
       </xsl:for-each>
     </tbody>
@@ -706,13 +706,13 @@
   <xsl:sequence select="format-number($count, '#,##0')"/>
 </xsl:function>
 
-<!-- Without `enabled`, statistics are always on if they cannot be toggled, otherwise unknown -->
+<!-- Without `enabled`, statistics are always on if they cannot be toggled, otherwise not reported -->
 <xsl:function name="f:cache-statistics-status" as="xs:string">
   <xsl:param name="statistics" as="element(statistics)?"/>
   <xsl:sequence select="if (not($statistics)) then '—'
                         else if ($statistics/@enabled = 'true') then 'On'
                         else if ($statistics/@enabled = 'false') then 'Off'
-                        else if (f:has-capability($statistics/parent::cache, 'statistics-toggle')) then 'Unknown'
+                        else if (f:has-capability($statistics/parent::cache, 'statistics-toggle')) then '—'
                         else 'Always on'"/>
 </xsl:function>
 

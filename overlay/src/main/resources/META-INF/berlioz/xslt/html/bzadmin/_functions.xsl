@@ -19,6 +19,14 @@
   @param path the path to go to regardless of context or extension.
   @return the reconstructed path
 -->
+<!--
+  The placeholder for a value that is not available: missing, not reported or not loaded yet.
+  A value that means nothing or none is a word instead ("No", "None", "No limit"), and zero is 0.
+-->
+<xsl:function name="f:not-available" as="element(span)">
+  <span class="muted" title="Not available"><span role="img" aria-label="Not available">—</span></span>
+</xsl:function>
+
 <xsl:function name="f:xml-url" as="xs:string">
   <xsl:param name="path" as="xs:string"/>
   <xsl:sequence select="if ($bzheader/path/@prefix != '')
@@ -141,7 +149,7 @@
   <xsl:param name="time"/>
   <span title="{$time}s">
   <xsl:choose>
-    <xsl:when test="not($time)">--</xsl:when>
+    <xsl:when test="not($time)">—</xsl:when>
     <xsl:when test="$time = 0"><i>eternal</i></xsl:when>
     <xsl:otherwise>
       <xsl:variable name="duration" select="xs:duration(concat('PT', $time, 'S'))"/>
@@ -178,7 +186,7 @@
   <xsl:param name="time"/>
   <span title="{$time}s">
   <xsl:choose>
-    <xsl:when test="not($time)">--</xsl:when>
+    <xsl:when test="not($time)">—</xsl:when>
     <xsl:when test="$time = 0"><i>eternal</i></xsl:when>
     <xsl:otherwise>
       <!-- Use the largest unit with at least 2 of it, based on the total so that no unit is lost -->
@@ -262,7 +270,7 @@
     <xsl:when test="$length lt (1000*1000*1000)"><xsl:value-of select="round-half-to-even($length div (1000*1000),1)"/> MB</xsl:when>
     <xsl:when test="$length lt (1000*1000*1000*1000)"><xsl:value-of select="round-half-to-even($length div (1000*1000*1000),1)"/> GB</xsl:when>
     <xsl:when test="$length lt (1000*1000*1000*1000*1000)"><xsl:value-of select="round-half-to-even($length div (1000*1000*1000*1000),1)"/> TB</xsl:when>
-    <xsl:otherwise>--</xsl:otherwise>
+    <xsl:otherwise><xsl:value-of select="round-half-to-even($length div (1000*1000*1000*1000*1000),1)"/> PB</xsl:otherwise>
   </xsl:choose>
 </xsl:function>
 

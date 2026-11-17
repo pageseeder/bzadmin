@@ -684,7 +684,7 @@
 <xsl:choose>
   <xsl:when test="$priority"><span><xsl:value-of select="$priority"/></span></xsl:when>
   <xsl:when test="$implicit"><span class="implied"><xsl:value-of select="$implicit"/></span></xsl:when>
-  <xsl:otherwise><span class="implied">N/A</span></xsl:otherwise>
+  <xsl:otherwise><span class="implied" title="Not applicable"><span role="img" aria-label="Not applicable">—</span></span></xsl:otherwise>
 </xsl:choose>
 </xsl:function>
 

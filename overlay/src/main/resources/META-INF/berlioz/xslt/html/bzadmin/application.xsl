@@ -126,10 +126,12 @@
                 <xsl:choose>
                   <!-- As the processor identifies itself, e.g. SAXON HE 12.10 -->
                   <xsl:when test="@name = 'xslt'">
-                    <xsl:value-of select="if (@product or @version) then string-join((@product, @version), ' ') else 'Unknown'"/>
+                    <xsl:value-of select="if (@product or @version) then string-join((@product, @version), ' ') else ()"/>
+                    <xsl:if test="not(@product or @version)"><xsl:sequence select="f:not-available()"/></xsl:if>
                   </xsl:when>
                   <xsl:otherwise>
-                    <xsl:value-of select="if (@version) then @version else if (@name = 'container') then '' else 'Unknown'"/>
+                    <xsl:value-of select="@version"/>
+                    <xsl:if test="not(@product or @version)"><xsl:sequence select="f:not-available()"/></xsl:if>
                     <xsl:if test="@product"><xsl:if test="@version"><xsl:text> </xsl:text></xsl:if><span class="muted"><xsl:value-of select="@product"/></span></xsl:if>
                   </xsl:otherwise>
                 </xsl:choose>

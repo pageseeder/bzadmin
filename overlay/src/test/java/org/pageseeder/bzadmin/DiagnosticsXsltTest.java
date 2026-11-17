@@ -73,7 +73,7 @@ final class DiagnosticsXsltTest {
         + "<access roles='false' fallback-login='false'/>"
         + "<status services='reload-failed' configuration='reload-failed' properties='0' xslt-cache='auto'/>"
         + "</application-summary>");
-    assertTrue(html.contains("<tr data-component=\"bzadmin\"><th>Berlioz administration</th><td>Unknown</td>"), html);
+    assertTrue(html.contains("<tr data-component=\"bzadmin\"><th>Berlioz administration</th><td><span class=\"muted\" title=\"Not available\"><span role=\"img\" aria-label=\"Not available\">—</span></span></td>"), html);
     assertTrue(html.contains("Unknown: the container does not identify itself to Berlioz"), html);
     assertTrue(html.contains("None: Berlioz cannot create its transformer factory"), html);
     assertTrue(html.contains("This backend does not provide recent event capture."), html);
@@ -440,7 +440,7 @@ final class DiagnosticsXsltTest {
         + "<div class=\"key-metric\"><dt>Live</dt><dd class=\"key-metric-value\">24</dd><dd class=\"key-metric-detail\">20 daemon</dd></div>"
         + "<div class=\"key-metric\"><dt>Peak</dt><dd class=\"key-metric-value\">26</dd><dd class=\"key-metric-detail\">40 started since start</dd></div>"
         + "<div class=\"key-metric warning\"><dt>Blocked</dt><dd class=\"key-metric-value\">1</dd><dd class=\"key-metric-detail\">of 24 live</dd></div>"
-        + "<div class=\"key-metric\"><dt>Deadlocked</dt><dd class=\"key-metric-value muted\">0</dd><dd class=\"key-metric-detail\">None</dd></div>", metrics(html));
+        + "<div class=\"key-metric\"><dt>Deadlocked</dt><dd class=\"key-metric-value muted\">0</dd></div>", metrics(html));
     // Read again by the Refresh button of the threads, the only one of the view
     assertTrue(html.contains("<section class=\"system-metrics\" id=\"system-metrics\" data-href=\"/ctx/bzadmin/x.html?view=threads\">"), html);
     assertFalse(html.contains("id=\"refresh-metrics\""), html);
@@ -481,7 +481,7 @@ final class DiagnosticsXsltTest {
         + "<div class=\"key-metric\"><dt>Non-heap</dt><dd class=\"key-metric-value\">61.9 MB</dd><dd class=\"key-metric-detail\">66.7 MB committed</dd></div>"
         + "<div class=\"key-metric\" id=\"metric-gc-time\"><dt>GC time</dt><dd class=\"key-metric-value\">0.0%</dd><dd class=\"key-metric-detail\">3 collections, 1,200 ms</dd></div>", metrics(html));
     assertTrue(html.contains("<th>Heap</th><td class=\"number\">52.4 MB</td><td class=\"number\">268.4 MB</td><td class=\"number\">4.3 GB</td>"), html);
-    assertTrue(html.contains("<th>Non-heap</th><td class=\"number\">61.9 MB</td><td class=\"number\">66.7 MB</td><td class=\"number\">Undefined</td>"), html);
+    assertTrue(html.contains("<th>Non-heap</th><td class=\"number\">61.9 MB</td><td class=\"number\">66.7 MB</td><td class=\"number\">No limit</td>"), html);
     // The pools follow their area
     assertTrue(html.contains("<td>G1 Eden Space <button"), html);
     assertTrue(html.indexOf("<td>G1 Eden Space") < html.indexOf("<th>Non-heap</th>"), html);
@@ -543,7 +543,7 @@ final class DiagnosticsXsltTest {
     String memory = page("bzadmin-system", "system-summary", summary, "memory");
     assertTrue(metrics(memory).contains("<dt>Heap used</dt><dd class=\"key-metric-value\">1 bytes</dd><dd class=\"key-metric-detail\">No maximum</dd>"), memory);
     assertTrue(metrics(memory).contains("<dt>Heap committed</dt><dd class=\"key-metric-value\">2 bytes</dd><dd class=\"key-metric-detail\">No maximum</dd>"), memory);
-    assertTrue(memory.contains("<td>Epsilon</td><td class=\"number\">Not available</td><td class=\"number\">Not available</td>"), memory);
+    assertTrue(memory.contains("<td>Epsilon</td><td class=\"number\"><span class=\"muted\" title=\"Not available\"><span role=\"img\" aria-label=\"Not available\">—</span></span></td><td class=\"number\"><span class=\"muted\" title=\"Not available\"><span role=\"img\" aria-label=\"Not available\">—</span></span></td>"), memory);
     String none = page("bzadmin-system", "system-summary",
         "<system-summary processors='1'><runtime start='2026-10-23T01:02:03Z' uptime-ms='0'/>"
         + "<memory-area type='heap' used='1' committed='2'/><memory-area type='non-heap' used='3' committed='4'/>"

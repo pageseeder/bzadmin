@@ -141,7 +141,7 @@ if (page) {
       // After a pause, the process and GC usage start again with a gap
       chart.push(usage.machine, usage.process, usage.gc);
       previous = sample;
-      for (const [name, cell] of cells) cell.textContent = usage[name] === null ? '--' : percent(usage[name]);
+      for (const [name, cell] of cells) cell.textContent = usage[name] === null ? '—' : percent(usage[name]);
       // The key metrics keep the last values read when the chart stops
       if (usage.process !== null) {
         setMetric('metric-cpu', {

@@ -72,6 +72,8 @@ final class OverlayXsltTest {
     assertTrue(html.contains("6.4 GB<small class=\"muted\"> maximum heap</small>"), html);
     assertTrue(html.contains("<td>1.5 KB</td>"), html);
     assertTrue(html.contains("999 bytes<small class=\"muted\"> free of 1 TB</small>"), html);
+    // No tier sized otherwise: a count of zero, not a missing value
+    assertTrue(html.contains("<td class=\"muted\">0</td>"), html);
     assertFalse(html.contains("10 MB"), html);
     assertFalse(html.contains("6 GB"), html);
   }

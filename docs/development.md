@@ -119,6 +119,11 @@ measure when the application started or loaded; the JVM's `uptime-ms` does not a
 so it remains the base of the CPU and GC averages, and the fallback without a start or with a start in the future.
 Byte sizes use decimal units on every page (1 KB = 1000 bytes: `f:size`/`f:to-size` in `_functions.xsl`,
 `formatSize` in `lib/format.js`); the Cache page's `f:cache-bytes` uses the same, so a 10 MiB cache limit reads 10.5 MB.
+
+A value that is not available (missing, not reported or not loaded yet) shows the em dash "—": `f:not-available()` in
+`_functions.xsl` adds `title` and `aria-label` "Not available", as key metrics and cache cells do; scripts write a bare "—".
+When the absence is the answer, a word says it instead: "No" in a Yes/No column, "None", "Never", "Off", "No limit"
+(a memory pool without a maximum). A count of zero shows `0`, muted, not a dash.
 Key metric meters use `aria-labelledby` to reference the visible label text, excluding
 adjacent information buttons. Label IDs remain attached when live values change.
 The landmark uses `tabindex="-1"` so it can receive focus without adding a tab stop. Paused chart legends and
