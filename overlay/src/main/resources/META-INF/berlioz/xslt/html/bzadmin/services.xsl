@@ -5,7 +5,7 @@
   The services are those Berlioz is running (Berlioz ListRuntimeServices), including services
   declared in JARs, with the source that declared each, the declarations it replaced and the
   diagnostics of the last load (sources, warnings, failure). See docs/design/metadata-contract.md. GetBerliozControl ('berlioz-control')
-  tells whether the services can be reloaded and the ETags reset, and when they were last reset. The Lookup view ('group-by=lookup') has the form to find
+  tells whether the services can be reloaded and the ETags reset, and when they were last reset. The Lookup view ('view=lookup') has the form to find
   the service matching a URL with Berlioz GetMatchingService ('service-match', /bzadmin/services/lookup).
 -->
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -13,10 +13,20 @@
                               xmlns:xs="http://www.w3.org/2001/XMLSchema"
                               exclude-result-prefixes="#all">
 
-<!-- The views of the services, selected by the 'group-by' parameter -->
+<!--
+  The view of the services, selected by the 'view' parameter, as on the other pages: none (by service),
+  'generator', 'tree' or 'lookup'. The 'group-by' parameter of 0.14.0 still selects it, for saved links.
+-->
+<xsl:function name="f:services-view" as="xs:string">
+  <xsl:param name="header" as="element(header)?"/>
+  <xsl:variable name="parameters" select="$header/http-parameters/parameter"/>
+  <xsl:sequence select="string(($parameters[@name = 'view'], $parameters[@name = 'group-by'])[1])"/>
+</xsl:function>
+
+<!-- The views of the services -->
 <xsl:template match="content[@name='runtime-services']" mode="bzadmin-secondary-nav">
   <xsl:call-template name="bzadmin-services-views">
-    <xsl:with-param name="active" select="string(/root/header/http-parameters/parameter[@name = 'group-by'][1])"/>
+    <xsl:with-param name="active" select="f:services-view(/root/header)"/>
   </xsl:call-template>
 </xsl:template>
 
@@ -30,7 +40,7 @@
 <!--
   Links to the views of the Services page.
 
-  @param active The 'group-by' value of the current view
+  @param active The 'view' value of the current view
 -->
 <xsl:template name="bzadmin-services-views">
   <xsl:param name="active" as="xs:string"/>
@@ -39,7 +49,7 @@
   <xsl:for-each select="$views">
     <xsl:variable name="i" select="position()"/>
     <xsl:call-template name="bzadmin-secondary-link">
-      <xsl:with-param name="href"   select="concat(f:to-path('/bzadmin/services'), '?group-by=', .)"/>
+      <xsl:with-param name="href"   select="concat(f:to-path('/bzadmin/services'), '?view=', .)"/>
       <xsl:with-param name="label"  select="$labels[$i]"/>
       <xsl:with-param name="active" select=". = $active"/>
     </xsl:call-template>
@@ -62,7 +72,7 @@
   Display the services.
 -->
 <xsl:template match="content[@name='runtime-services']" mode="bzadmin-content">
-  <xsl:variable name="group-by" select="string(/root/header/http-parameters/parameter[@name = 'group-by'][1])"/>
+  <xsl:variable name="view" select="f:services-view(/root/header)"/>
   <xsl:variable name="runtime" select="live-services"/>
   <xsl:variable name="control" select="../content[@name='berlioz-control']/berlioz-control"/>
   <xsl:variable name="disabled" as="node()*">
@@ -96,19 +106,19 @@
   </section>
   <section id="services-details">
     <xsl:apply-templates select="$runtime/@load-status" mode="bzadmin-services"/>
-    <xsl:if test="$group-by != 'lookup'">
+    <xsl:if test="$view != 'lookup'">
       <xsl:apply-templates select="$runtime[warning]" mode="bzadmin-services-warnings"/>
       <xsl:apply-templates select="$runtime[service]" mode="bzadmin-services-key-metrics"/>
     </xsl:if>
     <xsl:choose>
-      <xsl:when test="$group-by = 'lookup'">
+      <xsl:when test="$view = 'lookup'">
         <xsl:call-template name="bzadmin-service-lookup"/>
       </xsl:when>
       <xsl:when test="not($runtime/service)"><p><i>No service is running.</i></p></xsl:when>
-      <xsl:when test="$group-by = 'generator'">
+      <xsl:when test="$view = 'generator'">
         <xsl:apply-templates select="$runtime" mode="bzadmin-by-generator"/>
       </xsl:when>
-      <xsl:when test="$group-by = 'tree'">
+      <xsl:when test="$view = 'tree'">
         <xsl:apply-templates select="$runtime" mode="bzadmin-as-tree"/>
       </xsl:when>
       <xsl:otherwise>
@@ -116,7 +126,7 @@
         <xsl:apply-templates select="$runtime[source]" mode="bzadmin-services-sources"/>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:if test="$group-by != 'lookup'">
+    <xsl:if test="$view != 'lookup'">
       <xsl:apply-templates select="$runtime/service" mode="reveal-service"/>
     </xsl:if>
   </section>
@@ -391,7 +401,7 @@
         <div class="url-pattern-row"><code class="url-pattern"><xsl:sequence select="f:pretty-pattern(@pattern)"/></code></div>
       </xsl:for-each>
       </td>
-      <td><xsl:value-of select="@method"/></td>
+      <td><xsl:value-of select="upper-case(@method)"/></td>
       <td>
         <xsl:choose>
           <xsl:when test="@cacheable = 'true'"><abbr title="{if (@cache-control) then @cache-control else 'No Cache-Control'}">Yes</abbr></xsl:when>
@@ -399,7 +409,7 @@
         </xsl:choose>
       </td>
       <td><xsl:value-of select="f:outputs(@supported)"/></td>
-      <td><button type="button" class="link-button" commandfor="{f:dialog-id(.)}" command="show-modal" aria-label="Show service {@id} [{@method}]">show</button></td>
+      <td><button type="button" class="button hollow" commandfor="{f:dialog-id(.)}" command="show-modal" aria-label="Show service {@id} [{upper-case(@method)}]"><svg-icon name="eye"/> Show</button></td>
     </tr>
     </xsl:for-each>
   </tbody>
@@ -449,9 +459,9 @@
           <div class="url-pattern-row"><code class="url-pattern"><xsl:sequence select="f:pretty-pattern(@pattern)"/></code></div>
         </xsl:for-each>
         </td>
-        <td><xsl:value-of select="@method"/></td>
+        <td><xsl:value-of select="upper-case(@method)"/></td>
         <td><xsl:value-of select="distinct-values(generator[f:generator-class(@class) = current-grouping-key()]/@type)"/></td>
-        <td><button type="button" class="link-button" commandfor="{f:dialog-id(.)}" command="show-modal" aria-label="Show service {@id} [{@method}]">show</button></td>
+        <td><button type="button" class="button hollow" commandfor="{f:dialog-id(.)}" command="show-modal" aria-label="Show service {@id} [{upper-case(@method)}]"><svg-icon name="eye"/> Show</button></td>
       </tr>
       </xsl:for-each>
     </tbody>
@@ -487,7 +497,7 @@
                 <h3>
                   <svg-icon name="caret-right" class="caret"/><xsl:text> </xsl:text>
                   <xsl:value-of select="@id"/><xsl:text> </xsl:text>
-                  <i class="method">[<xsl:value-of select="@method"/>]</i>
+                  <i class="method">[<xsl:value-of select="upper-case(@method)"/>]</i>
                   <xsl:apply-templates select="." mode="bzadmin-service-tags"/>
                 </h3>
               </summary>
@@ -558,7 +568,7 @@
 <xsl:template match="service" mode="reveal-service">
 <xsl:call-template name="bzadmin-dialog">
   <xsl:with-param name="id" select="f:dialog-id(.)"/>
-  <xsl:with-param name="title"><xsl:value-of select="@id"/> [<xsl:value-of select="@method"/>]<xsl:apply-templates select="." mode="bzadmin-service-tags"><xsl:with-param name="direct" select="false()"/></xsl:apply-templates></xsl:with-param>
+  <xsl:with-param name="title"><xsl:value-of select="@id"/> [<xsl:value-of select="upper-case(@method)"/>]<xsl:apply-templates select="." mode="bzadmin-service-tags"><xsl:with-param name="direct" select="false()"/></xsl:apply-templates></xsl:with-param>
   <xsl:with-param name="body"><xsl:apply-templates select="." mode="bzadmin-service-details"/></xsl:with-param>
 </xsl:call-template>
 </xsl:template>

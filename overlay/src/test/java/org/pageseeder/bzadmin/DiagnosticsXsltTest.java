@@ -239,7 +239,7 @@ final class DiagnosticsXsltTest {
     assertTrue(html.contains("<dt>Average time</dt><dd class=\"key-metric-value\">1.5 ms</dd>"), html);
     assertTrue(html.contains("data-columns=\"performance\""), html);
     // The times, in microseconds as before, the classes, then the calls
-    assertTrue(html.contains("<th colspan=\"3\">Etag (µs)</th>"), html);
+    assertTrue(html.contains("<th colspan=\"3\">ETag (µs)</th>"), html);
     assertTrue(html.contains("<th colspan=\"3\">Process (µs)</th>"), html);
     assertTrue(html.contains("<th class=\"status\"><abbr title=\"Success\">2xx</abbr></th><th class=\"status\"><abbr title=\"Redirection\">3xx</abbr></th>"
         + "<th class=\"status\"><abbr title=\"Client error\">4xx</abbr></th><th class=\"status\"><abbr title=\"Server error\">5xx</abbr></th>"

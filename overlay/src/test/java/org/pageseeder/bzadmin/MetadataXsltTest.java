@@ -178,7 +178,7 @@ final class MetadataXsltTest {
     assertTrue(html.contains("<dt>Generators</dt><dd class=\"key-metric-value\">40</dd><dd class=\"key-metric-detail\">classes, used 81 times</dd>"), html);
     assertTrue(html.contains("<dt>Cacheable</dt><dd class=\"key-metric-value\">12</dd><dd class=\"key-metric-detail\">24.5% of the services have an ETag</dd>"), html);
     assertTrue(html.contains("<dt>Groups</dt><dd class=\"key-metric-value\">3</dd><dd class=\"key-metric-detail\">bzadmin, fixture, default</dd>"), html);
-    String lookup = render(fixture("services.xml").replace("<http-parameters/>", "<http-parameters><parameter name=\"group-by\">lookup</parameter></http-parameters>"));
+    String lookup = render(fixture("services.xml").replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">lookup</parameter></http-parameters>"));
     assertFalse(lookup.contains("key-metrics"), "Not in the Lookup view");
   }
 
@@ -259,13 +259,46 @@ final class MetadataXsltTest {
   void rendersViewsWithGeneratorDetails() throws Exception {
     String services = fixture("services.xml");
     for (String view : new String[]{"generator", "tree"}) {
-      String html = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"group-by\">" + view + "</parameter></http-parameters>"));
+      String html = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">" + view + "</parameter></http-parameters>"));
       assertTrue(html.contains("class=\"choice active\" aria-current=\"page\">" + (view.equals("tree") ? "Tree" : "Generators")), view);
       assertTrue(html.contains("org.pageseeder.berlioz.generator.ListRuntimeServices") || html.contains("ListRuntimeServices"), view);
       // The tags of a service in its row, as in the Services view (the dialog title leaves out 'direct')
-      assertTrue(Pattern.compile("fixture-direct (<i class=\"method\">\\[get\\]</i> )?<span class=\"tag\" title=\"Returns the output of its generator directly, without a Berlioz envelope\">direct</span>")
+      assertTrue(Pattern.compile("fixture-direct (<i class=\"method\">\\[GET\\]</i> )?<span class=\"tag\" title=\"Returns the output of its generator directly, without a Berlioz envelope\">direct</span>")
           .matcher(html).find(), view + ": " + html);
     }
+  }
+
+  @Test
+  void showsMethodsInUpperCaseAndShowButtonsAsTheLibraries() throws Exception {
+    String services = fixture("services.xml");
+    String button = "<button type=\"button\" class=\"button hollow\" commandfor=\"[^\"]+\" command=\"show-modal\""
+        + " aria-label=\"Show service fixture-echo \\[POST\\]\"><svg-icon name=\"eye\"></svg-icon> Show</button>";
+    for (String view : new String[]{"", "generator"}) {
+      String html = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">" + view + "</parameter></http-parameters>"));
+      assertTrue(Pattern.compile(button).matcher(html).find(), view + ": " + html);
+      assertTrue(html.contains("<td>GET</td>") && html.contains("<td>POST</td>"), view);
+      assertFalse(html.contains("<td>get</td>") || html.contains("<td>post</td>") || html.contains(">show</button>"), view);
+      assertTrue(html.contains("class=\"dialog-title\">fixture-echo [POST]"), "Dialog title: " + view);
+    }
+    String tree = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">tree</parameter></http-parameters>"));
+    assertTrue(tree.contains("<i class=\"method\">[POST]</i>"), tree);
+    assertFalse(tree.contains("<i class=\"method\">[post]</i>"), tree);
+  }
+
+  @Test
+  void selectsTheViewWithTheViewParameterAsTheOtherPages() throws Exception {
+    String services = fixture("services.xml");
+    String html = render(services);
+    for (String view : new String[]{"", "generator", "tree", "lookup"}) {
+      assertTrue(html.contains("<a href=\"/bzadmin/services.src?view=" + view + "\""), view);
+    }
+    assertFalse(html.contains("group-by="), html);
+    // A link saved from 0.14.0 still opens its view, and 'view' wins over it
+    String legacy = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"group-by\">tree</parameter></http-parameters>"));
+    assertTrue(legacy.contains("class=\"choice active\" aria-current=\"page\">Tree</a>"), legacy);
+    String both = render(services.replace("<http-parameters/>",
+        "<http-parameters><parameter name=\"group-by\">tree</parameter><parameter name=\"view\">generator</parameter></http-parameters>"));
+    assertTrue(both.contains("class=\"choice active\" aria-current=\"page\">Generators</a>"), both);
   }
 
   @Test
@@ -279,7 +312,7 @@ final class MetadataXsltTest {
     assertTrue(html.contains("class=\"info-popover generator-name-popover\" popover=\"\" role=\"group\" aria-label=\"Full class name\""), html);
     assertTrue(html.contains("popovertargetaction=\"hide\">Close</button>"), html);
     assertFalse(html.contains("<details class=\"generator-name\""), html);
-    String tree = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"group-by\">tree</parameter></http-parameters>"));
+    String tree = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">tree</parameter></http-parameters>"));
     java.util.Set<String> popovers = new java.util.HashSet<>();
     java.util.regex.Matcher ids = java.util.regex.Pattern.compile("id=\"(generator-[^\"]+)\"").matcher(tree);
     while (ids.find()) assertTrue(popovers.add(ids.group(1)), "Duplicate popover: " + ids.group(1));
@@ -291,7 +324,7 @@ final class MetadataXsltTest {
     assertFalse(guarded.contains("org.pageseeder.bzadmin.guard.berlioz.generator.ListRuntimeServices"), guarded);
     String bzindex = render(services.replace("org.pageseeder.berlioz.generator.ListRuntimeServices", "org.pageseeder.bzindex.generator.ListIndexes"));
     assertTrue(bzindex.contains("<span class=\"generator-origin origin-bzindex\">[bzindex]</span>.ListIndexes"), bzindex);
-    String grouped = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"group-by\">generator</parameter></http-parameters>"));
+    String grouped = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">generator</parameter></http-parameters>"));
     assertTrue(grouped.contains("<h2 class=\"generator-title\"><span>ListRuntimeServices "), grouped);
     assertTrue(grouped.contains("org.pageseeder.berlioz.generator</span>"), grouped);
   }
@@ -300,8 +333,8 @@ final class MetadataXsltTest {
   void rendersServiceLookupView() throws Exception {
     String services = fixture("services.xml");
     assertFalse(render(services).contains("id=\"service-lookup\""), "Not in the other views");
-    assertTrue(render(services).contains("<a href=\"/bzadmin/services.src?group-by=lookup\" class=\"choice\">Lookup</a>"), "Lookup tab");
-    String html = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"group-by\">lookup</parameter></http-parameters>"));
+    assertTrue(render(services).contains("<a href=\"/bzadmin/services.src?view=lookup\" class=\"choice\">Lookup</a>"), "Lookup tab");
+    String html = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"view\">lookup</parameter></http-parameters>"));
     assertTrue(html.contains("class=\"choice active\" aria-current=\"page\">Lookup</a>"), "Lookup view");
     assertTrue(html.contains("<h2>Find a service</h2>"));
     assertTrue(html.contains("This lookup does not execute the service."));

@@ -509,7 +509,7 @@
 </xsl:template>
 
 <xsl:template name="cache-back">
-  <a href="{f:to-path('/bzadmin/cache')}" class="button hollow"><svg-icon name="angle-left"/> back to cache overview</a>
+  <a href="{f:to-path('/bzadmin/cache')}" class="button hollow"><svg-icon name="angle-left"/> Back to cache overview</a>
 </xsl:template>
 
 <!-- Removing an entry by key, in its own panel, when the keys of the current cache-info cannot be listed -->
@@ -641,7 +641,7 @@
     </xsl:when>
     <xsl:otherwise><xsl:apply-templates select="no-cache" mode="bzadmin-content-cache"/></xsl:otherwise>
   </xsl:choose>
-  <p><a href="{f:to-path('/bzadmin/cache')}">&#x25C0; back to cache overview</a></p>
+  <p><a href="{f:to-path('/bzadmin/cache')}">&#x25C0; Back to cache overview</a></p>
 </section>
 </xsl:template>
 
@@ -657,7 +657,7 @@
     <p><xsl:value-of select="if (@removed = 'true') then 'Entry removed' else 'No entry with this key'"/>: <code><xsl:value-of select="@key"/></code></p>
   </xsl:for-each>
   <xsl:apply-templates select="no-cache" mode="bzadmin-content-cache"/>
-  <p><a href="{f:to-path('/bzadmin/cache')}">&#x25C0; back to cache overview</a></p>
+  <p><a href="{f:to-path('/bzadmin/cache')}">&#x25C0; Back to cache overview</a></p>
 </section>
 </xsl:template>
 

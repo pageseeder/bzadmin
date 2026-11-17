@@ -56,7 +56,7 @@ final class BerliozMetadataTest {
       assertFalse(response.body().contains(SECRET), route + format + " exposes a secret");
     }
     for (String view : new String[]{"generator", "tree"}) {
-      assertFalse(host.get(route + ".html?group-by=" + view).body().contains(SECRET), view);
+      assertFalse(host.get(route + ".html?view=" + view).body().contains(SECRET), view);
     }
   }
 
@@ -153,7 +153,7 @@ final class BerliozMetadataTest {
     assertTrue(page.body().contains("<li class=\"active\"><a href=\"/bzadmin/services.html\" aria-current=\"page\">Services</a>"), "Services page active");
     assertTrue(page.body().contains("class=\"choice active\" aria-current=\"page\">Lookup</a>"), "Lookup view");
 
-    HttpResponse<String> view = host.get("/bzadmin/services.html?group-by=lookup");
+    HttpResponse<String> view = host.get("/bzadmin/services.html?view=lookup");
     assertEquals(200, view.statusCode());
     assertTrue(view.body().contains("<form id=\"service-lookup\" action=\"/bzadmin/services/lookup.html\""), "Lookup form");
   }
@@ -161,7 +161,7 @@ final class BerliozMetadataTest {
   @ParameterizedTest
   @ValueSource(strings = {"", "generator", "tree"})
   void servicesPageHasOneDialogPerService(String view) throws Exception {
-    HttpResponse<String> response = host.get("/bzadmin/services.html?group-by=" + view);
+    HttpResponse<String> response = host.get("/bzadmin/services.html?view=" + view);
     assertEquals(200, response.statusCode());
     String html = response.body();
     List<String> dialogs = matches(html, "<dialog id=\"([^\"]+)\"");

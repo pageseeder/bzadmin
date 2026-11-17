@@ -290,7 +290,7 @@
         <xsl:apply-templates select="log-files" mode="bzadmin-logs-options"/>
       </select>
       <div class="input-group-button">
-        <input type="submit" class="button" value="show"/>
+        <input type="submit" class="button" value="Show"/>
       </div>
     </div>
   </form>
@@ -528,7 +528,7 @@
             </xsl:for-each>
           </select>
           <div class="input-group-button">
-            <input type="submit" value="change" class="button alert"/>
+            <input type="submit" value="Change" class="button alert"/>
           </div>
         </div>
       </form>

@@ -339,7 +339,7 @@
     <thead>
       <tr>
         <th></th>
-        <th colspan="3">Etag (&#xb5;s)</th>
+        <th colspan="3">ETag (&#xb5;s)</th>
         <th colspan="3">Process (&#xb5;s)</th>
         <th colspan="4">Status</th>
         <th></th>
