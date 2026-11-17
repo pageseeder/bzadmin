@@ -751,7 +751,8 @@
 
 <!-- A warning of a rule -->
 <xsl:template match="warning" mode="redirect-warning">
-  <br/>
+  <!-- On its own line under the effect or a previous warning; an ignored rule has no effect -->
+  <xsl:if test="../@effect != '' or preceding-sibling::warning"><br/></xsl:if>
   <span class="tag warning">
     <xsl:choose>
       <xsl:when test="@code = 'ignored-rule'"><xsl:attribute name="title" select="concat(if (starts-with(@reason, 'missing')) then 'A pattern is missing' else 'A pattern does not parse', ': Berlioz ignores this rule')"/>ignored</xsl:when>
