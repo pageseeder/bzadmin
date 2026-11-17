@@ -336,7 +336,7 @@ final class AdminOperationsTest {
     assertJson(host.get("/bzadmin/logs/recent.json").body(), "\"backend\":\"logback\",\"version\":\"" + xpath(xml, "//recent-logs/@version") + "\",\"threshold\":\"INFO\"");
     assertJson(host.get("/bzadmin/logs.json").body(), "\"origin\":\"detected\"");
     String html = host.get("/bzadmin/logs/recent.html").body();
-    assertTrue(html.contains("<span class=\"input-group-label\">Capture threshold</span>"), html);
+    assertTrue(html.contains("<label for=\"threshold-level\" class=\"input-group-label\">Capture threshold</label>"), html);
     assertTrue(html.contains("<option value=\"INFO\" selected>Info (default)</option>"), html);
   }
 
