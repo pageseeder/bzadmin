@@ -111,6 +111,11 @@ and Origin component names have no tooltips or help cursor; full thread details 
 available in the eye-button dialog.
 System uptime uses `<time>` with an ISO duration, compact text hidden from assistive
 technology, and expanded wording in visually hidden text. The time role is not named. It does not display a startup timestamp or tooltip.
+The uptime shown is measured by the wall clock from `runtime/@start` (`f:wall-clock-uptime`), as the other pages
+measure when the application started or loaded; the JVM's `uptime-ms` does not advance while the machine sleeps,
+so it remains the base of the CPU and GC averages, and the fallback without a start or with a start in the future.
+Byte sizes use decimal units on every page (1 KB = 1000 bytes: `f:size`/`f:to-size` in `_functions.xsl`,
+`formatSize` in `lib/format.js`); the Cache page's `f:cache-bytes` uses the same, so a 10 MiB cache limit reads 10.5 MB.
 Key metric meters use `aria-labelledby` to reference the visible label text, excluding
 adjacent information buttons. Label IDs remain attached when live values change.
 The landmark uses `tabindex="-1"` so it can receive focus without adding a tab stop. Paused chart legends and
