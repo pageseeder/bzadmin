@@ -143,7 +143,8 @@
     </dl>
     <p class="system-metrics-note">
       <span>
-        <span class="uptime">JVM up <time datetime="PT{xs:integer(runtime/@uptime-ms) idiv 1000}S"><span aria-hidden="true"><xsl:value-of select="f:to-short-uptime(runtime/@uptime-ms)"/></span><span class="visually-hidden"><xsl:value-of select="f:to-spoken-uptime(runtime/@uptime-ms)"/></span></time></span>
+        <xsl:variable name="up" select="f:wall-clock-uptime(runtime)"/>
+        <span class="uptime">JVM up <time datetime="PT{$up idiv 1000}S"><span aria-hidden="true"><xsl:value-of select="f:to-short-uptime($up)"/></span><span class="visually-hidden"><xsl:value-of select="f:to-spoken-uptime($up)"/></span></time></span>
         <span id="metrics-read-at">, read when the page loaded</span>
       </span>
       <xsl:if test="$view != 'threads'">
@@ -456,6 +457,19 @@
       concat($s mod 60, 's')), ' ')"/>
 </xsl:function>
 
+<!--
+  The time since the JVM started, in milliseconds, by the wall clock, as the other pages show when the
+  application started or loaded its configuration. The JVM's own uptime does not advance while the machine
+  sleeps, so it stays the measure of the CPU and GC averages. Falls back to it without a start time, or
+  when the start is in the future (clock changed).
+-->
+<xsl:function name="f:wall-clock-uptime" as="xs:integer">
+  <xsl:param name="runtime" as="element(runtime)"/>
+  <xsl:variable name="start" select="if ($runtime/@start castable as xs:dateTime) then xs:dateTime($runtime/@start) else ()"/>
+  <xsl:variable name="elapsed" select="if (exists($start)) then (current-dateTime() - $start) div xs:dayTimeDuration('PT0.001S') else ()"/>
+  <xsl:sequence select="if (exists($elapsed) and $elapsed ge 0) then xs:integer(floor($elapsed)) else xs:integer($runtime/@uptime-ms)"/>
+</xsl:function>
+
 <!-- A duration in milliseconds, with its two largest units -->
 <xsl:function name="f:to-short-uptime" as="xs:string">
   <xsl:param name="ms"/>
@@ -554,10 +568,19 @@
       <td class="count"><xsl:value-of select="@file-count"/></td>
     </tr>
   </xsl:for-each>
+  <!-- Berlioz counts in the total the files directly in the folder, which no directory row lists -->
+  <xsl:variable name="top-count" select="xs:integer(@total-count) - sum(directory/@file-count)"/>
+  <xsl:if test="$top-count gt 0">
+    <tr class="top-files">
+      <td class="name"><code>/</code><xsl:text> </xsl:text><span class="muted">(files directly in the folder)</span></td>
+      <td class="size"><xsl:value-of select="f:to-size(xs:integer(@total-size) - xs:integer(sum(directory/@file-size)))"/></td>
+      <td class="count"><xsl:value-of select="$top-count"/></td>
+    </tr>
+  </xsl:if>
   </tbody>
   <tfoot>
     <tr>
-      <td><b>TOTAL<sup>*</sup></b></td>
+      <td><b>Total</b></td>
       <td class="size"><xsl:value-of select="f:to-size(@total-size)"/></td>
       <td class="count"><xsl:value-of select="@total-count"/></td>
     </tr>
