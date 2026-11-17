@@ -1,6 +1,6 @@
 import { cpuSample, cpuUsage, formatShortDuration } from '../lib/cpu.js';
 import { clearFlash, dim, flash, on } from '../lib/dom.js';
-import { formatPercent, formatSize } from '../lib/format.js';
+import { formatCount, formatPercent, formatSize } from '../lib/format.js';
 import { fetchDocument, reloadFragment, swapFragment } from '../lib/http.js';
 import { poller } from '../lib/poll.js';
 import { formatRate, threadDeltas } from '../lib/threads.js';
@@ -108,9 +108,9 @@ if (page) {
       const [free, total, max] = attributes(doc, 'memory', 'free', 'total', 'max');
       const used = total - free;
       chart.push((total * 100) / max, (used * 100) / max);
-      cells['total-live-mb'].textContent = (total / 1000000).toFixed(1);
+      cells['total-live-mb'].textContent = formatCount(total / 1000000, 1);
       cells['total-live-pct'].textContent = formatPercent(total / max);
-      cells['used-live-mb'].textContent = (used / 1000000).toFixed(1);
+      cells['used-live-mb'].textContent = formatCount(used / 1000000, 1);
       cells['used-live-pct'].textContent = formatPercent(used / max);
       setMetric('metric-heap-used', {
         value: formatPercent(used / max),

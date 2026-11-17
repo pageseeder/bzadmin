@@ -54,7 +54,7 @@
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Entries'"/>
-      <xsl:with-param name="value" select="if (exists($entries)) then f:cache-count(sum($entries)) else ()"/>
+      <xsl:with-param name="value" select="if (exists($entries)) then f:count(sum($entries)) else ()"/>
       <xsl:with-param name="detail" select="if (count($entries) lt count($caches)) then concat('in ', count($entries), ' of the ', count($caches), ' caches') else ()"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
@@ -64,7 +64,7 @@
       <xsl:with-param name="meter" as="element()?">
         <xsl:if test="$requests gt 0"><meter min="0" max="1" low="0.5" high="0.8" optimum="1" value="{$hits div $requests}"/></xsl:if>
       </xsl:with-param>
-      <xsl:with-param name="detail" select="if ($requests gt 0) then concat(f:cache-count($hits), ' hits of ', f:cache-count($requests), ' requests')
+      <xsl:with-param name="detail" select="if ($requests gt 0) then concat(f:count($hits), ' hits of ', f:count($requests), ' requests')
                                             else if (exists($counted)) then 'No request' else ()"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
@@ -119,7 +119,7 @@
             </xsl:choose>
           </td>
           <td><xsl:value-of select="if (@ratio) then f:cache-percent(@ratio) else '—'"/></td>
-          <td><xsl:sequence select="f:cache-zero-muted(@unsized)"/><xsl:value-of select="f:cache-count(number(@unsized))"/></td>
+          <td><xsl:sequence select="f:cache-zero-muted(@unsized)"/><xsl:value-of select="f:count(@unsized)"/></td>
         </tr>
       </xsl:for-each>
     </tbody>
@@ -165,7 +165,7 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:if test="@truncated = 'true'">
-        <p class="muted">The first <xsl:value-of select="f:cache-count(count(cache))"/> of <xsl:value-of select="f:cache-count(number(@total))"/> caches.</p>
+        <p class="muted">The first <xsl:value-of select="f:count(count(cache))"/> of <xsl:value-of select="f:count(@total)"/> caches.</p>
       </xsl:if>
       <xsl:variable name="metrics" select="('entries', 'hits', 'misses')"/>
       <div class="table-scroll" tabindex="0" role="group" aria-label="Caches in manager {@id}"><sortable-table>
@@ -283,7 +283,7 @@
         <tr><th><xsl:value-of select="f:cache-metric-label(@name)"/></th><td><xsl:sequence select="f:cache-zero-muted(@value)"/><xsl:value-of select="f:cache-metric-value(.)"/></td></tr>
       </xsl:for-each>
       <xsl:if test="@entry-limit">
-        <tr><th>Entry limit</th><td><xsl:value-of select="f:cache-count(number(@entry-limit))"/>
+        <tr><th>Entry limit</th><td><xsl:value-of select="f:count(@entry-limit)"/>
           <xsl:if test="@fill-ratio"> (<xsl:value-of select="f:cache-percent(@fill-ratio)"/> full)</xsl:if></td></tr>
       </xsl:if>
       <xsl:if test="@hit-ratio">
@@ -370,14 +370,14 @@
           </td>
           <td>
             <xsl:choose>
-              <xsl:when test="@max-entries"><xsl:value-of select="f:cache-count(number(@max-entries))"/> entries</xsl:when>
+              <xsl:when test="@max-entries"><xsl:value-of select="f:count(@max-entries)"/> entries</xsl:when>
               <xsl:when test="@max-bytes"><xsl:value-of select="f:cache-bytes(@max-bytes)"/></xsl:when>
-              <xsl:when test="@max-weight"><xsl:value-of select="f:cache-count(number(@max-weight))"/> <small class="muted"> (weight, in the unit of the weigher)</small></xsl:when>
+              <xsl:when test="@max-weight"><xsl:value-of select="f:count(@max-weight)"/> <small class="muted"> (weight, in the unit of the weigher)</small></xsl:when>
               <xsl:when test="@pooled = 'true'">A pool of the manager</xsl:when>
               <xsl:otherwise><strong>No limit</strong></xsl:otherwise>
             </xsl:choose>
           </td>
-          <td><xsl:sequence select="f:cache-zero-muted($entries/@value)"/><xsl:value-of select="if ($entries) then f:cache-count(number($entries/@value)) else '—'"/></td>
+          <td><xsl:sequence select="f:cache-zero-muted($entries/@value)"/><xsl:value-of select="if ($entries) then f:count($entries/@value) else '—'"/></td>
         </tr>
       </xsl:for-each>
     </tbody>
@@ -403,7 +403,7 @@
   <dl class="key-metrics">
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Entries'"/>
-      <xsl:with-param name="value" select="if ($entries) then f:cache-count(number($entries)) else ()"/>
+      <xsl:with-param name="value" select="if ($entries) then f:count($entries) else ()"/>
       <xsl:with-param name="meter" as="element()?">
         <xsl:choose>
           <xsl:when test="$statistics/@fill-ratio">
@@ -414,11 +414,11 @@
           </xsl:when>
         </xsl:choose>
       </xsl:with-param>
-      <xsl:with-param name="detail" select="if ($statistics/@fill-ratio) then concat('of ', f:cache-count(number($statistics/@entry-limit)), ' (', f:cache-percent($statistics/@fill-ratio), ' full)')
+      <xsl:with-param name="detail" select="if ($statistics/@fill-ratio) then concat('of ', f:count($statistics/@entry-limit), ' (', f:cache-percent($statistics/@fill-ratio), ' full)')
                                             else if ($tier-used) then concat(f:cache-tier-label($tier/@type), ': ',
-                                                 if ($tier-unit = 'entries') then concat(f:cache-count(number($tier-used)), ' of ', f:cache-count(number($tier-max)))
+                                                 if ($tier-unit = 'entries') then concat(f:count($tier-used), ' of ', f:count($tier-max))
                                                  else concat(f:cache-bytes($tier-used), ' of ', f:cache-bytes($tier-max)))
-                                            else if ($statistics/@entry-limit) then concat('of ', f:cache-count(number($statistics/@entry-limit)))
+                                            else if ($statistics/@entry-limit) then concat('of ', f:count($statistics/@entry-limit))
                                             else if (warning/@code = 'unbounded') then 'No limit'
                                             else if (tier/@pooled = 'true') then 'Limited by a pool of the manager' else ()"/>
     </xsl:call-template>
@@ -430,14 +430,14 @@
         <xsl:if test="$statistics/@hit-ratio"><meter min="0" max="1" low="0.5" high="0.8" optimum="1" value="{$statistics/@hit-ratio}"/></xsl:if>
       </xsl:with-param>
       <xsl:with-param name="detail" select="if ($hits and $misses and number($hits) + number($misses) = 0) then 'No request'
-                                            else if ($hits and $misses) then concat(f:cache-count(number($hits)), ' hits of ', f:cache-count(number($hits) + number($misses)), ' requests') else ()"/>
+                                            else if ($hits and $misses) then concat(f:count($hits), ' hits of ', f:count(number($hits) + number($misses)), ' requests') else ()"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Evictions'"/>
-      <xsl:with-param name="value" select="if ($evictions) then f:cache-count(number($evictions)) else ()"/>
-      <xsl:with-param name="detail" select="if ($statistics/@eviction-ratio) then concat(f:cache-percent($statistics/@eviction-ratio), ' of ', f:cache-count(number($puts)), ' puts')
+      <xsl:with-param name="value" select="if ($evictions) then f:count($evictions) else ()"/>
+      <xsl:with-param name="detail" select="if ($statistics/@eviction-ratio) then concat(f:cache-percent($statistics/@eviction-ratio), ' of ', f:count($puts), ' puts')
                                             else if (number($puts) = 0) then 'No put'
-                                            else if ($puts) then concat('of ', f:cache-count(number($puts)), ' puts') else ()"/>
+                                            else if ($puts) then concat('of ', f:count($puts), ' puts') else ()"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Average get time'"/>
@@ -553,7 +553,7 @@
     <h3>Keys</h3>
     <xsl:choose>
       <xsl:when test="not(entries/entry) and not(entries/unsupported-keys)">
-        <p><i>No key<xsl:if test="$offset gt 0"> from position <xsl:value-of select="f:cache-count($offset + 1)"/></xsl:if>.</i></p>
+        <p><i>No key<xsl:if test="$offset gt 0"> from position <xsl:value-of select="f:count($offset + 1)"/></xsl:if>.</i></p>
       </xsl:when>
       <xsl:otherwise>
         <div class="table-scroll" tabindex="0" role="group" aria-label="Cache keys"><sortable-table>
@@ -581,7 +581,7 @@
         <xsl:if test="entries/unsupported-keys">
           <p class="muted">Keys of other types (not shown, cannot be removed here):
             <xsl:for-each select="entries/unsupported-keys">
-              <code><xsl:value-of select="@class"/></code> × <xsl:value-of select="f:cache-count(number(@count))"/><xsl:if test="position() != last()">, </xsl:if>
+              <code><xsl:value-of select="@class"/></code> × <xsl:value-of select="f:count(@count)"/><xsl:if test="position() != last()">, </xsl:if>
             </xsl:for-each>
           </p>
         </xsl:if>
@@ -592,14 +592,14 @@
         <a href="{f:to-path('/bzadmin/cache/entries')}{$query}&amp;offset={max(($offset - $limit, 0))}&amp;limit={$limit}"><svg-icon name="angle-left"/> Previous</a>
       </xsl:if>
       <xsl:if test="xs:integer(entries/@scanned) gt $offset">
-        <span>Positions <xsl:value-of select="f:cache-count($offset + 1)"/>–<xsl:value-of select="f:cache-count(number(entries/@scanned))"/></span>
+        <span>Positions <xsl:value-of select="f:count($offset + 1)"/>–<xsl:value-of select="f:count(entries/@scanned)"/></span>
       </xsl:if>
       <xsl:choose>
         <xsl:when test="entries/@more = 'true' and xs:integer(entries/@scanned) lt xs:integer(entries/@max-scan)">
           <a href="{f:to-path('/bzadmin/cache/entries')}{$query}&amp;offset={$offset + $limit}&amp;limit={$limit}">Next <svg-icon name="angle-right"/></a>
         </xsl:when>
         <xsl:when test="entries/@more = 'true'">
-          <span class="muted">Only the first <xsl:value-of select="f:cache-count(number(entries/@max-scan))"/> keys can be listed.</span>
+          <span class="muted">Only the first <xsl:value-of select="f:count(entries/@max-scan)"/> keys can be listed.</span>
         </xsl:when>
       </xsl:choose>
     </nav>
@@ -689,7 +689,7 @@
   <xsl:param name="name" as="xs:string"/>
   <xsl:variable name="metric" select="$statistics/metric[@name = $name]"/>
   <xsl:choose>
-    <xsl:when test="$metric"><td data-sort="{$metric/@value}"><xsl:sequence select="f:cache-zero-muted($metric/@value)"/><xsl:value-of select="f:cache-count(number($metric/@value))"/></td></xsl:when>
+    <xsl:when test="$metric"><td data-sort="{$metric/@value}"><xsl:sequence select="f:cache-zero-muted($metric/@value)"/><xsl:value-of select="f:count($metric/@value)"/></td></xsl:when>
     <xsl:otherwise><td class="muted" data-sort="-1" title="Not available"><span role="img" aria-label="Not available">—</span></td></xsl:otherwise>
   </xsl:choose>
 </xsl:function>
@@ -700,18 +700,12 @@
   <xsl:if test="number($value) = 0"><xsl:attribute name="class" select="'muted'"/></xsl:if>
 </xsl:function>
 
-<!-- A count with thousands separators -->
-<xsl:function name="f:cache-count" as="xs:string">
-  <xsl:param name="count" as="xs:double"/>
-  <xsl:sequence select="format-number($count, '#,##0')"/>
-</xsl:function>
-
 <!-- A metric as shown: a time in its unit, a size in bytes, otherwise a count -->
 <xsl:function name="f:cache-metric-value" as="xs:string">
   <xsl:param name="metric" as="element(metric)"/>
   <xsl:sequence select="if ($metric/@unit = 'ms') then f:cache-time($metric/@value)
                         else if (ends-with($metric/@name, '-bytes')) then f:cache-bytes($metric/@value)
-                        else f:cache-count(number($metric/@value))"/>
+                        else f:count($metric/@value)"/>
 </xsl:function>
 
 <!-- Without `enabled`, statistics are always on if they cannot be toggled, otherwise not reported -->

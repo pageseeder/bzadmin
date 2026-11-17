@@ -108,7 +108,7 @@ final class LogsXsltTest {
         "<log-files origin='configured'><log-directory name='logs' path='/var/log' total='1001' truncated='true'>"
         + "<log-file id='0123456789abcdef' name='app.log' size='1' datetime='2026-10-23T01:02:03Z'/>"
         + "</log-directory></log-files>");
-    assertTrue(html.contains("Only the 1 most recent of the 1001 log files of <i>logs</i> are listed: open the others by name, <code>/ctx/bzadmin/logs/raw.html?name=logs/…</code>"), html);
+    assertTrue(html.contains("Only the 1 most recent of the 1,001 log files of <i>logs</i> are listed: open the others by name, <code>/ctx/bzadmin/logs/raw.html?name=logs/…</code>"), html);
   }
 
   @Test

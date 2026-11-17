@@ -37,17 +37,17 @@
   <dl id="xslt-key-metrics" class="key-metrics">
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Stylesheets'"/>
-      <xsl:with-param name="value" select="string(count($files))"/>
-      <xsl:with-param name="detail" select="concat(count($files[@source = ('file', 'override')]), ' in the XSLT folder, ', count($files[@source = 'classpath']), ' from JAR overlays')"/>
+      <xsl:with-param name="value" select="f:count(count($files))"/>
+      <xsl:with-param name="detail" select="concat(f:count(count($files[@source = ('file', 'override')])), ' in the XSLT folder, ', f:count(count($files[@source = 'classpath'])), ' from JAR overlays')"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Overrides'"/>
-      <xsl:with-param name="value" select="string(count($overrides))"/>
+      <xsl:with-param name="value" select="f:count(count($overrides))"/>
       <xsl:with-param name="detail" select="'Replace a stylesheet of a JAR overlay'"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Duplicates'"/>
-      <xsl:with-param name="value" select="string(count($duplicates))"/>
+      <xsl:with-param name="value" select="f:count(count($duplicates))"/>
       <xsl:with-param name="detail" select="'On the classpath more than once: Berlioz uses the first'"/>
       <xsl:with-param name="warning" select="exists($duplicates)"/>
     </xsl:call-template>

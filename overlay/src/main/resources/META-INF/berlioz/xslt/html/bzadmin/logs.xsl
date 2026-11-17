@@ -145,7 +145,7 @@
   <xsl:for-each select="loggers[logger]">
   <section class="panel">
     <h3>Loggers</h3>
-    <p class="muted">The root and the loggers with a level or appenders of their own<xsl:if test="number(@total) gt count(logger)">: the first <xsl:value-of select="count(logger)"/> of <xsl:value-of select="@total"/></xsl:if>.</p>
+    <p class="muted">The root and the loggers with a level or appenders of their own<xsl:if test="number(@total) gt count(logger)">: the first <xsl:value-of select="f:count(count(logger))"/> of <xsl:value-of select="f:count(@total)"/></xsl:if>.</p>
     <div class="table-scroll" tabindex="0" role="group" aria-label="Loggers"><table class="basic-table logging-loggers" aria-label="Loggers">
       <thead><tr><th>Name</th><th>Level</th><th>Effective level</th><th>Additive</th><th>Appenders</th><th>Output</th></tr></thead>
       <tbody>
@@ -175,7 +175,7 @@
   <section class="panel">
     <h3>Status messages</h3>
     <p class="muted">The warnings and errors that logback reported <xsl:value-of select="if (@since = 'reset') then 'since its last reset' else 'since it started'"/>, most recent first:
-      <xsl:value-of select="@errors"/> error<xsl:if test="@errors != 1">s</xsl:if>, <xsl:value-of select="@warnings"/> warning<xsl:if test="@warnings != 1">s</xsl:if>, <xsl:value-of select="@infos"/> information message<xsl:if test="@infos != 1">s</xsl:if>.</p>
+      <xsl:value-of select="f:count(@errors)"/> error<xsl:if test="@errors != 1">s</xsl:if>, <xsl:value-of select="f:count(@warnings)"/> warning<xsl:if test="@warnings != 1">s</xsl:if>, <xsl:value-of select="f:count(@infos)"/> information message<xsl:if test="@infos != 1">s</xsl:if>.</p>
     <xsl:if test="status">
     <div class="table-scroll" tabindex="0" role="group" aria-label="Status messages"><table class="basic-table events logging-statuses" aria-label="Status messages">
       <thead><tr><th class="time">Time</th><th class="level">Level</th><th>Origin</th><th>Message</th></tr></thead>
@@ -204,7 +204,7 @@
     <xsl:for-each select="resets">
     <p><xsl:choose>
       <xsl:when test="@count = 0">No reset of the logger context observed since bzadmin started.</xsl:when>
-      <xsl:otherwise><xsl:value-of select="@count"/> reset<xsl:if test="@count != 1">s</xsl:if> of the logger context observed, the last <xsl:sequence select="f:last-modified(@last)"/>. Berlioz resets it once for each logback file it tries; a <code>scan</code> reconfiguration resets it too.</xsl:otherwise>
+      <xsl:otherwise><xsl:value-of select="f:count(@count)"/> reset<xsl:if test="@count != 1">s</xsl:if> of the logger context observed, the last <xsl:sequence select="f:last-modified(@last)"/>. Berlioz resets it once for each logback file it tries; a <code>scan</code> reconfiguration resets it too.</xsl:otherwise>
     </xsl:choose></p>
     </xsl:for-each>
     <xsl:for-each select="scan">
@@ -255,7 +255,7 @@
                 <td>
                   <xsl:if test="@failure"><p><xsl:value-of select="@failure"/></p></xsl:if>
                   <xsl:for-each select="problem"><p><span class="muted"><xsl:value-of select="upper-case(@level)"/></span><xsl:text> </xsl:text><xsl:value-of select="@message"/></p></xsl:for-each>
-                  <xsl:if test="@problem-count and not(problem)"><xsl:value-of select="@problem-count"/>: the details are in the startup log.</xsl:if>
+                  <xsl:if test="@problem-count and not(problem)"><xsl:value-of select="f:count(@problem-count)"/>: the details are in the startup log.</xsl:if>
                 </td>
               </tr>
             </xsl:for-each>
@@ -304,7 +304,7 @@
   </p>
   </xsl:if>
   <xsl:for-each select="descendant::log-directory[@truncated = 'true']">
-  <p>Only the <xsl:value-of select="count(log-file)"/> most recent of the <xsl:value-of select="@total"/> log files of <i><xsl:value-of select="@name"/></i> are listed: open the others by name, <code><xsl:value-of select="f:to-path('/bzadmin/logs/raw')"/>?name=<xsl:value-of select="@name"/>/…</code>.</p>
+  <p>Only the <xsl:value-of select="f:count(count(log-file))"/> most recent of the <xsl:value-of select="f:count(@total)"/> log files of <i><xsl:value-of select="@name"/></i> are listed: open the others by name, <code><xsl:value-of select="f:to-path('/bzadmin/logs/raw')"/>?name=<xsl:value-of select="@name"/>/…</code>.</p>
   </xsl:for-each>
 </section>
 <xsl:if test="descendant::log-file">
@@ -408,8 +408,8 @@
   <dl class="key-metrics">
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Log files'"/>
-      <xsl:with-param name="value" select="string(count($files))"/>
-      <xsl:with-param name="detail" select="concat(if ($directories gt 0) then concat('In ', $directories, if ($directories = 1) then ' directory' else ' directories') else 'Registered files',
+      <xsl:with-param name="value" select="f:count(count($files))"/>
+      <xsl:with-param name="detail" select="concat(if ($directories gt 0) then concat('In ', f:count($directories), if ($directories = 1) then ' directory' else ' directories') else 'Registered files',
                                                    if (log-directory[@truncated = 'true']) then ', not all listed' else '')"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
@@ -444,18 +444,18 @@
   <xsl:variable name="warnings-captured" select="not($threshold gt index-of($levels, 'WARN'))"/>
   <xsl:variable name="errors" select="event[@level = 'ERROR']"/>
   <xsl:variable name="last-error" select="($errors[number(@timestamp) = max($errors/@timestamp/number())])[1]"/>
-  <xsl:variable name="kept" select="concat('In the last ', count(event), ' events')"/>
+  <xsl:variable name="kept" select="concat('In the last ', f:count(count(event)), ' events')"/>
   <xsl:variable name="not-captured" select="concat('Not captured: the threshold is ', @threshold)"/>
   <dl class="key-metrics" id="recent-metrics">
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Errors'"/>
-      <xsl:with-param name="value" select="if ($errors-captured) then string(count($errors)) else ()"/>
+      <xsl:with-param name="value" select="if ($errors-captured) then f:count(count($errors)) else ()"/>
       <xsl:with-param name="detail" select="if ($errors-captured) then $kept else $not-captured"/>
       <xsl:with-param name="warning" select="exists($errors)"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Warnings'"/>
-      <xsl:with-param name="value" select="if ($warnings-captured) then string(count(event[@level = 'WARN'])) else ()"/>
+      <xsl:with-param name="value" select="if ($warnings-captured) then f:count(count(event[@level = 'WARN'])) else ()"/>
       <xsl:with-param name="detail" select="if ($warnings-captured) then $kept else $not-captured"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
@@ -466,8 +466,8 @@
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Captured'"/>
-      <xsl:with-param name="value" select="format-number(@captured, '#,##0')"/>
-      <xsl:with-param name="detail" select="concat('Since the application started; the last ', @capacity, ' are kept')"/>
+      <xsl:with-param name="value" select="f:count(@captured)"/>
+      <xsl:with-param name="detail" select="concat('Since the application started; the last ', f:count(@capacity), ' are kept')"/>
     </xsl:call-template>
   </dl>
 </xsl:template>
@@ -624,7 +624,7 @@
   </xsl:if>
   <xsl:if test="log/@truncated = 'true' and not(log/@before)">
   <div class="alert callout">
-    <p><svg-icon name="warning"/> Only the last <xsl:value-of select="count(log/line)"/> lines of this log file are shown.</p>
+    <p><svg-icon name="warning"/> Only the last <xsl:value-of select="f:count(count(log/line))"/> lines of this log file are shown.</p>
   </div>
   </xsl:if>
   <!-- One span per line, followed by a line feed, so that a selection copies the text alone: the line numbers are generated content -->

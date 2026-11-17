@@ -723,7 +723,7 @@ final class DiagnosticsXsltTest {
         + "<origin component='Unknown' role='running' basis='none' loader='system'/>"
         + "<lock name='java.lang.Object@1' owner-id='6' owner-name='other'/></thread></threads>");
     assertTrue(html.contains("<p class=\"callout alert\"><svg-icon name=\"warning\"></svg-icon> 2 threads are deadlocked"), html);
-    assertTrue(html.contains("Only the first 1 of 3000 threads are listed."), html);
+    assertTrue(html.contains("Only the first 1 of 3,000 threads are listed."), html);
     assertTrue(html.contains("<span class=\"tag warning\">deadlocked</span>"), html);
     assertTrue(html.contains("<span class=\"thread-component\">Unknown</span>"), html);
     assertFalse(html.contains(">Allocated</th>"), html);

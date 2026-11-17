@@ -35,7 +35,7 @@ final class PsmlXsltTest {
   void reportsATruncatedFolder() throws Exception {
     String html = page("bzadmin-files", "files", "ok",
         "<psml-folder root='psml' path='/' offset='0' limit='1000' total='10000' folders='0' truncated='true'/>");
-    assertTrue(html.contains("too many entries: only the first 10000"), html);
+    assertTrue(html.contains("too many entries: only the first 10,000"), html);
   }
 
   @Test

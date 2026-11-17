@@ -174,7 +174,7 @@
     <xsl:with-param name="meter" as="element()?">
       <xsl:if test="runtime/@load-average"><meter min="0" max="{@processors}" high="{0.8 * number(@processors)}" optimum="0" value="{min((number(runtime/@load-average), number(@processors)))}"/></xsl:if>
     </xsl:with-param>
-    <xsl:with-param name="detail" select="concat(@processors, if (@processors = '1') then ' processor' else ' processors')"/>
+    <xsl:with-param name="detail" select="concat(f:count(@processors), if (@processors = '1') then ' processor' else ' processors')"/>
     <xsl:with-param name="info" as="node()*"><xsl:call-template name="system-info"><xsl:with-param name="name" select="'load-average'"/><xsl:with-param name="label" select="'Load average'"/></xsl:call-template></xsl:with-param>
   </xsl:call-template>
   <xsl:call-template name="bzadmin-key-metric">
@@ -198,7 +198,7 @@
     <xsl:with-param name="id" select="'metric-gc-time'"/>
     <xsl:with-param name="label" select="'GC time'"/>
     <xsl:with-param name="value" select="if ($collectors and $uptime gt 0) then f:to-percent($gc-time div $uptime) else ()"/>
-    <xsl:with-param name="detail" select="if ($collectors) then concat(format-number(sum(garbage-collector/@collections), '#,##0'), ' collections, ', if ($gc-time lt 10000) then concat(format-number($gc-time, '#,##0'), ' ms') else f:to-uptime($gc-time)) else ()"/>
+    <xsl:with-param name="detail" select="if ($collectors) then concat(f:count(sum(garbage-collector/@collections)), ' collections, ', if ($gc-time lt 10000) then concat(f:count($gc-time), ' ms') else f:to-uptime($gc-time)) else ()"/>
     <xsl:with-param name="info" as="node()*"><xsl:call-template name="system-info"><xsl:with-param name="name" select="'gc-time'"/><xsl:with-param name="label" select="'GC time'"/></xsl:call-template></xsl:with-param>
   </xsl:call-template>
 </xsl:template>
@@ -207,26 +207,26 @@
 <xsl:template match="threads" mode="system-key-metrics">
   <xsl:call-template name="bzadmin-key-metric">
     <xsl:with-param name="label" select="'Live'"/>
-    <xsl:with-param name="value" select="string(@live)"/>
-    <xsl:with-param name="detail" select="concat(@daemon, ' daemon')"/>
+    <xsl:with-param name="value" select="f:count(@live)"/>
+    <xsl:with-param name="detail" select="concat(f:count(@daemon), ' daemon')"/>
     <xsl:with-param name="info" as="node()*"><xsl:call-template name="system-info"><xsl:with-param name="name" select="'threads-live'"/><xsl:with-param name="label" select="'Live threads'"/></xsl:call-template></xsl:with-param>
   </xsl:call-template>
   <xsl:call-template name="bzadmin-key-metric">
     <xsl:with-param name="label" select="'Peak'"/>
-    <xsl:with-param name="value" select="string(@peak)"/>
-    <xsl:with-param name="detail" select="concat(format-number(@started, '#,##0'), ' started since start')"/>
+    <xsl:with-param name="value" select="f:count(@peak)"/>
+    <xsl:with-param name="detail" select="concat(f:count(@started), ' started since start')"/>
     <xsl:with-param name="info" as="node()*"><xsl:call-template name="system-info"><xsl:with-param name="name" select="'threads-peak'"/><xsl:with-param name="label" select="'Peak threads'"/></xsl:call-template></xsl:with-param>
   </xsl:call-template>
   <xsl:call-template name="bzadmin-key-metric">
     <xsl:with-param name="label" select="'Blocked'"/>
-    <xsl:with-param name="value" select="string(@blocked)"/>
+    <xsl:with-param name="value" select="f:count(@blocked)"/>
     <xsl:with-param name="warning" select="number(@blocked) gt 0"/>
-    <xsl:with-param name="detail" select="concat('of ', @live, ' live')"/>
+    <xsl:with-param name="detail" select="concat('of ', f:count(@live), ' live')"/>
     <xsl:with-param name="info" as="node()*"><xsl:call-template name="system-info"><xsl:with-param name="name" select="'threads-blocked'"/><xsl:with-param name="label" select="'Blocked threads'"/></xsl:call-template></xsl:with-param>
   </xsl:call-template>
   <xsl:call-template name="bzadmin-key-metric">
     <xsl:with-param name="label" select="'Deadlocked'"/>
-    <xsl:with-param name="value" select="string(@deadlocked)"/>
+    <xsl:with-param name="value" select="f:count(@deadlocked)"/>
     <xsl:with-param name="warning" select="number(@deadlocked) gt 0"/>
     <xsl:with-param name="detail" select="if (number(@deadlocked) gt 0) then 'Marked in the thread list' else ()"/>
     <xsl:with-param name="info" as="node()*"><xsl:call-template name="system-info"><xsl:with-param name="name" select="'threads-deadlocked'"/><xsl:with-param name="label" select="'Deadlocked threads'"/></xsl:call-template></xsl:with-param>
@@ -292,8 +292,8 @@
   <xsl:variable name="encoding" select="f:system-property(., 'file.encoding')"/>
   <xsl:call-template name="bzadmin-key-metric">
     <xsl:with-param name="label" select="'Properties'"/>
-    <xsl:with-param name="value" select="string(count(property))"/>
-    <xsl:with-param name="detail" select="concat($redacted, ' redacted')"/>
+    <xsl:with-param name="value" select="f:count(count(property))"/>
+    <xsl:with-param name="detail" select="concat(f:count($redacted), ' redacted')"/>
     <xsl:with-param name="info" as="node()*"><xsl:call-template name="system-info"><xsl:with-param name="name" select="'properties-redacted'"/><xsl:with-param name="label" select="'Redacted properties'"/></xsl:call-template></xsl:with-param>
   </xsl:call-template>
   <xsl:call-template name="bzadmin-key-metric">
@@ -406,8 +406,8 @@
           <xsl:for-each select="garbage-collector">
             <tr>
               <td><xsl:value-of select="@name"/></td>
-              <td class="number"><xsl:choose><xsl:when test="@collections"><xsl:value-of select="@collections"/></xsl:when><xsl:otherwise><xsl:sequence select="f:not-available()"/></xsl:otherwise></xsl:choose></td>
-              <td class="number"><xsl:choose><xsl:when test="@time-ms"><xsl:value-of select="concat(format-number(@time-ms, '#,##0'), ' ms')"/></xsl:when><xsl:otherwise><xsl:sequence select="f:not-available()"/></xsl:otherwise></xsl:choose></td>
+              <td class="number"><xsl:choose><xsl:when test="@collections"><xsl:value-of select="f:count(@collections)"/></xsl:when><xsl:otherwise><xsl:sequence select="f:not-available()"/></xsl:otherwise></xsl:choose></td>
+              <td class="number"><xsl:choose><xsl:when test="@time-ms"><xsl:value-of select="concat(f:count(@time-ms), ' ms')"/></xsl:when><xsl:otherwise><xsl:sequence select="f:not-available()"/></xsl:otherwise></xsl:choose></td>
               <td><xsl:value-of select="replace(@pools, ',', ', ')"/></td>
             </tr>
           </xsl:for-each>
@@ -565,7 +565,7 @@
     <tr>
       <td class="name"><code>/<xsl:value-of select="@name"/></code></td>
       <td class="size"><xsl:value-of select="f:to-size(@file-size)"/></td>
-      <td class="count"><xsl:value-of select="@file-count"/></td>
+      <td class="count"><xsl:value-of select="f:count(@file-count)"/></td>
     </tr>
   </xsl:for-each>
   <!-- Berlioz counts in the total the files directly in the folder, which no directory row lists -->
@@ -574,7 +574,7 @@
     <tr class="top-files">
       <td class="name"><code>/</code><xsl:text> </xsl:text><span class="muted">(files directly in the folder)</span></td>
       <td class="size"><xsl:value-of select="f:to-size(xs:integer(@total-size) - xs:integer(sum(directory/@file-size)))"/></td>
-      <td class="count"><xsl:value-of select="$top-count"/></td>
+      <td class="count"><xsl:value-of select="f:count($top-count)"/></td>
     </tr>
   </xsl:if>
   </tbody>
@@ -582,7 +582,7 @@
     <tr>
       <td><b>Total</b></td>
       <td class="size"><xsl:value-of select="f:to-size(@total-size)"/></td>
-      <td class="count"><xsl:value-of select="@total-count"/></td>
+      <td class="count"><xsl:value-of select="f:count(@total-count)"/></td>
     </tr>
   </tfoot>
 </table></div>
@@ -667,7 +667,7 @@
     <p class="callout alert"><svg-icon name="warning"/><xsl:text> </xsl:text><xsl:value-of select="@deadlocks"/> threads are deadlocked: each waits for a lock that another one holds. Their state shows the lock and its owner.</p>
   </xsl:if>
   <xsl:if test="@truncated = 'true'">
-    <p class="callout">Only the first <xsl:value-of select="count($threads)"/> of <xsl:value-of select="@live"/> threads are listed.</p>
+    <p class="callout">Only the first <xsl:value-of select="f:count(count($threads))"/> of <xsl:value-of select="f:count(@live)"/> threads are listed.</p>
   </xsl:if>
   <xsl:variable name="states" select="for $state in ('RUNNABLE', 'BLOCKED', 'WAITING', 'TIMED_WAITING') return count($threads[@state = $state])"/>
   <div class="thread-breakdown">
@@ -683,13 +683,13 @@
             <xsl:sort select="current-grouping-key()"/>
             <tr>
               <th scope="row"><xsl:value-of select="current-grouping-key()"/></th>
-              <td class="number"><xsl:value-of select="count(current-group())"/></td>
+              <td class="number"><xsl:value-of select="f:count(count(current-group()))"/></td>
               <td>
                 <xsl:for-each-group select="current-group()" group-by="origin/@role">
                   <xsl:sort select="count(current-group())" order="descending"/>
                   <xsl:sort select="current-grouping-key()"/>
                   <xsl:if test="position() > 1"><xsl:text> </xsl:text></xsl:if>
-                  <span class="tag thread-role {current-grouping-key()}"><xsl:value-of select="count(current-group())"/><xsl:text> </xsl:text><xsl:value-of select="current-grouping-key()"/></span>
+                  <span class="tag thread-role {current-grouping-key()}"><xsl:value-of select="f:count(count(current-group()))"/><xsl:text> </xsl:text><xsl:value-of select="current-grouping-key()"/></span>
                 </xsl:for-each-group>
               </td>
             </tr>
@@ -701,10 +701,10 @@
       <h3>By state<xsl:call-template name="system-info"><xsl:with-param name="name" select="'thread-states'"/><xsl:with-param name="label" select="'Thread states'"/></xsl:call-template></h3>
       <pie-chart values="{string-join(for $count in $states return string($count), ',')}" labels="Runnable,Blocked,Waiting,Timed waiting"/>
       <ul>
-        <li><span class="state-key runnable"/><xsl:value-of select="$states[1]"/> runnable</li>
-        <li><span class="state-key blocked"/><xsl:value-of select="$states[2]"/> blocked</li>
-        <li><span class="state-key waiting"/><xsl:value-of select="$states[3]"/> waiting</li>
-        <li><span class="state-key timed-waiting"/><xsl:value-of select="$states[4]"/> timed waiting</li>
+        <li><span class="state-key runnable"/><xsl:value-of select="f:count($states[1])"/> runnable</li>
+        <li><span class="state-key blocked"/><xsl:value-of select="f:count($states[2])"/> blocked</li>
+        <li><span class="state-key waiting"/><xsl:value-of select="f:count($states[3])"/> waiting</li>
+        <li><span class="state-key timed-waiting"/><xsl:value-of select="f:count($states[4])"/> timed waiting</li>
       </ul>
     </div>
   </div>
@@ -756,7 +756,7 @@
       <td class="number" data-sort="{@allocated-bytes}"><xsl:if test="@allocated-bytes"><xsl:value-of select="f:to-size(xs:integer(@allocated-bytes))"/></xsl:if></td>
       <td class="number allocated-delta" data-allocated="{@allocated-bytes}">–</td>
     </xsl:if>
-    <td class="number" data-sort="{@blocked-count}"><xsl:value-of select="format-number(@blocked-count, '#,##0')"/> / <xsl:value-of select="format-number(@waited-count, '#,##0')"/></td>
+    <td class="number" data-sort="{@blocked-count}"><xsl:value-of select="f:count(@blocked-count)"/> / <xsl:value-of select="f:count(@waited-count)"/></td>
     <td><button type="button" class="button small hollow show-thread" data-href="{f:to-path('/bzadmin/system/thread')}?id={@id}" aria-label="Stack of {@name}"><svg-icon name="eye"/></button></td>
   </tr>
 </xsl:template>
@@ -804,7 +804,7 @@
       <xsl:if test="@allocated-bytes">
         <tr><th>Allocated</th><td><xsl:value-of select="f:to-size(xs:integer(@allocated-bytes))"/></td></tr>
       </xsl:if>
-      <tr><th>Blocked / waited</th><td><xsl:value-of select="format-number(@blocked-count, '#,##0')"/> / <xsl:value-of select="format-number(@waited-count, '#,##0')"/> times</td></tr>
+      <tr><th>Blocked / waited</th><td><xsl:value-of select="f:count(@blocked-count)"/> / <xsl:value-of select="f:count(@waited-count)"/> times</td></tr>
     </tbody>
   </table></div>
   <h3>Stack</h3>
@@ -820,7 +820,7 @@
         </xsl:for-each>
       </ol>
       <xsl:if test="@stack-truncated = 'true'">
-        <p><small>Only the top <xsl:value-of select="count(stacktrace/element)"/> of <xsl:value-of select="@frames"/> frames are shown.</small></p>
+        <p><small>Only the top <xsl:value-of select="f:count(count(stacktrace/element))"/> of <xsl:value-of select="f:count(@frames)"/> frames are shown.</small></p>
       </xsl:if>
     </xsl:when>
     <xsl:otherwise><p>No Java frames: the thread runs only native code.</p></xsl:otherwise>
@@ -892,7 +892,7 @@
   <xsl:param name="ns"/>
   <xsl:variable name="ms" select="number($ns) div 1000000"/>
   <xsl:sequence select="if ($ms lt 10) then concat(format-number($ms, '0.0'), ' ms')
-                        else if ($ms lt 10000) then concat(format-number($ms, '#,##0'), ' ms')
+                        else if ($ms lt 10000) then concat(f:count($ms), ' ms')
                         else concat(format-number($ms div 1000, '#,##0.0'), ' s')"/>
 </xsl:function>
 

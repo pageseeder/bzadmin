@@ -280,6 +280,12 @@
   <xsl:sequence select="string-join(f:to-size(xs:integer($bytes)), '')"/>
 </xsl:function>
 
+<!-- A count with thousands separators (`1,234`); not for line or column numbers, which are references -->
+<xsl:function name="f:count" as="xs:string">
+  <xsl:param name="count"/>
+  <xsl:sequence select="format-number(number($count), '#,##0')"/>
+</xsl:function>
+
 <!-- A fraction from 0 to 1 as a percentage -->
 <xsl:function name="f:to-percent" as="xs:string">
   <xsl:param name="fraction"/>

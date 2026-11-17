@@ -294,7 +294,7 @@
 -->
 <xsl:function name="f:status-count" as="xs:string">
   <xsl:param name="count" as="xs:double"/>
-  <xsl:sequence select="if ($count = 0) then '' else format-number($count, '#,##0')"/>
+  <xsl:sequence select="if ($count = 0) then '' else f:count($count)"/>
 </xsl:function>
 
 <!--
@@ -372,9 +372,9 @@
         <xsl:variable name="counts" select="statistic/status/@*"/>
         <xsl:for-each select="$bzadmin-status-classes">
           <xsl:variable name="total" select="f:status-class-count($counts, xs:integer(@code))"/>
-          <td class="status{if ($total = 0) then ' muted' else if (@code = 5) then ' server_error' else ''}"><xsl:value-of select="format-number($total, '#,##0')"/></td>
+          <td class="status{if ($total = 0) then ' muted' else if (@code = 5) then ' server_error' else ''}"><xsl:value-of select="f:count($total)"/></td>
         </xsl:for-each>
-        <td class="calls"><xsl:value-of select="format-number(sum(statistic/@count), '#,##0')"/></td>
+        <td class="calls"><xsl:value-of select="f:count(sum(statistic/@count))"/></td>
       </tr>
     </tfoot>
     <tbody>
@@ -384,22 +384,22 @@
         <xsl:apply-templates select="." mode="bzadmin-application-statistic"/>
         <xsl:variable name="etag-trend"    select="if (@avg-last-etag    &gt; @avg-etag*1.2)    then 'up' else if (@avg-last-etag    &lt; @avg-etag*0.8)    then 'down' else ''"/>
         <xsl:variable name="process-trend" select="if (@avg-last-process &gt; @avg-process*1.2) then 'up' else if (@avg-last-process &lt; @avg-process*0.8) then 'down' else ''" />
-        <td><xsl:if test="number(@min-etag) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@min-etag, '#,###,###')"/></td>
-        <td><xsl:if test="number(@max-etag) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@max-etag, '#,###,###')"/></td>
+        <td><xsl:if test="number(@min-etag) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="f:count(@min-etag)"/></td>
+        <td><xsl:if test="number(@max-etag) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="f:count(@max-etag)"/></td>
         <td class="avg{if (@avg-etag > 10000) then ' mark' else ''}{f:muted-zero(@avg-etag)} {$etag-trend}">
-          <span title="Average over the last 10: {if (@avg-last-etag > 0) then format-number(@avg-last-etag, '#,###,###') else '&#x2013;'}"><xsl:value-of select="format-number(@avg-etag, '#,###,###')"/><svg-icon name="arrow-{$etag-trend}"/></span>
+          <span title="Average over the last 10: {if (@avg-last-etag > 0) then f:count(@avg-last-etag) else '&#x2013;'}"><xsl:value-of select="f:count(@avg-etag)"/><svg-icon name="arrow-{$etag-trend}"/></span>
         </td>
-        <td><xsl:if test="number(@min-process) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@min-process, '#,###,##0')"/></td>
-        <td><xsl:if test="number(@max-process) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="format-number(@max-process, '#,###,##0')"/></td>
+        <td><xsl:if test="number(@min-process) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="f:count(@min-process)"/></td>
+        <td><xsl:if test="number(@max-process) = 0"><xsl:attribute name="class">muted</xsl:attribute></xsl:if><xsl:value-of select="f:count(@max-process)"/></td>
         <td class="avg{if (@avg-process > 100000) then ' mark' else ''}{f:muted-zero(@avg-process)} {$process-trend}">
-          <span title="Average over the last 10: {if (@avg-last-process > 0) then format-number(@avg-last-process, '#,###,###') else '&#x2013;'}"><xsl:value-of select="format-number(@avg-process, '#,###,##0')"/><svg-icon name="arrow-{$process-trend}"/></span>
+          <span title="Average over the last 10: {if (@avg-last-process > 0) then f:count(@avg-last-process) else '&#x2013;'}"><xsl:value-of select="f:count(@avg-process)"/><svg-icon name="arrow-{$process-trend}"/></span>
         </td>
         <xsl:variable name="counts" select="status/@*"/>
         <xsl:for-each select="$bzadmin-status-classes">
           <xsl:variable name="count" select="f:status-class-count($counts, xs:integer(@code))"/>
           <td class="status{if (@code = 5 and $count > 0) then ' mark' else ''}"><xsl:value-of select="f:status-count($count)"/></td>
         </xsl:for-each>
-        <td class="calls{f:muted-zero(@count)}"><xsl:value-of select="format-number(@count, '#,##0')"/></td>
+        <td class="calls{f:muted-zero(@count)}"><xsl:value-of select="f:count(@count)"/></td>
       </tr>
       </xsl:for-each>
     </tbody>
@@ -445,12 +445,12 @@
           <xsl:for-each select="$codes[xs:integer(@code) idiv 100 = $class]">
             <xsl:variable name="name" select="string(@name)"/>
             <xsl:variable name="total" select="sum($statistics/status/@*[local-name() = $name])"/>
-            <td class="status{if ($total = 0) then ' muted' else if ($class = 5) then ' server_error' else ''}"><xsl:value-of select="format-number($total, '#,##0')"/></td>
+            <td class="status{if ($total = 0) then ' muted' else if ($class = 5) then ' server_error' else ''}"><xsl:value-of select="f:count($total)"/></td>
           </xsl:for-each>
           <xsl:variable name="total" select="f:status-class-count($statistics/status/@*, $class)"/>
-          <td class="status total{if ($total = 0) then ' muted' else if ($class = 5) then ' server_error' else ''}"><xsl:value-of select="format-number($total, '#,##0')"/></td>
+          <td class="status total{if ($total = 0) then ' muted' else if ($class = 5) then ' server_error' else ''}"><xsl:value-of select="f:count($total)"/></td>
         </xsl:for-each>
-        <td class="calls"><xsl:value-of select="format-number(sum($statistics/@count), '#,##0')"/></td>
+        <td class="calls"><xsl:value-of select="f:count(sum($statistics/@count))"/></td>
       </tr>
     </tfoot>
     <tbody>
@@ -467,9 +467,9 @@
             <td class="status{if ($class = 5 and $count > 0) then ' mark' else ''}"><xsl:value-of select="f:status-count($count)"/></td>
           </xsl:for-each>
           <xsl:variable name="total" select="f:status-class-count($counts, $class)"/>
-          <td class="status total{if ($total = 0) then ' muted' else if ($class = 5) then ' mark' else ''}"><xsl:value-of select="format-number($total, '#,##0')"/></td>
+          <td class="status total{if ($total = 0) then ' muted' else if ($class = 5) then ' mark' else ''}"><xsl:value-of select="f:count($total)"/></td>
         </xsl:for-each>
-        <td class="calls{f:muted-zero(@count)}"><xsl:value-of select="format-number(@count, '#,##0')"/></td>
+        <td class="calls{f:muted-zero(@count)}"><xsl:value-of select="f:count(@count)"/></td>
       </tr>
       </xsl:for-each>
     </tbody>
@@ -550,8 +550,8 @@
   <dl class="key-metrics" id="statistics-metrics">
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Generator calls'"/>
-      <xsl:with-param name="value" select="format-number($calls, '#,##0')"/>
-      <xsl:with-param name="detail" select="concat('by ', count(statistic), ' generators')"/>
+      <xsl:with-param name="value" select="f:count($calls)"/>
+      <xsl:with-param name="detail" select="concat('by ', f:count(count(statistic)), ' generators')"/>
     </xsl:call-template>
     <xsl:choose>
       <xsl:when test="$view = 'status-codes'">
@@ -560,18 +560,18 @@
         <xsl:variable name="worst" select="if (empty($failing)) then () else $failing[index-of($rates, max($rates))[1]]"/>
         <xsl:call-template name="bzadmin-key-metric">
           <xsl:with-param name="label" select="'Client errors'"/>
-          <xsl:with-param name="value" select="format-number(f:status-class-count($counts, 4), '#,##0')"/>
+          <xsl:with-param name="value" select="f:count(f:status-class-count($counts, 4))"/>
           <xsl:with-param name="detail" select="f:errors-detail($counts, 4, $calls)"/>
         </xsl:call-template>
         <xsl:call-template name="bzadmin-key-metric">
           <xsl:with-param name="label" select="'Server errors'"/>
-          <xsl:with-param name="value" select="format-number($errors, '#,##0')"/>
+          <xsl:with-param name="value" select="f:count($errors)"/>
           <xsl:with-param name="detail" select="f:errors-detail($counts, 5, $calls)"/>
           <xsl:with-param name="warning" select="$errors gt 0"/>
         </xsl:call-template>
         <xsl:call-template name="bzadmin-key-metric">
           <xsl:with-param name="label" select="'Generators with errors'"/>
-          <xsl:with-param name="value" select="string(count($failing))"/>
+          <xsl:with-param name="value" select="f:count(count($failing))"/>
           <xsl:with-param name="detail" select="if ($worst) then concat('Highest rate: ', f:generator-label($worst/@generator), ' (', format-number(max($rates), '0.0%'), ')') else 'Client or server errors'"/>
         </xsl:call-template>
       </xsl:when>
@@ -594,7 +594,7 @@
         </xsl:call-template>
         <xsl:call-template name="bzadmin-key-metric">
           <xsl:with-param name="label" select="'Slow generators'"/>
-          <xsl:with-param name="value" select="string(count($slow))"/>
+          <xsl:with-param name="value" select="f:count(count($slow))"/>
           <xsl:with-param name="detail" select="'Over 100 ms on average'"/>
           <xsl:with-param name="warning" select="exists($slow)"/>
         </xsl:call-template>
@@ -609,7 +609,7 @@
 -->
 <xsl:template match="content[@name='libraries']" mode="bzadmin-application">
 <section>
-  <h2>Libraries <span class="count muted" title="{count(libraries/library)} libraries">(<xsl:value-of select="count(libraries/library)"/>)</span></h2>
+  <h2>Libraries <span class="count muted" title="{f:count(count(libraries/library))} libraries">(<xsl:value-of select="f:count(count(libraries/library))"/>)</span></h2>
   <div class="table-scroll" tabindex="0" role="group" aria-label="Libraries"><sortable-table>
   <table class="basic-table libraries-table is-panel" aria-label="Libraries">
     <thead>

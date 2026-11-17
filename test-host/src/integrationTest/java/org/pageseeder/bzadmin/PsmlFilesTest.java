@@ -113,7 +113,7 @@ final class PsmlFilesTest {
     assertEquals("1", xpath(next, "count(//entry)"));
     assertEquals("doc-1000.psml", xpath(next, "//entry/@name"));
     String html = host.get("/bzadmin/files.html?path=/fixture/many").body();
-    assertTrue(html.contains("Entries 1–1000 of 1001"), "The range is shown");
+    assertTrue(html.contains("Entries 1–1,000 of 1,001"), "The range is shown");
     assertTrue(html.contains("path=%2Ffixture%2Fmany&amp;offset=1000\">Next"), "Link to the next range");
   }
 

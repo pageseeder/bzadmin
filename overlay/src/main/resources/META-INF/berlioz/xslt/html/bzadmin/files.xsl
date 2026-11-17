@@ -65,7 +65,7 @@
 <h3>Folder contents</h3>
 <xsl:if test="@truncated = 'true'">
   <div class="alert callout">
-    <p><svg-icon name="warning"/> This folder has too many entries: only the first <xsl:value-of select="$total"/> found are listed, and sorted.</p>
+    <p><svg-icon name="warning"/> This folder has too many entries: only the first <xsl:value-of select="f:count($total)"/> found are listed, and sorted.</p>
   </div>
 </xsl:if>
 <div class="table-scroll" tabindex="0" role="group" aria-label="Folder contents"><sortable-table>
@@ -111,7 +111,7 @@
     <xsl:if test="$offset gt 0">
       <a href="{$base}&amp;offset={max(($offset - $limit, 0))}"><svg-icon name="angle-left"/> Previous</a>
     </xsl:if>
-    <span>Entries <xsl:value-of select="if ($count = 0) then $offset else $offset + 1"/>–<xsl:value-of select="$offset + $count"/> of <xsl:value-of select="$total"/></span>
+    <span>Entries <xsl:value-of select="f:count(if ($count = 0) then $offset else $offset + 1)"/>–<xsl:value-of select="f:count($offset + $count)"/> of <xsl:value-of select="f:count($total)"/></span>
     <xsl:if test="$offset + $count lt $total">
       <a href="{$base}&amp;offset={$offset + $limit}">Next <svg-icon name="angle-right"/></a>
     </xsl:if>

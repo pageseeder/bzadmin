@@ -1,3 +1,5 @@
+import { formatCount } from './format.js';
+
 /**
  * Rates of cumulative counters (the hits, puts… of a cache) over a sliding window of samples, so
  * that the page shows what happens now rather than since the counters started.
@@ -41,9 +43,6 @@ export function counterWindow(span = 60000) {
   };
 }
 
-// One decimal with thousands separators, like the counts formatted by the XSLT (`#,##0`)
-const RATE_FORMAT = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
 /**
  * @param {number} count
  * @param {number} seconds
@@ -52,6 +51,6 @@ const RATE_FORMAT = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, m
 export function formatRate(count, seconds) {
   const rate = count / seconds;
   if (count === 0) return 'None';
-  if (rate >= 1) return `${RATE_FORMAT.format(rate)}/s`;
-  return `${RATE_FORMAT.format(rate * 60)}/min`;
+  if (rate >= 1) return `${formatCount(rate, 1)}/s`;
+  return `${formatCount(rate * 60, 1)}/min`;
 }

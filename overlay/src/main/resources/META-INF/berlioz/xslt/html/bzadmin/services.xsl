@@ -143,22 +143,22 @@
   <dl class="key-metrics">
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Services'"/>
-      <xsl:with-param name="value" select="string(count(service))"/>
-      <xsl:with-param name="detail" select="string-join(for $m in $methods return concat(count(service[upper-case(@method) = $m]), ' ', $m), ', ')"/>
+      <xsl:with-param name="value" select="f:count(count(service))"/>
+      <xsl:with-param name="detail" select="string-join(for $m in $methods return concat(f:count(count(service[upper-case(@method) = $m])), ' ', $m), ', ')"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Generators'"/>
-      <xsl:with-param name="value" select="string(count(distinct-values(service/generator/@class)))"/>
-      <xsl:with-param name="detail" select="concat('classes, used ', count(service/generator), ' times')"/>
+      <xsl:with-param name="value" select="f:count(count(distinct-values(service/generator/@class)))"/>
+      <xsl:with-param name="detail" select="concat('classes, used ', f:count(count(service/generator)), ' times')"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Cacheable'"/>
-      <xsl:with-param name="value" select="string(count($cacheable))"/>
+      <xsl:with-param name="value" select="f:count(count($cacheable))"/>
       <xsl:with-param name="detail" select="concat(f:to-percent(count($cacheable) div count(service)), ' of the services have an ETag')"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Groups'"/>
-      <xsl:with-param name="value" select="string(count($groups))"/>
+      <xsl:with-param name="value" select="f:count(count($groups))"/>
       <xsl:with-param name="detail" select="if (count($groups) le 4) then string-join($groups, ', ') else concat(string-join(subsequence($groups, 1, 3), ', '), '…')"/>
     </xsl:call-template>
   </dl>
@@ -325,7 +325,7 @@
 -->
 <xsl:template match="live-services" mode="bzadmin-services-warnings">
   <div class="callout warning">
-    <p><svg-icon name="warning"/> <b><xsl:value-of select="count(warning)"/> <xsl:value-of select="if (count(warning) = 1) then ' warning' else ' warnings'"/></b>
+    <p><svg-icon name="warning"/> <b><xsl:value-of select="f:count(count(warning))"/> <xsl:value-of select="if (count(warning) = 1) then ' warning' else ' warnings'"/></b>
     when the service configuration was loaded:</p>
     <ul>
       <xsl:for-each select="warning">
@@ -361,8 +361,8 @@
             <td class="number"><xsl:value-of select="position()"/></td>
             <td><code><xsl:value-of select="@name"/></code></td>
             <td><xsl:value-of select="if (@kind = 'classpath') then 'JAR overlay' else 'Application'"/></td>
-            <td class="number"><xsl:value-of select="count(../service[@source = $name])"/></td>
-            <td class="number"><xsl:value-of select="count(../service/overridden[@source = $name])"/></td>
+            <td class="number"><xsl:value-of select="f:count(count(../service[@source = $name]))"/></td>
+            <td class="number"><xsl:value-of select="f:count(count(../service/overridden[@source = $name]))"/></td>
           </tr>
         </xsl:for-each>
       </tbody>
@@ -378,7 +378,7 @@
   <xsl:sort select="current-grouping-key()"/>
   <div class="panel">
   <h2><xsl:value-of select="current-grouping-key()"/> services
-    <span class="count muted" title="{count(current-group())} services">(<xsl:value-of select="count(current-group())"/>)</span></h2>
+    <span class="count muted" title="{f:count(count(current-group()))} services">(<xsl:value-of select="f:count(count(current-group()))"/>)</span></h2>
   <div class="table-scroll" tabindex="0" role="group" aria-label="Services in {current-grouping-key()}"><sortable-table>
   <table class="basic-table" aria-label="Services in {current-grouping-key()}">
     <thead>
@@ -429,7 +429,7 @@
     <xsl:variable name="services" select="current-group()/parent::service"/>
     <h2 class="generator-title">
       <span><xsl:value-of select="tokenize(current-grouping-key(), '\.')[last()]"/><xsl:text> </xsl:text>
-        <span class="count muted" title="{count($services)} services">(<xsl:value-of select="count($services)"/>)</span>
+        <span class="count muted" title="{f:count(count($services))} services">(<xsl:value-of select="f:count(count($services))"/>)</span>
       </span>
       <span class="generator-package">
         <xsl:if test="f:generator-origin(current-grouping-key()) != ''"><span class="{f:origin-class(f:generator-origin(current-grouping-key()))}">[<xsl:value-of select="f:generator-origin(current-grouping-key())"/>]</span><xsl:text> · </xsl:text></xsl:if>
@@ -485,7 +485,7 @@
         <h2>
           <svg-icon name="caret-right" class="caret"/><xsl:text> </xsl:text>
           <xsl:value-of select="current-grouping-key()"/><xsl:text> </xsl:text>
-          <span class="count muted" title="{count(current-group())} services">(<xsl:value-of select="count(current-group())"/>)</span>
+          <span class="count muted" title="{f:count(count(current-group()))} services">(<xsl:value-of select="f:count(count(current-group()))"/>)</span>
         </h2>
       </summary>
       <ul class="no-bullet">

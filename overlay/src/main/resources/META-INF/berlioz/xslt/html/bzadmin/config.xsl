@@ -285,18 +285,18 @@
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Options configured'"/>
-      <xsl:with-param name="value" select="string(count($configured))"/>
-      <xsl:with-param name="detail" select="concat('of ', count($options), ' Berlioz options; the others use their default')"/>
+      <xsl:with-param name="value" select="f:count(count($configured))"/>
+      <xsl:with-param name="detail" select="concat('of ', f:count(count($options)), ' Berlioz options; the others use their default')"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Deprecated options'"/>
-      <xsl:with-param name="value" select="string(count($deprecated))"/>
+      <xsl:with-param name="value" select="f:count(count($deprecated))"/>
       <xsl:with-param name="detail" select="if ($deprecated) then string-join($deprecated/@property, ', ') else 'None configured'"/>
       <xsl:with-param name="warning" select="exists($deprecated)"/>
     </xsl:call-template>
     <xsl:call-template name="bzadmin-key-metric">
       <xsl:with-param name="label" select="'Other properties'"/>
-      <xsl:with-param name="value" select="string(count($others))"/>
+      <xsl:with-param name="value" select="f:count(count($others))"/>
     </xsl:call-template>
   </dl>
 </xsl:template>
@@ -689,9 +689,9 @@
           <tr>
             <th scope="row">Rules</th>
             <td>
-              <xsl:value-of select="@rules"/>
-              <xsl:if test="@ignored">, and <xsl:value-of select="@ignored"/> ignored</xsl:if>
-              <xsl:if test="@limit"> (the first <xsl:value-of select="@limit"/> of each listed)</xsl:if>
+              <xsl:value-of select="f:count(@rules)"/>
+              <xsl:if test="@ignored">, and <xsl:value-of select="f:count(@ignored)"/> ignored</xsl:if>
+              <xsl:if test="@limit"> (the first <xsl:value-of select="f:count(@limit)"/> of each listed)</xsl:if>
             </td>
           </tr>
         </xsl:if>
