@@ -28,6 +28,7 @@ final class LogsXsltTest {
     String html = page("bzadmin-logs", "files", "logs-files", "ok", FILES);
     assertTrue(html.contains("<form id=\"switch-logs\" action=\"/ctx/bzadmin/logs/raw.html\">"), html);
     assertTrue(html.contains("<select id=\"switch-logs-file\" class=\"input-group-field\" name=\"id\">"), "Opens the file without script");
+    assertTrue(html.contains("<button type=\"submit\" class=\"button\">Show<span class=\"visually-hidden\"> log file</span></button>"), "Names what it shows: " + html);
     assertTrue(html.contains("<option value=\"0123456789abcdef\">app.log (2 KB)</option>"), html);
     assertTrue(html.contains("<a href=\"/ctx/bzadmin/logs/raw.html?id=0123456789abcdef\" class=\"log-file-link\" data-id=\"0123456789abcdef\">app.log</a>"), html);
     assertTrue(html.contains("<td title=\"/var/log\">logs</td>"), html);
@@ -79,6 +80,9 @@ final class LogsXsltTest {
     assertTrue(recent.contains("<a href=\"/ctx/bzadmin/logs.html\" class=\"choice active\" aria-current=\"page\">Recent</a>"), recent);
     assertTrue(recent.contains("<a href=\"/ctx/bzadmin/logs.html?view=files\" class=\"choice\">Files</a>"), recent);
     assertTrue(recent.contains("set-threshold"), recent);
+    assertTrue(recent.contains("<label for=\"threshold-level\" class=\"input-group-label\">Capture threshold</label>"), "Labels the select: " + recent);
+    assertTrue(recent.contains("<select id=\"threshold-level\" class=\"input-group-field\" name=\"threshold\">"), recent);
+    assertTrue(recent.contains("Change<span class=\"visually-hidden\"> capture threshold</span></button>"), "Names what it changes: " + recent);
     assertFalse(recent.contains("switch-logs"), recent);
 
     String files = logsPage("bzadmin-logs", "files", RECENT, FILES);

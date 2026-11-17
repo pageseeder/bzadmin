@@ -290,7 +290,7 @@
         <xsl:apply-templates select="log-files" mode="bzadmin-logs-options"/>
       </select>
       <div class="input-group-button">
-        <input type="submit" class="button" value="Show"/>
+        <button type="submit" class="button">Show<span class="visually-hidden"> log file</span></button>
       </div>
     </div>
   </form>
@@ -518,8 +518,8 @@
     <div class="medium-4 columns text-right">
       <form id="set-threshold" action="{f:xml-url('/bzadmin/api/logs/recent/threshold')}" method="post">
         <div class="input-group">
-          <span class="input-group-label">Capture threshold</span>
-          <select class="input-group-field" name="threshold">
+          <label for="threshold-level" class="input-group-label">Capture threshold</label>
+          <select id="threshold-level" class="input-group-field" name="threshold">
             <xsl:variable name="threshold" select="@threshold"/>
             <xsl:variable name="labels" select="('Trace', 'Debug', 'Info (default)', 'Warnings', 'Errors only', 'Off')"/>
             <xsl:for-each select="$levels">
@@ -528,7 +528,7 @@
             </xsl:for-each>
           </select>
           <div class="input-group-button">
-            <input type="submit" value="Change" class="button alert"/>
+            <button type="submit" class="button alert">Change<span class="visually-hidden"> capture threshold</span></button>
           </div>
         </div>
       </form>
