@@ -768,14 +768,10 @@
 </xsl:function>
 
 <!-- Bytes in binary units, as the cache libraries write their limits (64 MB is 64 × 1024 × 1024 bytes) -->
+<!-- A size in bytes in decimal units (1 KB = 1000 bytes), as on the other pages (see f:size) -->
 <xsl:function name="f:cache-bytes" as="xs:string">
   <xsl:param name="bytes" as="xs:string?"/>
-  <xsl:variable name="n" select="number($bytes)"/>
-  <xsl:variable name="units" select="('KB', 'MB', 'GB', 'TB')"/>
-  <xsl:variable name="sizes" select="(1024, 1048576, 1073741824, 1099511627776)"/>
-  <xsl:variable name="power" select="count($sizes[. le $n])"/>
-  <xsl:sequence select="if ($power = 0) then concat(format-number($n, '0'), ' bytes')
-                        else concat(format-number($n div $sizes[$power], '0.#'), ' ', $units[$power])"/>
+  <xsl:sequence select="if ($bytes castable as xs:integer) then f:size($bytes) else ''"/>
 </xsl:function>
 
 <xsl:function name="f:cache-problem" as="xs:string">
