@@ -41,6 +41,9 @@ export function counterWindow(span = 60000) {
   };
 }
 
+// One decimal with thousands separators, like the counts formatted by the XSLT (`#,##0`)
+const RATE_FORMAT = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 /**
  * @param {number} count
  * @param {number} seconds
@@ -49,6 +52,6 @@ export function counterWindow(span = 60000) {
 export function formatRate(count, seconds) {
   const rate = count / seconds;
   if (count === 0) return 'None';
-  if (rate >= 1) return `${rate.toFixed(1)}/s`;
-  return `${(rate * 60).toFixed(1)}/min`;
+  if (rate >= 1) return `${RATE_FORMAT.format(rate)}/s`;
+  return `${RATE_FORMAT.format(rate * 60)}/min`;
 }

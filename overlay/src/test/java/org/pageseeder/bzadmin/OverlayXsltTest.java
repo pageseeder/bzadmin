@@ -110,6 +110,26 @@ final class OverlayXsltTest {
   }
 
   @Test
+  void formatsCacheCountsWithThousandsSeparators() throws Exception {
+    String xml = "<root service='bzadmin-cache-info' group='bzadmin'>"
+        + "<header><location path='/bzadmin/cache/info.html'/><path info='/bzadmin/cache/info' extension='.html'/></header>"
+        + "<content name='cache-info' target='main' status='ok'><cache-info provider='fixture' manager='main'>"
+        + "<cache name='pages' capabilities='statistics'><statistics entry-limit='10000'>"
+        + "<metric name='entries' value='1234'/><metric name='heap-entries' value='1234'/><metric name='heap-bytes' value='2500000'/>"
+        + "<metric name='average-get-time' value='0.0125' unit='ms'/></statistics>"
+        + "<tier type='heap' max-entries='10000'/></cache></cache-info></content></root>";
+    String html = OverlayXslt.transform(new StreamSource(new StringReader(xml)));
+    assertTrue(html.contains("<tr><th>Entries</th><td>1,234</td></tr>"), html);
+    assertTrue(html.contains("<td>2.5 MB</td>"), html);
+    assertTrue(html.contains("<td>12.5 µs</td>"), html);
+    assertTrue(html.contains("<tr><th>Entry limit</th><td>10,000"), html);
+    assertTrue(html.contains("<td>10,000 entries</td>"), html);
+    assertTrue(html.contains("<td>1,234</td></tr>"), html);
+    assertFalse(html.contains(">10000<"), html);
+    assertFalse(html.contains(">1234<"), html);
+  }
+
+  @Test
   void showsCacheActionsAfterTheKeyMetrics() throws Exception {
     String cache = "<cache name='pages' scope='local' capabilities='statistics entries clear'><statistics/></cache>";
     String info = "<root service='bzadmin-cache-info' group='bzadmin'>"

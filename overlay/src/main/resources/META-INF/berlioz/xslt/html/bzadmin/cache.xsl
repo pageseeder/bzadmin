@@ -119,7 +119,7 @@
             </xsl:choose>
           </td>
           <td><xsl:value-of select="if (@ratio) then f:cache-percent(@ratio) else '—'"/></td>
-          <td><xsl:sequence select="f:cache-zero-muted(@unsized)"/><xsl:value-of select="@unsized"/></td>
+          <td><xsl:sequence select="f:cache-zero-muted(@unsized)"/><xsl:value-of select="f:cache-count(number(@unsized))"/></td>
         </tr>
       </xsl:for-each>
     </tbody>
@@ -165,7 +165,7 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:if test="@truncated = 'true'">
-        <p class="muted">The first <xsl:value-of select="count(cache)"/> of <xsl:value-of select="@total"/> caches.</p>
+        <p class="muted">The first <xsl:value-of select="f:cache-count(count(cache))"/> of <xsl:value-of select="f:cache-count(number(@total))"/> caches.</p>
       </xsl:if>
       <xsl:variable name="metrics" select="('entries', 'hits', 'misses')"/>
       <div class="table-scroll" tabindex="0" role="group" aria-label="Caches in manager {@id}"><sortable-table>
@@ -280,10 +280,10 @@
     <tbody>
       <tr><th>Collection</th><td><xsl:value-of select="f:cache-statistics-status(.)"/></td></tr>
       <xsl:for-each select="metric">
-        <tr><th><xsl:value-of select="f:cache-metric-label(@name)"/></th><td><xsl:sequence select="f:cache-zero-muted(@value)"/><xsl:value-of select="if (@unit = 'ms') then f:cache-time(@value) else @value"/></td></tr>
+        <tr><th><xsl:value-of select="f:cache-metric-label(@name)"/></th><td><xsl:sequence select="f:cache-zero-muted(@value)"/><xsl:value-of select="f:cache-metric-value(.)"/></td></tr>
       </xsl:for-each>
       <xsl:if test="@entry-limit">
-        <tr><th>Entry limit</th><td><xsl:value-of select="@entry-limit"/>
+        <tr><th>Entry limit</th><td><xsl:value-of select="f:cache-count(number(@entry-limit))"/>
           <xsl:if test="@fill-ratio"> (<xsl:value-of select="f:cache-percent(@fill-ratio)"/> full)</xsl:if></td></tr>
       </xsl:if>
       <xsl:if test="@hit-ratio">
@@ -345,7 +345,7 @@
     </p>
   </xsl:for-each>
   <xsl:if test="../warning/@code = ('low-hit-ratio', 'high-eviction', 'high-expiration')">
-    <p class="muted"><small>Statistics warnings come from the counts of the library, after at least 1000 requests or puts; evictions and expirations only when the hit ratio is below 80%.
+    <p class="muted"><small>Statistics warnings come from the counts of the library, after at least 1,000 requests or puts; evictions and expirations only when the hit ratio is below 80%.
       Check the recent activity: the counts may cover a long period.</small></p>
   </xsl:if>
   <xsl:if test="../warning/@code = ('heap-over-allocated', 'off-heap-over-allocated', 'disk-over-allocated')">
@@ -370,14 +370,14 @@
           </td>
           <td>
             <xsl:choose>
-              <xsl:when test="@max-entries"><xsl:value-of select="@max-entries"/> entries</xsl:when>
+              <xsl:when test="@max-entries"><xsl:value-of select="f:cache-count(number(@max-entries))"/> entries</xsl:when>
               <xsl:when test="@max-bytes"><xsl:value-of select="f:cache-bytes(@max-bytes)"/></xsl:when>
-              <xsl:when test="@max-weight"><xsl:value-of select="@max-weight"/> <small class="muted"> (weight, in the unit of the weigher)</small></xsl:when>
+              <xsl:when test="@max-weight"><xsl:value-of select="f:cache-count(number(@max-weight))"/> <small class="muted"> (weight, in the unit of the weigher)</small></xsl:when>
               <xsl:when test="@pooled = 'true'">A pool of the manager</xsl:when>
               <xsl:otherwise><strong>No limit</strong></xsl:otherwise>
             </xsl:choose>
           </td>
-          <td><xsl:sequence select="f:cache-zero-muted($entries/@value)"/><xsl:value-of select="if ($entries) then $entries/@value else '—'"/></td>
+          <td><xsl:sequence select="f:cache-zero-muted($entries/@value)"/><xsl:value-of select="if ($entries) then f:cache-count(number($entries/@value)) else '—'"/></td>
         </tr>
       </xsl:for-each>
     </tbody>
@@ -553,7 +553,7 @@
     <h3>Keys</h3>
     <xsl:choose>
       <xsl:when test="not(entries/entry) and not(entries/unsupported-keys)">
-        <p><i>No key<xsl:if test="$offset gt 0"> from position <xsl:value-of select="$offset + 1"/></xsl:if>.</i></p>
+        <p><i>No key<xsl:if test="$offset gt 0"> from position <xsl:value-of select="f:cache-count($offset + 1)"/></xsl:if>.</i></p>
       </xsl:when>
       <xsl:otherwise>
         <div class="table-scroll" tabindex="0" role="group" aria-label="Cache keys"><sortable-table>
@@ -581,7 +581,7 @@
         <xsl:if test="entries/unsupported-keys">
           <p class="muted">Keys of other types (not shown, cannot be removed here):
             <xsl:for-each select="entries/unsupported-keys">
-              <code><xsl:value-of select="@class"/></code> × <xsl:value-of select="@count"/><xsl:if test="position() != last()">, </xsl:if>
+              <code><xsl:value-of select="@class"/></code> × <xsl:value-of select="f:cache-count(number(@count))"/><xsl:if test="position() != last()">, </xsl:if>
             </xsl:for-each>
           </p>
         </xsl:if>
@@ -592,14 +592,14 @@
         <a href="{f:to-path('/bzadmin/cache/entries')}{$query}&amp;offset={max(($offset - $limit, 0))}&amp;limit={$limit}"><svg-icon name="angle-left"/> Previous</a>
       </xsl:if>
       <xsl:if test="xs:integer(entries/@scanned) gt $offset">
-        <span>Positions <xsl:value-of select="$offset + 1"/>–<xsl:value-of select="entries/@scanned"/></span>
+        <span>Positions <xsl:value-of select="f:cache-count($offset + 1)"/>–<xsl:value-of select="f:cache-count(number(entries/@scanned))"/></span>
       </xsl:if>
       <xsl:choose>
         <xsl:when test="entries/@more = 'true' and xs:integer(entries/@scanned) lt xs:integer(entries/@max-scan)">
           <a href="{f:to-path('/bzadmin/cache/entries')}{$query}&amp;offset={$offset + $limit}&amp;limit={$limit}">Next <svg-icon name="angle-right"/></a>
         </xsl:when>
         <xsl:when test="entries/@more = 'true'">
-          <span class="muted">Only the first <xsl:value-of select="entries/@max-scan"/> keys can be listed.</span>
+          <span class="muted">Only the first <xsl:value-of select="f:cache-count(number(entries/@max-scan))"/> keys can be listed.</span>
         </xsl:when>
       </xsl:choose>
     </nav>
@@ -689,7 +689,7 @@
   <xsl:param name="name" as="xs:string"/>
   <xsl:variable name="metric" select="$statistics/metric[@name = $name]"/>
   <xsl:choose>
-    <xsl:when test="$metric"><td data-sort="{$metric/@value}"><xsl:sequence select="f:cache-zero-muted($metric/@value)"/><xsl:value-of select="$metric/@value"/></td></xsl:when>
+    <xsl:when test="$metric"><td data-sort="{$metric/@value}"><xsl:sequence select="f:cache-zero-muted($metric/@value)"/><xsl:value-of select="f:cache-count(number($metric/@value))"/></td></xsl:when>
     <xsl:otherwise><td class="muted" data-sort="-1" title="Not available"><span role="img" aria-label="Not available">—</span></td></xsl:otherwise>
   </xsl:choose>
 </xsl:function>
@@ -704,6 +704,14 @@
 <xsl:function name="f:cache-count" as="xs:string">
   <xsl:param name="count" as="xs:double"/>
   <xsl:sequence select="format-number($count, '#,##0')"/>
+</xsl:function>
+
+<!-- A metric as shown: a time in its unit, a size in bytes, otherwise a count -->
+<xsl:function name="f:cache-metric-value" as="xs:string">
+  <xsl:param name="metric" as="element(metric)"/>
+  <xsl:sequence select="if ($metric/@unit = 'ms') then f:cache-time($metric/@value)
+                        else if (ends-with($metric/@name, '-bytes')) then f:cache-bytes($metric/@value)
+                        else f:cache-count(number($metric/@value))"/>
 </xsl:function>
 
 <!-- Without `enabled`, statistics are always on if they cannot be toggled, otherwise not reported -->

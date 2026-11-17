@@ -40,4 +40,5 @@ test('formats rates per second or per minute', () => {
   assert.equal(formatRate(0, 60), 'None');
   assert.equal(formatRate(120, 60), '2.0/s');
   assert.equal(formatRate(3, 60), '3.0/min');
+  assert.equal(formatRate(75000, 60), '1,250.0/s');
 });

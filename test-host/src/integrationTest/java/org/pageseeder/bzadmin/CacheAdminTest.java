@@ -127,12 +127,12 @@ final class CacheAdminTest {
     assertFalse(ehcache.contains("toggle-statistics"), "EHCache 2.11 statistics are always collected");
     assertTrue(ehcache.contains("Always on"), ehcache);
     assertFalse(ehcache.contains("Reset statistics"), "EHCache 2 statistics are never reset");
-    assertTrue(ehcache.contains("Entry limit</th><td>1000"), ehcache);
+    assertTrue(ehcache.contains("Entry limit</th><td>1,000"), ehcache);
     // The key metrics: the entries against the entry limit, and the hit ratio
     assertTrue(ehcache.matches("(?s).*<dl class=\"key-metrics\"><div class=\"key-metric\"><dt><span id=\"[^\"]+\">Entries</span></dt>.*"), ehcache);
     assertTrue(ehcache.matches("(?s).*<meter min=\"0\" max=\"1\" high=\"0.9\" optimum=\"0\" value=\"[0-9.E-]+\" aria-labelledby=\"[^\"]+\"></meter></dd><dd class=\"key-metric-detail\">of 1,000 \\(.*"), ehcache);
     assertTrue(ehcache.contains("<h3>Storage tiers</h3>"), ehcache);
-    assertTrue(ehcache.contains("1000 entries"), ehcache);
+    assertTrue(ehcache.contains("1,000 entries"), ehcache);
     assertTrue(html.contains("No limit"), "The Caffeine cache has no maximum");
     assertTrue(html.contains("Unbounded: </strong>"), html);
     // The recent activity, in its own panel, reads the XML of the same cache, from the handler (no envelope)

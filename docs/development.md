@@ -99,6 +99,8 @@ retaining the hover hint without relying on it for the accessible name.
 Table headings are left-aligned (`.basic-table thead th` in `components.css`); a column of numbers is
 right-aligned, its heading too, with `class="number"` on its heading and cells (or a column rule of its
 table where the cells already use `class`, such as the cache tables), and its sort icon just before the heading.
+Counts of the Cache pages have thousands separators (`f:cache-count`, `#,##0`), as do the rates of their recent
+activity (`formatRate`); configuration values are shown as the library gives them.
 The cache capacity table explains “Not sized in bytes” through a heading information
 button and popover rather than a tooltip. Cache manager status icons use `role="img"`
 and a status-specific accessible label, retaining the hover hint. Cache statistics explain
