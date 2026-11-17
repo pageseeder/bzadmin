@@ -69,7 +69,7 @@ final class MetadataXsltTest {
         + "<dd class=\"key-metric-detail\">of 21 Berlioz options; the others use their default</dd>"), html);
     assertTrue(html.contains("<div class=\"key-metric warning\"><dt>Deprecated options</dt><dd class=\"key-metric-value\">1</dd>"
         + "<dd class=\"key-metric-detail\">berlioz.xml.header.version</dd>"), html);
-    assertTrue(html.contains("<span class=\"tag warning\" title=\"Deprecated since Berlioz 0.14.0: removed in Berlioz 1.0\">deprecated</span>"), html);
+    assertTrue(html.contains("<span class=\"tag warning\">deprecated</span> <span class=\"tag-note\">Since Berlioz 0.14.0, removed in Berlioz 1.0.</span>"), html);
     assertFalse(html.contains("Set to default"), html);
     assertTrue(html.contains("<dt>Other properties</dt><dd class=\"key-metric-value\">4</dd></div>"), "fixture.* and berlioz.admin.role.*: " + html);
     assertFalse(render(deployment(fixture("config.xml"))).contains("key-metrics"), "Only for the global properties");
@@ -77,7 +77,7 @@ final class MetadataXsltTest {
 
   @Test
   void marksOptionsConfiguredWithTheirDefault() throws Exception {
-    String sameAsDefault = " <span class=\"tag\" title=\"Configured with the default value: the property can be removed\">same as default</span>";
+    String sameAsDefault = " <span class=\"tag\">same as default</span> <span class=\"tag-note\">The property can be removed.</span>";
     String html = render(fixture("config.xml"));
     assertTrue(valueCell(html, "berlioz.xml.header.version").endsWith("<code>1.0</code>" + sameAsDefault), "Same string as the default");
     assertFalse(valueCell(html, "berlioz.errors.handle").contains("same as default"), "Different boolean");
@@ -135,12 +135,14 @@ final class MetadataXsltTest {
             "requires-control=\"true\" xslt-cache=\"no\"><stylesheet allocation=\"identity\"/>");
     String html = render(deployment(xml));
     assertTrue(html.contains("<li>bzadmin: classpath <code>classpath:xslt/html/bzadmin.xsl</code></li>"), "Selected stylesheet");
-    assertTrue(html.contains(">BerliozSource <span class=\"tag\" title=\"Only serves requests authorised for Berlioz control; others receive a 404\">requires control</span>"), html);
-    assertTrue(html.contains(">BerliozJSON <span class=\"tag\" title=\"Registered, but not requested yet\">not initialised</span></th><td><code>*.json</code></td>"), html);
+    assertTrue(html.contains(">BerliozSource <span class=\"tag\">requires control</span></th>"), html);
+    assertTrue(html.contains(" A servlet that requires control only serves requests authorised for Berlioz control; others receive a 404.</p>"), html);
+    assertTrue(html.contains(">BerliozJSON <span class=\"tag\">not initialised</span></th><td><code>*.json</code></td>"
+        + "<td colspan=\"4\" class=\"muted\">Not requested yet: known after its first request</td>"), html);
     assertTrue(html.indexOf(">BerliozSource ") < html.indexOf(">BerliozJSON "), "Initialised servlets first");
     assertFalse(html.contains("<h2>Runtime</h2>"), "Runtime components are on the Application page");
     String captured = render(deployment(fixture("config.xml")));
-    assertFalse(captured.contains("requires control</span>"), "Not required by the test host");
+    assertFalse(captured.contains("requires control"), "Not required by the test host");
   }
 
   @Test

@@ -197,16 +197,16 @@
           <th scope="row" data-sort="{@property}">
             <xsl:value-of select="@property"/>
             <xsl:call-template name="config-info"><xsl:with-param name="name" select="@property"/><xsl:with-param name="description" select="@description"/></xsl:call-template>
-            <xsl:if test="@deprecated"><xsl:text> </xsl:text><span class="tag warning" title="Deprecated since Berlioz {@deprecated}{if (@removal) then concat(': removed in Berlioz ', @removal) else ''}">deprecated</span></xsl:if>
+            <xsl:if test="@deprecated"><xsl:text> </xsl:text><span class="tag warning">deprecated</span><xsl:text> </xsl:text><span class="tag-note">Since Berlioz <xsl:value-of select="@deprecated"/><xsl:if test="@removal">, removed in Berlioz <xsl:value-of select="@removal"/></xsl:if>.</span></xsl:if>
           </th>
           <td data-sort="{if ($configured) then $configured/@value else ''}">
             <xsl:choose>
               <xsl:when test="$configured">
                 <code><xsl:sequence select="f:redacted($configured/@value)"/></code>
-                <xsl:if test="f:config-is-default(., $configured/@value)"><xsl:text> </xsl:text><span class="tag" title="Configured with the default value: the property can be removed">same as default</span></xsl:if>
+                <xsl:if test="f:config-is-default(., $configured/@value)"><xsl:text> </xsl:text><span class="tag">same as default</span><xsl:text> </xsl:text><span class="tag-note">The property can be removed.</span></xsl:if>
               </xsl:when>
               <xsl:otherwise>
-                <span class="tag" title="Not configured: Berlioz uses the default">default</span>
+                <span class="tag">default</span>
                 <xsl:text> </xsl:text>
                 <code class="muted"><xsl:value-of select="if (@default = '') then '(empty)' else @default"/></code>
               </xsl:otherwise>
@@ -341,7 +341,7 @@
 <xsl:template match="content[@name='berlioz-config']" mode="bzadmin-config">
 <div class="panel">
   <h2>Servlets</h2>
-  <p>The Berlioz servlets of the application. A servlet that is not loaded on startup is initialised by its first request: until then, only its mappings are known. Stylesheets are selected on first use, so a group or service is only listed once requested.</p>
+  <p>The Berlioz servlets of the application. A servlet that is not loaded on startup is initialised by its first request: until then, only its mappings are known. Stylesheets are selected on first use, so a group or service is only listed once requested.<xsl:if test="berlioz-config/servlet/@requires-control = 'true'"> A servlet that requires control only serves requests authorised for Berlioz control; others receive a 404.</xsl:if></p>
   <xsl:choose>
     <xsl:when test="berlioz-config/servlet">
       <div class="table-scroll" tabindex="0" role="group" aria-label="Servlets"><sortable-table>
@@ -360,7 +360,7 @@
         <xsl:for-each select="berlioz-config/servlet[not(@initialised = 'false')]">
           <xsl:sort select="@name"/>
           <tr>
-            <th scope="row" data-sort="{@name}"><xsl:value-of select="@name"/><xsl:if test="@requires-control = 'true'"><xsl:text> </xsl:text><span class="tag" title="Only serves requests authorised for Berlioz control; others receive a 404">requires control</span></xsl:if></th>
+            <th scope="row" data-sort="{@name}"><xsl:value-of select="@name"/><xsl:if test="@requires-control = 'true'"><xsl:text> </xsl:text><span class="tag">requires control</span></xsl:if></th>
             <td><code><xsl:value-of select="@mappings"/></code></td>
             <td><xsl:value-of select="@media-type"/><xsl:if test="@charset">; charset=<xsl:value-of select="@charset"/></xsl:if></td>
             <td><code><xsl:value-of select="@cache-control"/></code></td>
@@ -383,9 +383,9 @@
         <xsl:for-each select="berlioz-config/servlet[@initialised = 'false']">
           <xsl:sort select="@name"/>
           <tr>
-            <th scope="row" data-sort="{@name}"><xsl:value-of select="@name"/><xsl:text> </xsl:text><span class="tag" title="Registered, but not requested yet">not initialised</span></th>
+            <th scope="row" data-sort="{@name}"><xsl:value-of select="@name"/><xsl:text> </xsl:text><span class="tag">not initialised</span></th>
             <td><code><xsl:value-of select="@mappings"/></code></td>
-            <td colspan="4" class="muted">Known after its first request</td>
+            <td colspan="4" class="muted">Not requested yet: known after its first request</td>
           </tr>
         </xsl:for-each>
         </tbody>
@@ -711,6 +711,7 @@
         <tbody>
           <xsl:for-each select="rule">
             <tr>
+              <xsl:if test="@position"><xsl:attribute name="id" select="f:redirect-rule-id(.)"/></xsl:if>
               <td class="number"><xsl:value-of select="@position"/></td>
               <td><code><xsl:sequence select="f:redirect-uri(@from)"/></code></td>
               <td><code><xsl:sequence select="f:redirect-uri(@to)"/></code></td>
@@ -756,20 +757,54 @@
   </xsl:choose>
 </xsl:template>
 
-<!-- A warning of a rule -->
+<!-- The id of the row of a rule, unique on the page -->
+<xsl:function name="f:redirect-rule-id" as="xs:string">
+  <xsl:param name="rule" as="element(rule)"/>
+  <xsl:variable name="filter" select="$rule/.."/>
+  <xsl:sequence select="concat('rule-', $filter/@type, '-', count($filter/preceding-sibling::filter[@type = $filter/@type]) + 1, '-', $rule/@position)"/>
+</xsl:function>
+
+<!--
+  A warning of a rule, on its own line under the effect or a previous warning: a short tag, then what
+  it means as visible text (not a tooltip, which keyboard and touch users cannot reach)
+-->
 <xsl:template match="warning" mode="redirect-warning">
-  <!-- On its own line under the effect or a previous warning; an ignored rule has no effect -->
-  <xsl:if test="../@effect != '' or preceding-sibling::warning"><br/></xsl:if>
-  <span class="tag warning">
-    <xsl:choose>
-      <xsl:when test="@code = 'ignored-rule'"><xsl:attribute name="title" select="concat(if (starts-with(@reason, 'missing')) then 'A pattern is missing' else 'A pattern does not parse', ': Berlioz ignores this rule')"/>ignored</xsl:when>
-      <xsl:when test="@code = 'duplicate-from'"><xsl:attribute name="title">Rule <xsl:value-of select="@position"/> has the same pattern and applies first</xsl:attribute>same as #<xsl:value-of select="@position"/></xsl:when>
-      <xsl:when test="@code = 'redirect-chain'"><xsl:attribute name="title" select="concat('The filter redirects the target again', if (@position) then concat(', with rule ', @position) else '', ': the browser makes one more request')"/><xsl:value-of select="if (@position) then concat('redirected again by #', @position) else 'redirected again'"/></xsl:when>
-      <xsl:when test="@code = 'redirect-loop'"><xsl:attribute name="title" select="concat('Following the redirects', if (@position) then concat(' from rule ', @position) else '', ' comes back to a rule already followed: the browser stops with a too many redirects error, and keeps following them for a day after a fix')"/><xsl:value-of select="if (@position) then concat('redirect loop via #', @position) else 'redirect loop'"/></xsl:when>
-      <xsl:when test="@code = 'forwards-to-admin'"><xsl:attribute name="title">Container security constraints do not apply to forwards, and AdminFilter checks them only when mapped with FORWARD: the admin page is denied</xsl:attribute>forwards to admin</xsl:when>
-      <xsl:otherwise><xsl:value-of select="@code"/></xsl:otherwise>
-    </xsl:choose>
-  </span>
+  <div class="redirect-warning">
+    <span class="tag warning">
+      <xsl:choose>
+        <xsl:when test="@code = 'ignored-rule'">ignored</xsl:when>
+        <xsl:when test="@code = 'duplicate-from'">same as #<xsl:value-of select="@position"/></xsl:when>
+        <xsl:when test="@code = 'redirect-chain'"><xsl:value-of select="if (@position) then concat('redirected again by #', @position) else 'redirected again'"/></xsl:when>
+        <xsl:when test="@code = 'redirect-loop'"><xsl:value-of select="if (@position) then concat('redirect loop via #', @position) else 'redirect loop'"/></xsl:when>
+        <xsl:when test="@code = 'forwards-to-admin'">forwards to admin</xsl:when>
+        <xsl:otherwise><xsl:value-of select="@code"/></xsl:otherwise>
+      </xsl:choose>
+    </span>
+    <xsl:variable name="note" as="node()*">
+      <xsl:choose>
+        <xsl:when test="@code = 'ignored-rule'"><xsl:value-of select="if (starts-with(@reason, 'missing')) then 'A pattern is missing' else 'A pattern does not parse'"/>: Berlioz ignores this rule.</xsl:when>
+        <xsl:when test="@code = 'duplicate-from'"><xsl:apply-templates select="@position" mode="redirect-rule-link"><xsl:with-param name="first" select="true()"/></xsl:apply-templates> has the same pattern and applies first.</xsl:when>
+        <xsl:when test="@code = 'redirect-chain'">The filter redirects the target again<xsl:if test="@position">, with <xsl:apply-templates select="@position" mode="redirect-rule-link"/></xsl:if>: the browser makes one more request.</xsl:when>
+        <xsl:when test="@code = 'redirect-loop'">Following the redirects<xsl:if test="@position"> from <xsl:apply-templates select="@position" mode="redirect-rule-link"/></xsl:if> comes back to a rule already followed: the browser stops with a too many redirects error, and keeps following them for a day after a fix.</xsl:when>
+        <xsl:when test="@code = 'forwards-to-admin'">The admin page is denied: container security constraints do not apply to forwards, and <code>AdminFilter</code> checks them only when mapped with <code>FORWARD</code>.</xsl:when>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:if test="exists($note)">
+      <xsl:text> </xsl:text>
+      <span class="tag-note"><xsl:sequence select="$note"/></span>
+    </xsl:if>
+  </div>
+</xsl:template>
+
+<!-- A rule named by a warning, linked to its row when the table lists it -->
+<xsl:template match="warning/@position" mode="redirect-rule-link">
+  <xsl:param name="first" select="false()" as="xs:boolean"/>
+  <xsl:variable name="label" select="concat(if ($first) then 'Rule ' else 'rule ', .)"/>
+  <xsl:variable name="rule" select="../../../rule[@position = current()]"/>
+  <xsl:choose>
+    <xsl:when test="$rule"><a href="#{f:redirect-rule-id($rule[1])}"><xsl:value-of select="$label"/></a></xsl:when>
+    <xsl:otherwise><xsl:value-of select="$label"/></xsl:otherwise>
+  </xsl:choose>
 </xsl:template>
 
 </xsl:stylesheet>

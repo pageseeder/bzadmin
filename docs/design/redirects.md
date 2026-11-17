@@ -189,7 +189,9 @@ a table of rules as a panel of its own, with left-aligned column headings (posit
 and warnings), following the existing table and status styles. URI template tokens (`{path}`) are in
 bold blue and redacted parts (`[REDACTED]`) in bold red. The empty state, when neither filter is
 mapped, explains the two filters. Long patterns wrap anywhere, leaving the effect column its width;
-the table scrolls horizontally on narrow screens.
+the table scrolls horizontally on narrow screens. Each warning is a short tag followed by what it
+means as visible text, not a tooltip, so that keyboard and touch users can read it; a rule that it
+names links to that rule's row when the table lists it.
 
 ## Non-goals
 

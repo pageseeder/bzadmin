@@ -35,6 +35,18 @@
     code {
       overflow-wrap: anywhere;
     }
+    /* A rule linked from a warning */
+    tr:target > * {
+      background: var(--surface-selected);
+    }
+  }
+  /* Each warning on its own line; its explanation wraps, giving the effect column a readable width */
+  .redirect-warning {
+    min-width: 18rem;
+    white-space: normal;
+  }
+  .redirect-warning + .redirect-warning {
+    margin-top: var(--space-2);
   }
   .redirect-token {
     color: var(--accent);

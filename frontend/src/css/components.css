@@ -508,6 +508,13 @@ svg-icon {
   }
 }
 
+/* What a tag means, as visible text next to it rather than a tooltip */
+.tag-note {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
 /* Highlighted XML source */
 xml-source {
   display: block;

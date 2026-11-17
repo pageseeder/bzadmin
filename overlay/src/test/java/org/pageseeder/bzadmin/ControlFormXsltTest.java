@@ -147,11 +147,18 @@ final class ControlFormXsltTest {
         + "<rule position='1' from='/a' to='/b' effect='302'><warning code='redirect-chain' position='2'/><warning code='duplicate-from' position='3'/></rule>"
         + "<rule position='2' from='/c/{!x}' to='/d'><warning code='ignored-rule' reason='invalid-from'/></rule>"
         + "</filter></redirect-filters></content>", "true", "manual", "", "?view=redirects");
-    // Each warning on its own line under the effect
-    assertTrue(html.contains("302 temporary<br><span class=\"tag warning\""), html);
-    assertTrue(html.contains(">redirected again by #2</span><br><span class=\"tag warning\""), html);
+    // Each warning on its own line under the effect, with what it means as visible text
+    assertTrue(html.contains("302 temporary<div class=\"redirect-warning\"><span class=\"tag warning\">redirected again by #2</span>"
+        + " <span class=\"tag-note\">The filter redirects the target again, with <a href=\"#rule-redirect-1-2\">rule 2</a>:"
+        + " the browser makes one more request.</span></div><div class=\"redirect-warning\">"), html);
+    // A rule that the table does not list is named without a link
+    assertTrue(html.contains("<span class=\"tag warning\">same as #3</span> <span class=\"tag-note\">Rule 3 has the same pattern and applies first.</span>"), html);
+    assertTrue(html.contains("<tr id=\"rule-redirect-1-2\">"), html);
+    String rules = html.substring(html.indexOf("<table class=\"basic-table redirect-rules"), html.lastIndexOf("</table>"));
+    assertFalse(rules.contains("title=\""), "No tooltip: " + rules);
     // An ignored rule has no effect: its warning starts the cell, without an empty line
-    assertTrue(html.contains("<td><span class=\"tag warning\" title=\"A pattern does not parse: Berlioz ignores this rule\">ignored</span>"), html);
+    assertTrue(html.contains("<td><div class=\"redirect-warning\"><span class=\"tag warning\">ignored</span>"
+        + " <span class=\"tag-note\">A pattern does not parse: Berlioz ignores this rule.</span></div></td>"), html);
   }
 
   @Test
