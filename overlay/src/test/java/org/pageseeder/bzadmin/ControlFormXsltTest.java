@@ -154,6 +154,22 @@ final class ControlFormXsltTest {
     assertTrue(html.contains("<td><span class=\"tag warning\" title=\"A pattern does not parse: Berlioz ignores this rule\">ignored</span>"), html);
   }
 
+  @Test
+  void namesAFilterOnlyWhenItsNameIsNotItsClassName() throws Exception {
+    String html = render("bzadmin-config", "<content generator='org.pageseeder.berlioz.generator.GetGlobalConfig' name='global-config'"
+        + " target='main' status='ok'><properties/></content>"
+        + "<content generator='org.pageseeder.bzadmin.redirect.GetRedirectFilters' name='redirect-filters' target='main' status='ok'>"
+        + "<redirect-filters><filter type='redirect' name='RedirectFilter' status='loaded'/>"
+        + "<filter type='redirect' name='permanent' status='loaded'/>"
+        + "<filter type='relocation' name='RelocationFilter' status='loaded'/></redirect-filters></content>",
+        "true", "manual", "", "?view=redirects");
+    assertTrue(html.contains("<h2>Redirects (RedirectFilter)</h2>"), html);
+    assertTrue(html.contains("<h2>Redirects (RedirectFilter): permanent</h2>"), html);
+    assertTrue(html.contains("<h2>Forwards (RelocationFilter)</h2>"), html);
+    assertFalse(html.contains(": RedirectFilter"), html);
+    assertFalse(html.contains(": RelocationFilter"), html);
+  }
+
   private static String renderRedirects(String authorized, String status) throws Exception {
     return render("bzadmin-config", "<content generator='org.pageseeder.berlioz.generator.GetGlobalConfig' name='global-config'"
         + " target='main' status='ok'><properties/></content>"

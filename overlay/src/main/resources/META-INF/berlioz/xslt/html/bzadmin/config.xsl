@@ -629,10 +629,16 @@
   </xsl:choose>
 </xsl:template>
 
+<!-- The simple class name of a filter type -->
+<xsl:function name="f:redirect-class" as="xs:string">
+  <xsl:param name="type" as="xs:string"/>
+  <xsl:sequence select="if ($type = 'relocation') then 'RelocationFilter' else 'RedirectFilter'"/>
+</xsl:function>
+
 <!-- The label of a filter type -->
 <xsl:function name="f:redirect-type" as="xs:string">
   <xsl:param name="type" as="xs:string"/>
-  <xsl:sequence select="if ($type = 'relocation') then 'Forwards (RelocationFilter)' else 'Redirects (RedirectFilter)'"/>
+  <xsl:sequence select="concat(if ($type = 'relocation') then 'Forwards' else 'Redirects', ' (', f:redirect-class($type), ')')"/>
 </xsl:function>
 
 <!-- A type of filter that the application does not map -->
@@ -645,9 +651,10 @@
   </section>
 </xsl:template>
 
-<!-- A registration of a filter -->
+<!-- A registration of a filter, named after the type only when its name repeats the class name -->
 <xsl:template match="filter" mode="bzadmin-config">
-  <xsl:variable name="label" select="concat(f:redirect-type(@type), ': ', @name)"/>
+  <xsl:variable name="label" select="if (normalize-space(@name) = ('', f:redirect-class(@type))) then f:redirect-type(@type)
+                                     else concat(f:redirect-type(@type), ': ', @name)"/>
   <section>
   <h2><xsl:value-of select="$label"/></h2>
   <div class="panel">

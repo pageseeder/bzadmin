@@ -181,7 +181,9 @@ Field-level schemas and compatibility notes are in the [metadata contract](metad
 
 ## Presentation
 
-The Config page has a Redirects tab next to the existing views. Each registration has a heading, above
+The Config page has a Redirects tab next to the existing views. Each registration has a heading, the
+type and class of the filter followed by its name unless the name is the class name
+(`Redirects (RedirectFilter): permanent`, but `Redirects (RedirectFilter)`), above
 a panel with its status and what it means, the configuration, mappings, load time and rule count, then
 a table of rules as a panel of its own, with left-aligned column headings (position, from, to, effect
 and warnings), following the existing table and status styles. URI template tokens (`{path}`) are in
