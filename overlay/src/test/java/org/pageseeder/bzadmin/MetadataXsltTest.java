@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 import javax.xml.transform.stream.StreamSource;
 
@@ -261,6 +262,9 @@ final class MetadataXsltTest {
       String html = render(services.replace("<http-parameters/>", "<http-parameters><parameter name=\"group-by\">" + view + "</parameter></http-parameters>"));
       assertTrue(html.contains("class=\"choice active\" aria-current=\"page\">" + (view.equals("tree") ? "Tree" : "Generators")), view);
       assertTrue(html.contains("org.pageseeder.berlioz.generator.ListRuntimeServices") || html.contains("ListRuntimeServices"), view);
+      // The tags of a service in its row, as in the Services view (the dialog title leaves out 'direct')
+      assertTrue(Pattern.compile("fixture-direct (<i class=\"method\">\\[get\\]</i> )?<span class=\"tag\" title=\"Returns the output of its generator directly, without a Berlioz envelope\">direct</span>")
+          .matcher(html).find(), view + ": " + html);
     }
   }
 

@@ -442,7 +442,8 @@
       <xsl:for-each select="$services">
       <tr>
         <td><xsl:value-of select="@group"/></td>
-        <td><xsl:value-of select="@id"/></td>
+        <!-- With its tags, as in the other views: the dialog title leaves out 'direct' -->
+        <td><xsl:value-of select="@id"/><xsl:apply-templates select="." mode="bzadmin-service-tags"/></td>
         <td>
         <xsl:for-each select="url">
           <div class="url-pattern-row"><code class="url-pattern"><xsl:sequence select="f:pretty-pattern(@pattern)"/></code></div>

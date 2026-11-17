@@ -95,8 +95,12 @@ final class BerliozMetadataTest {
     assertTrue(deployment.contains("<h2>Servlets</h2>") && deployment.contains("BerliozHTML") && deployment.contains("BerliozSource"), "Servlets");
     assertTrue(deployment.contains("<h2>Error handler</h2>") && deployment.contains("ErrorHandlerServlet"), "Error handler");
     assertFalse(deployment.contains("<h2>Berlioz options</h2>"), "Properties in their own tab");
-    assertTrue(deployment.contains("<th scope=\"row\">XSLT processor</th><td>SAXON HE 12."), "Processor of Berlioz 0.14.5");
-    assertTrue(deployment.contains("<th scope=\"row\">Servlet container</th><td>" + Container.product()), "Container of Berlioz 0.14.5");
+    // The XSLT processor and the servlet container (Berlioz 0.14.5) are on the Application page
+    assertFalse(deployment.contains("XSLT processor"), "Processor on the Application page");
+    String application = host.get("/bzadmin/application.html").body();
+    assertTrue(application.contains("<tr data-component=\"xslt\"><th>XSLT processor</th><td>SAXON HE 12."), "Processor of Berlioz 0.14.5");
+    assertTrue(application.contains("<tr data-component=\"container\"><th>Servlet container</th><td><span class=\"muted\">" + Container.product()),
+        "Container of Berlioz 0.14.5");
   }
 
   // Services ------------------------------------------------------------------------------------
@@ -164,7 +168,7 @@ final class BerliozMetadataTest {
     assertEquals(dialogs.size(), new HashSet<>(dialogs).size(), "Unique dialog ids");
     Set<String> targets = new HashSet<>(matches(html, "commandfor=\"([^\"]+)\""));
     assertTrue(dialogs.containsAll(targets), "Every button opens a dialog");
-    assertEquals(2, matches(html, "<h2 class=\"dialog-title\" id=\"([^\"]+)\">fixture-echo \\[").size(), "One dialog per method");
+    assertEquals(2, matches(html, "<h2 id=\"([^\"]+)\" class=\"dialog-title\">fixture-echo \\[").size(), "One dialog per method");
     assertTrue(html.contains(">direct</span>") && html.contains(">fixture-flag</span>"));
     if (view.isEmpty()) assertTrue(html.contains("<h2>bzadmin services"), "JAR services listed");
   }
