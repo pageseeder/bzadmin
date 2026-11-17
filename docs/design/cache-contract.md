@@ -159,7 +159,9 @@ the overlay supports them. An operation without the capability is 501 (`unsuppor
 ## Configuration
 
 Name/value text, display only (`configuration` capability); names are the library's own, so a developer can
-match them with the library's documentation and the host's configuration files.
+match them with the library's documentation and the host's configuration files. The page follows a duration (the
+seconds of an EHCache 2 `…Seconds` property, an ISO 8601 duration such as Caffeine's `PT48H`) with the same in
+days, hours, minutes and seconds (`172800 (2 days)`); XML and JSON have the reported value only.
 
 - **Effective configuration** of the cache, as the library reports it at run time (current: limits per tier,
   expiry, eviction policy, persistence, transactions, replication for EHCache 2; types, store-by-value,

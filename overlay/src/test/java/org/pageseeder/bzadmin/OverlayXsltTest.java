@@ -130,6 +130,26 @@ final class OverlayXsltTest {
   }
 
   @Test
+  void showsCacheDurationsWithTheirValueInReadableUnits() throws Exception {
+    String xml = "<root service='bzadmin-cache-info' group='bzadmin'>"
+        + "<header><location path='/bzadmin/cache/info.html'/><path info='/bzadmin/cache/info' extension='.html'/></header>"
+        + "<content name='cache-info' target='main' status='ok'><cache-info provider='fixture' manager='main'>"
+        + "<cache name='pages' capabilities='configuration'><configuration>"
+        + "<property name='timeToLiveSeconds' value='172800'/><property name='timeToIdleSeconds' value='0'/>"
+        + "<property name='diskExpiryThreadIntervalSeconds' value='90'/><property name='maxEntriesLocalHeap' value='10000'/>"
+        + "<property name='expireAfterWrite' value='PT1H30M'/><property name='refreshAfterWrite' value='PT0.25S'/>"
+        + "<property name='status' value='STATUS_ALIVE'/></configuration></cache></cache-info></content></root>";
+    String html = OverlayXslt.transform(new StreamSource(new StringReader(xml)));
+    assertTrue(html.contains("<th>timeToLiveSeconds</th><td>172800 <span class=\"muted\">(2 days)</span></td>"), html);
+    assertTrue(html.contains("<th>timeToIdleSeconds</th><td class=\"muted\">0</td>"), html);
+    assertTrue(html.contains("<th>diskExpiryThreadIntervalSeconds</th><td>90 <span class=\"muted\">(1 minute 30 seconds)</span></td>"), html);
+    assertTrue(html.contains("<th>maxEntriesLocalHeap</th><td>10000</td>"), html);
+    assertTrue(html.contains("<th>expireAfterWrite</th><td>PT1H30M <span class=\"muted\">(1 hour 30 minutes)</span></td>"), html);
+    assertTrue(html.contains("<th>refreshAfterWrite</th><td>PT0.25S <span class=\"muted\">(0.25 seconds)</span></td>"), html);
+    assertTrue(html.contains("<th>status</th><td>STATUS_ALIVE</td>"), html);
+  }
+
+  @Test
   void showsCacheActionsAfterTheKeyMetrics() throws Exception {
     String cache = "<cache name='pages' scope='local' capabilities='statistics entries clear'><statistics/></cache>";
     String info = "<root service='bzadmin-cache-info' group='bzadmin'>"

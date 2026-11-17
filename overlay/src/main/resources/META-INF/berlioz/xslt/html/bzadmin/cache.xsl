@@ -253,7 +253,7 @@
             <div class="table-scroll" tabindex="0" role="group" aria-label="Cache configuration"><table class="basic-table summary-table properties-table" aria-label="Cache configuration">
               <tbody>
                 <xsl:for-each select="cache/configuration/property">
-                  <tr><th><xsl:value-of select="@name"/></th><td><xsl:sequence select="f:cache-zero-muted(@value)"/><xsl:value-of select="@value"/></td></tr>
+                  <tr><th><xsl:value-of select="@name"/></th><td><xsl:sequence select="f:cache-zero-muted(@value)"/><xsl:sequence select="f:cache-property-value(.)"/></td></tr>
                 </xsl:for-each>
               </tbody>
             </table></div>
@@ -737,6 +737,48 @@
                         else if ($name = 'average-put-time') then 'Average put time'
                         else if ($name = 'average-remove-time') then 'Average remove time'
                         else $name"/>
+</xsl:function>
+
+<!--
+  A configuration property as shown: its value as the library reports it, followed for a duration (seconds of
+  EHCache 2 `…Seconds`, ISO 8601 durations of Caffeine) by the duration in readable units.
+-->
+<xsl:function name="f:cache-property-value" as="node()*">
+  <xsl:param name="property" as="element(property)"/>
+  <xsl:variable name="value" select="string($property/@value)"/>
+  <xsl:variable name="seconds" as="xs:decimal?"
+                select="if (ends-with($property/@name, 'Seconds') and $value castable as xs:integer) then xs:decimal($value)
+                        else if (starts-with($value, 'P') and $value castable as xs:dayTimeDuration)
+                        then xs:dayTimeDuration($value) div xs:dayTimeDuration('PT1S')
+                        else ()"/>
+  <xsl:choose>
+    <xsl:when test="$seconds gt 0">
+      <xsl:value-of select="$value"/>
+      <xsl:text> </xsl:text>
+      <span class="muted">(<xsl:value-of select="f:cache-duration($seconds)"/>)</span>
+    </xsl:when>
+    <xsl:otherwise><xsl:value-of select="$value"/></xsl:otherwise>
+  </xsl:choose>
+</xsl:function>
+
+<!-- A positive duration in seconds, in days, hours, minutes and seconds without the units that are zero (172800 is "2 days") -->
+<xsl:function name="f:cache-duration" as="xs:string">
+  <xsl:param name="seconds" as="xs:decimal"/>
+  <xsl:variable name="whole" select="xs:integer(floor($seconds))"/>
+  <xsl:variable name="parts" as="xs:string*">
+    <xsl:if test="$whole ge 86400"><xsl:sequence select="f:cache-units($whole idiv 86400, 'day')"/></xsl:if>
+    <xsl:if test="($whole mod 86400) ge 3600"><xsl:sequence select="f:cache-units(($whole mod 86400) idiv 3600, 'hour')"/></xsl:if>
+    <xsl:if test="($whole mod 3600) ge 60"><xsl:sequence select="f:cache-units(($whole mod 3600) idiv 60, 'minute')"/></xsl:if>
+    <xsl:if test="$seconds mod 60 gt 0"><xsl:sequence select="f:cache-units($seconds mod 60, 'second')"/></xsl:if>
+  </xsl:variable>
+  <xsl:sequence select="if (exists($parts)) then string-join($parts, ' ') else f:cache-units($seconds * 1000, 'millisecond')"/>
+</xsl:function>
+
+<!-- A number of units, the unit in the plural unless the number is 1 ("1 day", "2 days", "0.5 seconds") -->
+<xsl:function name="f:cache-units" as="xs:string">
+  <xsl:param name="number" as="xs:decimal"/>
+  <xsl:param name="unit" as="xs:string"/>
+  <xsl:sequence select="concat(format-number($number, '0.###'), ' ', $unit, if ($number = 1) then '' else 's')"/>
 </xsl:function>
 
 <!-- A time in milliseconds, in microseconds below one millisecond (a get on the heap) -->
