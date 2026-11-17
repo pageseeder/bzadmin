@@ -79,6 +79,18 @@
   .variables,
   .functions {
     width: 100%;
+    /* Words in headers are never cut: 'overflow-wrap: anywhere' lets a column shrink below them */
+    th {
+      overflow-wrap: normal;
+    }
+  }
+
+  /* A priority ('0.5', 'N/A') stays on one line; a mode only breaks after its hyphens */
+  .templates td:nth-child(2) {
+    white-space: nowrap;
+  }
+  .templates td:nth-child(3) {
+    overflow-wrap: normal;
   }
 
   var {
