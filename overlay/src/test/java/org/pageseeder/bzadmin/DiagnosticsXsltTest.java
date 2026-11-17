@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -362,7 +363,7 @@ final class DiagnosticsXsltTest {
 
   @Test
   void showsTheCpuByDefault() throws Exception {
-    String html = page("bzadmin-system", "system-summary", JVM_SUMMARY);
+    String html = page("bzadmin-system", "system-summary", startedAgo(JVM_SUMMARY, 90061));
     assertTrue(html.contains("class=\"choice active\" aria-current=\"page\">CPU</a>"), html);
     assertTrue(html.contains("href=\"/ctx/bzadmin/x.html?view=threads\" class=\"choice\">Threads</a>"), html);
     assertFalse(html.contains("Overview"), html);
@@ -377,7 +378,7 @@ final class DiagnosticsXsltTest {
     for (String name : new String[]{"cpu-process", "load-average", "cpu-process-time", "gc-time"}) {
       assertTrue(html.contains("<p id=\"system-info-" + name + "\" class=\"info-popover\" popover=\"\">"), name);
     }
-    assertTrue(html.contains("<span class=\"uptime\">JVM up <time datetime=\"PT90061S\"><span aria-hidden=\"true\">1d 1h</span><span class=\"visually-hidden\">1 day, 1 hour</span></time></span>"), html);
+    assertTrue(Pattern.compile("<span class=\"uptime\">JVM up <time datetime=\"PT9006[12]S\"><span aria-hidden=\"true\">1d 1h</span><span class=\"visually-hidden\">1 day, 1 hour</span></time></span>").matcher(html).find(), html);
     assertFalse(html.contains("system-info-uptime"), html);
     assertFalse(html.contains("title=\"Started"), html);
     assertTrue(html.contains("data-href=\"/ctx/bzadmin/x.html?view=cpu\" id=\"refresh-metrics\""), html);
@@ -406,10 +407,29 @@ final class DiagnosticsXsltTest {
         {"172800000", "PT172800S", "2 days, 0 hours", "2d 0h"}
     };
     for (String[] sample : cases) {
+      // Without a start time, the uptime of the JVM is shown
       String html = page("bzadmin-system", "system-summary",
-          JVM_SUMMARY.replace("uptime-ms='90061000'", "uptime-ms='" + sample[0] + "'"));
+          JVM_SUMMARY.replace("start='2026-10-23T01:02:03Z' ", "").replace("uptime-ms='90061000'", "uptime-ms='" + sample[0] + "'"));
       assertTrue(html.contains("<time datetime=\"" + sample[1] + "\"><span aria-hidden=\"true\">" + sample[3] + "</span><span class=\"visually-hidden\">" + sample[2] + "</span></time>"), html);
     }
+  }
+
+  @Test
+  void showsTheUptimeByTheWallClockAsTheOtherPages() throws Exception {
+    // The JVM's uptime does not advance while the machine sleeps: started 4 hours ago, up 1 hour by the JVM
+    String slept = startedAgo(JVM_SUMMARY, 4 * 3600).replace("uptime-ms='90061000'", "uptime-ms='3600000'");
+    String html = page("bzadmin-system", "system-summary", slept);
+    assertTrue(html.contains("<span aria-hidden=\"true\">4h 0min</span>"), html);
+    // The averages stay over the JVM's uptime: 5,230 s of CPU over 1 hour on 8 processors
+    assertTrue(html.contains("Average 18.2% since start"), html);
+    // A start in the future (the clock changed) falls back to the JVM's uptime
+    String future = JVM_SUMMARY.replace("2026-10-23T01:02:03Z", Instant.now().plusSeconds(3600).toString());
+    assertTrue(page("bzadmin-system", "system-summary", future).contains("<span aria-hidden=\"true\">1d 1h</span>"));
+  }
+
+  /** The summary, with a JVM started the given number of seconds ago. */
+  private static String startedAgo(String summary, long seconds) {
+    return summary.replace("2026-10-23T01:02:03Z", Instant.now().minusSeconds(seconds).toString());
   }
 
   @Test
@@ -549,6 +569,27 @@ final class DiagnosticsXsltTest {
     assertFalse(html.contains("diskspace"), html);
     assertTrue(html.contains("<h2>Application files</h2>"), html);
     assertTrue(html.contains("Show details</button>"), html);
+  }
+
+  @Test
+  void listsTheFilesDirectlyInTheFolderSoThatTheTotalAddsUp() throws Exception {
+    String xml = "<root service='bzadmin-system-files' group='bzadmin'>"
+        + "<header><location path='/ctx/bzadmin/system/files.html'/><path context='/ctx' info='/bzadmin/system/files' extension='.html'/>"
+        + "<http-parameters><parameter name='details'>true</parameter></http-parameters>"
+        + "<berlioz version='0.14.6' mode='test'/></header>"
+        + "<content generator='org.pageseeder.bzadmin.X' name='filesystem' target='main' status='ok'>"
+        + "<file-system free-space='1' total-space='2'>"
+        + "<public total-size='11386' total-count='3'><directory name='script' file-size='0' file-count='0'/><directory name='style' file-size='1257' file-count='1'/></public>"
+        + "<private total-size='3238' total-count='1'><directory name='xslt' file-size='3238' file-count='1'/></private>"
+        + "</file-system></content></root>";
+    String html = OverlayXslt.transform(new StreamSource(new StringReader(xml)));
+    // Public: 2 files of 10,129 bytes directly in the folder, with the 1 file of 'style'
+    assertTrue(html.contains("<tr class=\"top-files\"><td class=\"name\"><code>/</code> <span class=\"muted\">(files directly in the folder)</span></td>"
+        + "<td class=\"size\">10.1 KB</td><td class=\"count\">2</td></tr>"), html);
+    assertTrue(html.contains("<td><b>Total</b></td><td class=\"size\">11.4 KB</td><td class=\"count\">3</td>"), html);
+    // Private: every file is in a directory, so no row for the folder itself
+    assertEquals(1, html.split("class=\"top-files\"", -1).length - 1, html);
+    assertFalse(html.contains("<sup>*</sup>"), html);
   }
 
   @Test

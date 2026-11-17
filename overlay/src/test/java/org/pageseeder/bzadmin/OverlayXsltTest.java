@@ -57,6 +57,26 @@ final class OverlayXsltTest {
   }
 
   @Test
+  void showsCacheSizesInDecimalUnitsAsTheOtherPages() throws Exception {
+    // A 10 MiB heap limit ("10M" in EHCache) against a 6 GiB heap (-Xmx6g), and a disk volume
+    String xml = "<root service='bzadmin-cache-summary' group='bzadmin'>"
+        + "<header><location path='/bzadmin/cache.html'/><path info='/bzadmin/cache' extension='.html'/></header>"
+        + "<content name='cache-overview' target='main' status='ok'><cache-providers>"
+        + "<cache-capacity><resource type='heap' limits='10485760' available='6442450944' unsized='0'/>"
+        + "<resource type='disk' limits='1500' available='999' total='1000000000000' unsized='0'/></cache-capacity>"
+        + "<cache-provider id='fixture' label='Fixture'/></cache-providers></content></root>";
+    String html = OverlayXslt.transform(new StreamSource(new StringReader(xml)));
+    // The same figures as the System page shows for the heap
+    assertTrue(html.contains("10.5 MB of 6.4 GB maximum heap"), html);
+    assertTrue(html.contains("<td>10.5 MB</td>"), html);
+    assertTrue(html.contains("6.4 GB<small class=\"muted\"> maximum heap</small>"), html);
+    assertTrue(html.contains("<td>1.5 KB</td>"), html);
+    assertTrue(html.contains("999 bytes<small class=\"muted\"> free of 1 TB</small>"), html);
+    assertFalse(html.contains("10 MB"), html);
+    assertFalse(html.contains("6 GB"), html);
+  }
+
+  @Test
   void namesCacheManagerStatusIcons() throws Exception {
     for (String status : new String[]{"active", "shutdown"}) {
       String xml = "<root service='bzadmin-cache-summary' group='bzadmin'>"

@@ -138,6 +138,22 @@ final class ControlFormXsltTest {
     assertFalse(html.contains("No filter with a"), "One reason at a time");
   }
 
+  @Test
+  void putsTheWarningsOfARuleUnderItsEffect() throws Exception {
+    String html = render("bzadmin-config", "<content generator='org.pageseeder.berlioz.generator.GetGlobalConfig' name='global-config'"
+        + " target='main' status='ok'><properties/></content>"
+        + "<content generator='org.pageseeder.bzadmin.redirect.GetRedirectFilters' name='redirect-filters' target='main' status='ok'>"
+        + "<redirect-filters><filter type='redirect' name='RedirectFilter' status='loaded' rules='2' ignored='1'>"
+        + "<rule position='1' from='/a' to='/b' effect='302'><warning code='redirect-chain' position='2'/><warning code='duplicate-from' position='3'/></rule>"
+        + "<rule position='2' from='/c/{!x}' to='/d'><warning code='ignored-rule' reason='invalid-from'/></rule>"
+        + "</filter></redirect-filters></content>", "true", "manual", "", "?view=redirects");
+    // Each warning on its own line under the effect
+    assertTrue(html.contains("302 temporary<br><span class=\"tag warning\""), html);
+    assertTrue(html.contains(">redirected again by #2</span><br><span class=\"tag warning\""), html);
+    // An ignored rule has no effect: its warning starts the cell, without an empty line
+    assertTrue(html.contains("<td><span class=\"tag warning\" title=\"A pattern does not parse: Berlioz ignores this rule\">ignored</span>"), html);
+  }
+
   private static String renderRedirects(String authorized, String status) throws Exception {
     return render("bzadmin-config", "<content generator='org.pageseeder.berlioz.generator.GetGlobalConfig' name='global-config'"
         + " target='main' status='ok'><properties/></content>"
