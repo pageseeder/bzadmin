@@ -9,7 +9,7 @@ Version `0.14.0` is the first public release, at `org.pageseeder.berlioz:pso-bza
 [0.14.1](docs/release/0.14.1.md) was released on 18 November 2026, with the Redirects tab, redaction of system property values and fixes for some known limitations of 0.14.0.
 
 - Address the remaining [known limitations](docs/release/0.14.1.md#known-limitations) where they can be fixed within the overlay. 0.14.1 requires Berlioz 0.14.6, which keeps the container's challenge for every method and the status of errors sent on Tomcat, so the [error page for 401](docs/access.md#error-page-for-401) is no longer needed.
-- Java 11 and Jetty 10 remain the reference environment; from 0.14.1, the overlay and packaged-host tests also run on Java 17, 21 and 25, and the packaged-host tests on Tomcat 9.
+- Make Jetty 12's EE 8 environment on Java 17 the reference container for the next release. Move the packaged-host and staged-host qualification tests to embedded Jetty 12 before changing the compatibility claim; retain Java 11 as the overlay's compilation and compatibility baseline and keep the Tomcat 9 qualification. Gretty still runs the local development host on Jetty 10, so document that difference rather than treating it as Jetty 12 evidence.
 - Keep refining keyboard navigation, dialogs, errors, refresh behavior and accessibility based on feedback.
 - Add a package filter to the Application performance and status-code tables. Keep their headline metrics application-wide and label that scope when the rows are filtered.
 - Let a host configure its main Java package root for a consistent, distinct `[app]` alias in Logs, Application and Services. Keep the full class or logger name available, and retain the built-in aliases for common packages.
@@ -32,9 +32,19 @@ For regular application logs in recognized timestamp-and-level formats, starting
 
 Use servlet session lifecycle events for hourly counts of sessions created and destroyed, kept in a bounded seven-day history with 24-hour and seven-day views. Show an open-session estimate and observed peak where meaningful. These are per-application-instance indicators since collection began, not counts of distinct users or a persistent analytics record; show gaps after a restart rather than filling them with zeroes. Request volume by hour from the log analysis can provide a better guide to quiet maintenance windows.
 
-### Mode-specific availability
+### Mode-specific admin access
 
-Allow `berlioz.admin.disabled=true` in mode-specific configuration to make admin requests that reach Berlioz Admin return 404 before login, redirects or generator execution, including direct generator invocation. Log capture continues. Host authentication or a container constraint that responds before the admin filter can still answer first; hosts needing an unconditional external 404 must block the routes before that layer.
+Allow `berlioz.admin.access=off|view|operate` in mode-specific configuration, with `operate` as the default for existing hosts. This setting caps access; it never grants permission that the host did not grant. `off` makes admin requests that reach Berlioz Admin return 404 before its login, redirects or generator execution, including direct generator invocation. `view` permits authorized reads but refuses every admin operation with 403, even for a user granted `OPERATE`. `operate` retains the host's existing `VIEW` and `OPERATE` decisions. Enforce the limit in the filter and generator verdict, including alternate dispatches and control operations; show the effective value on Application Overview and explain disabled operations in the UI.
+
+Log capture continues in every setting. Host authentication or a container constraint that responds before the admin filter can still answer first; hosts needing an unconditional external 404 must block the routes before that layer. This setting does not govern host services or Berlioz control parameters on public URLs.
+
+### Security tab
+
+Add one read-only Security tab that encourages good deployment practice using a small set of observable checks. Show the effective admin access ceiling and installation mappings; flag permissive Berlioz control-network configuration, URL session tracking, explicitly insecure cookie settings, full error detail and profiling where relevant. Reuse the Config Login view's fallback-login status: draw attention to a plain password or active local-proxy setting in production, and report incomplete or invalid configuration without showing the password or hash. Surface a failed configuration load with a link to Config, where the cause and whether Berlioz kept the last valid settings or fell back to defaults are shown. Show the session timeout and whether a control key is configured as facts, without imposing an arbitrary timeout or key-strength score. Reuse existing diagnostics where possible, and link each finding to the relevant guide or existing view. Use individual Attention, Observed and Verify with host results, without an overall security score or an assurance that the application is secure.
+
+Allow `berlioz.admin.environment=development|production` in mode-specific configuration as an optional hint for the Security tab. When unset, report facts and avoid environment-specific warnings; do not infer the environment from `berlioz.mode` or a hostname. In development, describe expected diagnostic and local-HTTP settings without presenting them as production warnings; continue to flag clear access and mapping problems. Show the configured hint prominently so an incorrect hint cannot silently make the page appear safe. The hint does not change permissions, the `berlioz.admin.access` ceiling or the behavior of any operation.
+
+Do not infer effective browser cookies, externally reachable control URLs or transport guarantees from settings that cannot establish them; explain what the host must verify. Opening the tab must not change state, send probe requests or disclose secret values.
 
 ### Shared access module
 
@@ -63,6 +73,11 @@ Qualify a Berlioz 1.0 candidate when available before claiming compatibility.
 - A filename or directory filter for the log file selector if its date groups are insufficient for directories with many files; distinct from filtering recent event text.
 - Bounded exports of admin views.
 - Deeper XSLT 3 package analysis beyond the current source-level documentation.
+- A Services Exposure view based on the runtime service inventory, if it can distinguish observable concerns from host authorization, CSRF and user-data behavior that a service declaration cannot prove.
+- Source-level XSLT security indicators and effective parser restrictions, only where they can be reported without executing host stylesheets or mistaking the overlay's parser settings for the host's.
+- A bounded CycloneDX export of visible host libraries, separate from the release SBOM of the overlay runtime graph, with explicit coverage and missing metadata and no outbound vulnerability lookup.
+- A fixed-size, per-instance Audit view under Logs with structured operation targets, collection start time and the existing audit logger retained as the durable integration point.
+- A Security view of request-log analysis for probe paths, scanner User Agents and 401, 403 and 429 patterns, with the same work limits and coverage reporting as the analysis and with proxy and false-positive limitations explained.
 
 ## Scope boundaries
 
